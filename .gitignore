@@ -1,0 +1,69 @@
+# --- Node ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+server.out.log
+server.err.log
+backend/uploads/
+
+# --- Environment / secrets ---
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Firebase admin service-account keys (SECRET - never commit)
+backend/*firebase-adminsdk*.json
+backend/*serviceAccount*.json
+**/google-services.json
+**/GoogleService-Info.plist
+
+# Android signing
+**/key.properties
+**/*.jks
+**/*.keystore
+
+# --- Build output ---
+admin-web/dist/
+admin-web/.vite/
+mobile/build/
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.packages
+mobile/.pub-cache/
+mobile/**/GeneratedPluginRegistrant.*
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/key.properties
+mobile/android/app/debug/
+mobile/android/app/profile/
+mobile/android/app/release/
+mobile/ios/Pods/
+mobile/ios/.symlinks/
+mobile/ios/Flutter/Flutter.framework
+mobile/ios/Flutter/Flutter.podspec
+mobile/windows/flutter/ephemeral/
+mobile/linux/flutter/ephemeral/
+mobile/macos/Flutter/ephemeral/
+
+# --- Build artifacts ---
+*.apk
+*.aab
+*.ipa
+*.app
+dist/
+build/
+
+# --- Postman (local env may hold real tokens) ---
+postman/*.local.json
+
+# --- IDE / OS ---
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+Desktop.ini

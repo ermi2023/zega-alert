@@ -22,6 +22,8 @@ export const env = {
     ? '*'
     : process.env.CORS_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean),
   nodeEnv: process.env.NODE_ENV || 'development',
+  // '' = auto-detect from the database host; 'true'/'false' force TLS.
+  dbSsl: process.env.DB_SSL || '',
   fcmProjectId: process.env.FCM_PROJECT_ID || '',
   fcmServiceAccount: process.env.FCM_SERVICE_ACCOUNT || '',
   firebaseServiceAccount: process.env.FIREBASE_SERVICE_ACCOUNT || process.env.FIREBASE_SERVICE_ACCOUNT_JSON || '',

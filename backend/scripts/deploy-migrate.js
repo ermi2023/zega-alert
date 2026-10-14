@@ -22,7 +22,10 @@ async function applyFile(file, { tolerant }) {
       ok++;
     } catch (e) {
       failed++;
-      if (!tolerant) throw new Error(`${file}: ${e.message}`);
+      // Managed databases may forbid extension creation, and PostgreSQL 13+
+      // provides gen_random_uuid() in core, so treat this as non-fatal.
+      const ignorable = tolerant || /^CREATE\s+EXTENSION/i.test(stmt);
+      if (!ignorable) throw new Error(`${file}: ${e.message}`);
       console.warn(`[DB] ${file} (ignored): ${e.message}`);
     }
   }

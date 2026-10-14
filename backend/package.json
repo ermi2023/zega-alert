@@ -6,8 +6,10 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
+    "start:deploy": "node scripts/deploy-migrate.js && node src/server.js",
     "dev": "node --watch src/server.js",
     "db:schema": "node scripts/run-sql.js schema.sql",
+    "db:migrate": "node scripts/run-sql.js migration_gaps.sql",
     "db:seed": "node scripts/run-sql.js seed.sql"
   },
   "dependencies": {

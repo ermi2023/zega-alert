@@ -3,16 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { io } from 'socket.io-client';
-import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
+import LiveMap from '../components/LiveMap';
 
 const badge = (v) => ({ pending: 'amber', under_review: 'blue', verified: 'green', resolved: 'green', rejected: 'red', closed: 'gray' }[v] || 'gray');
 const badgeSos = (v) => ({ triggered: 'red', acknowledged: 'amber', dispatched: 'blue', resolved: 'green', cancelled: 'gray' }[v] || 'gray');
@@ -360,31 +351,7 @@ export function DispatcherDashboard() {
         <div className="panel">
           <h2>🗺 {t('dashboard.liveMap')} <small style={{ color: 'var(--muted)', fontWeight: 400 }}>· {officerPts.length} officers live</small></h2>
           {(points.length > 0 || officerPts.length > 0) ? (
-            <div style={{ height: 340, borderRadius: 10, overflow: 'hidden' }}>
-              <MapContainer
-                center={points[0] ? [points[0].latitude, points[0].longitude] : [officerPts[0].latitude, officerPts[0].longitude]}
-                zoom={12} style={{ height: '100%', width: '100%', background: '#1b2436' }}>
-                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
-                {points.map((s) => (
-                  <Marker key={s.id} position={[s.latitude, s.longitude]}>
-                    <Popup>
-                      <b>{s.user_name || 'Citizen'}</b><br />
-                      {s.address_text || 'No address'}<br />
-                      Status: <b>{s.status}</b>
-                    </Popup>
-                  </Marker>
-                ))}
-                {officerPts.map((p) => (
-                  <CircleMarker key={p.userId} center={[p.latitude, p.longitude]} radius={7}
-                    pathOptions={{ color: '#2563eb', fillColor: '#2563eb', fillOpacity: 0.85 }}>
-                    <Popup>
-                      <b>{p.userName}</b><br />
-                      {p.role} · updated {new Date(p.timestamp).toLocaleTimeString()}
-                    </Popup>
-                  </CircleMarker>
-                ))}
-              </MapContainer>
-            </div>
+            <LiveMap alerts={points} officers={officerPts} height={340} />
           ) : (
             <p style={{ color: 'var(--muted)' }}>{t('dashboard.noGps')}</p>
           )}

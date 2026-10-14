@@ -82,10 +82,56 @@ class _AuthScreenState extends State<AuthScreen> {
       await Api.setProfile(data['user'] as Map<String, dynamic>?);
       if (mounted) Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const MainShell()));
     } catch (e) {
-      setState(() => _error = e.toString());
+      setState(() => _error = _friendlyError(e));
     } finally {
       setState(() => _busy = false);
     }
+  }
+
+  String _friendlyError(Object e) {
+    final s = e.toString();
+    if (s.contains('SocketException') || s.contains('ClientException') || s.contains('timed out') || s.contains('errno = 110')) {
+      return 'Cannot reach the server at ${Api.baseUrl}.\n'
+          'Tap "Server" below to paste a public URL (e.g. a Cloudflare tunnel), '
+          'or make sure the backend is running and your phone is on the same network.';
+    }
+    return s;
+  }
+
+  Future<void> _editServerUrl() async {
+    final controller = TextEditingController(text: Api.overrideBaseUrl ?? '');
+    final result = await showDialog<String?>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Backend server'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Current: ${Api.baseUrl}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.url,
+              decoration: const InputDecoration(
+                labelText: 'Server URL',
+                hintText: 'https://zega-api.example.et',
+                helperText: 'Leave blank to auto-detect on the local network.',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, ''), child: const Text('Auto-detect')),
+          TextButton(onPressed: () => Navigator.pop(ctx, null), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, controller.text), child: const Text('Save')),
+        ],
+      ),
+    );
+    if (result == null) return;
+    await Api.setBaseUrl(result);
+    if (mounted) setState(() {});
   }
 
   Future<String> _askOtp() async {
@@ -161,6 +207,12 @@ class _AuthScreenState extends State<AuthScreen> {
                       TextButton(
                         onPressed: () => setState(() => _register = !_register),
                         child: Text(_register ? loc.alreadyHaveAccount : loc.newHere),
+                      ),
+                      const Divider(height: 24),
+                      TextButton.icon(
+                        onPressed: _busy ? null : _editServerUrl,
+                        icon: const Icon(Icons.dns_outlined, size: 16),
+                        label: Text('Server: ${Api.baseUrl}', style: const TextStyle(fontSize: 11)),
                       ),
                     ],
                   ),

@@ -5,21 +5,103 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'database_service.dart';
 
 class Api {
-  static const String _lanHost = '10.108.92.91';
+  static const int port = 5000;
+
+  /// Build-time backend base URL, e.g.
+  /// `flutter build apk --dart-define=ZEGA_API_BASE=https://api.example.et`.
+  /// Empty in normal local builds (falls back to LAN auto-detect).
+  static const String _envBase = String.fromEnvironment('ZEGA_API_BASE');
+
+  /// User-set backend base URL (e.g. a public HTTPS tunnel), persisted from the
+  /// Settings screen. Takes precedence over everything else when present.
+  static String? _overrideBase;
+
+  /// The currently active explicit override, if any (for the settings UI).
+  static String? get overrideBaseUrl => _overrideBase;
+  static bool get hasEnvBase => _envBase.isNotEmpty;
+
+  /// Candidate backend hosts on the local network, tried in order until one
+  /// answers `/health`. The first entry is the typical Ethernet LAN IP; the
+  /// others cover the Windows Mobile Hotspot gateway and VirtualBox networks.
+  static const List<String> _candidateHosts = [
+    '10.235.107.49',
+    '192.168.137.1',
+    '192.168.137.90',
+    '192.168.56.1',
+    '10.0.2.2',
+  ];
+
+  static String _lanHost = _candidateHosts.first;
+
+  /// Point the app at an explicit backend URL (no trailing slash). Pass null or
+  /// an empty string to clear it and fall back to LAN auto-detection.
+  static Future<void> setBaseUrl(String? url) async {
+    final clean = (url ?? '').trim().replaceAll(RegExp(r'/+$'), '');
+    final prefs = await SharedPreferences.getInstance();
+    if (clean.isEmpty) {
+      _overrideBase = null;
+      await prefs.remove('apiBaseUrl');
+    } else {
+      _overrideBase = clean;
+      await prefs.setString('apiBaseUrl', clean);
+    }
+  }
+
+  /// Resolve which backend to use at startup: a saved/compiled explicit URL
+  /// wins; otherwise probe the LAN hosts. Safe no-op on web and desktop.
+  static Future<void> resolveHost() async {
+    _overrideBase = null;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString('apiBaseUrl');
+      if (saved != null && saved.isNotEmpty) _overrideBase = saved;
+    } catch (_) {}
+
+    if (_overrideBase != null || _envBase.isNotEmpty) return; // explicit URL wins
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
+
+    String? cached;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      cached = prefs.getString('lanHost');
+    } catch (_) {}
+    final candidates = <String>[
+      if (cached != null && cached.isNotEmpty) cached,
+      ..._candidateHosts,
+    ];
+    for (final host in candidates) {
+      if (await _hostAlive(host)) {
+        _lanHost = host;
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('lanHost', host);
+        } catch (_) {}
+        return;
+      }
+    }
+    if (cached != null && cached.isNotEmpty) _lanHost = cached;
+  }
+
+  static Future<bool> _hostAlive(String host) async {
+    try {
+      final res = await http
+          .get(Uri.parse('http://$host:$port/health'))
+          .timeout(const Duration(seconds: 2));
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
 
   static String get baseUrl {
-    if (kIsWeb) return 'http://localhost:5000';
-    if (defaultTargetPlatform == TargetPlatform.android) return 'http://$_lanHost:5000';
-    if (defaultTargetPlatform == TargetPlatform.windows) return 'http://localhost:5000';
-    return 'http://$_lanHost:5000';
+    if (_overrideBase != null && _overrideBase!.isNotEmpty) return _overrideBase!;
+    if (_envBase.isNotEmpty) return _envBase;
+    if (kIsWeb) return 'http://localhost:$port';
+    if (defaultTargetPlatform == TargetPlatform.windows) return 'http://localhost:$port';
+    return 'http://$_lanHost:$port';
   }
 
-  static String get socketUrl {
-    if (kIsWeb) return 'http://localhost:5000';
-    if (defaultTargetPlatform == TargetPlatform.android) return 'http://$_lanHost:5000';
-    if (defaultTargetPlatform == TargetPlatform.windows) return 'http://localhost:5000';
-    return 'http://$_lanHost:5000';
-  }
+  static String get socketUrl => baseUrl;
 
   static String? _token;
   static String? _userId;

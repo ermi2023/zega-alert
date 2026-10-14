@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'firebase_options.dart';
 import 'package:geolocator/geolocator.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/auth_screen.dart';
@@ -24,7 +26,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (!kIsWeb) {
     try {
-      await Firebase.initializeApp();
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
     } catch (_) {}
   }
   if (!kIsWeb) {
@@ -32,6 +35,7 @@ void main() async {
       await Geolocator.requestPermission();
     } catch (_) {}
   }
+  await Api.resolveHost();
   await Api.loadToken();
   if (Api.token != null && !kIsWeb) {
     await NotificationService.initialize();

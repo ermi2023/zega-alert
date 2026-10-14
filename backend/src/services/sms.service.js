@@ -1,8 +1,11 @@
 import { env } from '../config/env.js';
 
-const AT_API_URL = 'https://api.africastalking.com/version1/messaging';
 const AT_USERNAME = env.atUsername || 'sandbox';
 const AT_API_KEY = env.atApiKey || '';
+// Sandbox accounts use a different host than live/production accounts.
+const AT_API_URL = AT_USERNAME === 'sandbox'
+  ? 'https://api.sandbox.africastalking.com/version1/messaging'
+  : 'https://api.africastalking.com/version1/messaging';
 
 /**
  * Send SMS via Africa's Talking API

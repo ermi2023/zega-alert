@@ -1,0 +1,513 @@
+{
+  "info": {
+    "name": "ZEGA-ALERT API",
+    "description": "Crime Reporting, Missing Person Finder and Emergency Assistance System. Base URL: {{baseUrl}}. Login first to populate {{accessToken}} / {{refreshToken}}.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /health",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] }, "auth": { "type": "noauth" } }
+        },
+        {
+          "name": "GET / (root)",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/", "host": ["{{baseUrl}}"], "path": [""] }, "auth": { "type": "noauth" } }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /api/auth/register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"phone\": \"0911000099\",\n  \"fullName\": \"Test Citizen\",\n  \"pin\": \"123456\",\n  \"region\": \"Addis Ababa\",\n  \"subCity\": \"Arada\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] }
+          },
+          "auth": { "type": "noauth" }
+        },
+        {
+          "name": "POST /api/auth/login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "if (d && d.data) {",
+                  "  if (d.data.accessToken) pm.environment.set('accessToken', d.data.accessToken);",
+                  "  if (d.data.refreshToken) pm.environment.set('refreshToken', d.data.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"phone\": \"0911000001\",\n  \"pin\": \"password123\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          },
+          "auth": { "type": "noauth" }
+        },
+        {
+          "name": "POST /api/auth/refresh",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/refresh", "host": ["{{baseUrl}}"], "path": ["api", "auth", "refresh"] }
+          },
+          "auth": { "type": "noauth" }
+        },
+        {
+          "name": "POST /api/auth/logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "auth", "logout"] }
+          }
+        },
+        {
+          "name": "GET /api/auth/me",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/auth/me", "host": ["{{baseUrl}}"], "path": ["api", "auth", "me"] } }
+        },
+        {
+          "name": "PUT /api/auth/me",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"fullName\": \"Updated Name\",\n  \"region\": \"Dire Dawa\",\n  \"subCity\": \"Dire Dawa City\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/me", "host": ["{{baseUrl}}"], "path": ["api", "auth", "me"] }
+          }
+        },
+        {
+          "name": "PUT /api/auth/change-password",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"currentPin\": \"password123\",\n  \"newPin\": \"password1234\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/change-password", "host": ["{{baseUrl}}"], "path": ["api", "auth", "change-password"] }
+          }
+        },
+        {
+          "name": "GET /api/auth/staff?q=",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/auth/staff?q=09", "host": ["{{baseUrl}}"], "path": ["api", "auth", "staff"], "query": [{ "key": "q", "value": "09" }] } }
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "POST /api/reports",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"crimeType\": \"theft\",\n  \"description\": \"Phone stolen near the market\",\n  \"latitude\": 9.03,\n  \"longitude\": 38.74,\n  \"region\": \"Addis Ababa\",\n  \"subCity\": \"Arada\",\n  \"isAnonymous\": false\n}" },
+            "url": { "raw": "{{baseUrl}}/api/reports", "host": ["{{baseUrl}}"], "path": ["api", "reports"] }
+          }
+        },
+        { "name": "GET /api/reports/mine", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/reports/mine", "host": ["{{baseUrl}}"], "path": ["api", "reports", "mine"] } } },
+        { "name": "GET /api/reports", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/reports", "host": ["{{baseUrl}}"], "path": ["api", "reports"] } } },
+        { "name": "GET /api/reports/:id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/reports/{{reportId}}", "host": ["{{baseUrl}}"], "path": ["api", "reports", "{{reportId}}"] } } },
+        { "name": "GET /api/reports/:id/history", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/reports/{{reportId}}/history", "host": ["{{baseUrl}}"], "path": ["api", "reports", "{{reportId}}", "history"] } } },
+        {
+          "name": "PATCH /api/reports/:id/status (assign)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"assigned\",\n  \"assigned_to\": \"<officer-uuid>\",\n  \"response_notes\": \"Unit dispatched\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/reports/{{reportId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "reports", "{{reportId}}", "status"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "SOS",
+      "item": [
+        {
+          "name": "POST /api/sos",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"latitude\": 9.03,\n  \"longitude\": 38.74,\n  \"region\": \"Addis Ababa\",\n  \"subCity\": \"Arada\",\n  \"message\": \"Emergency at home\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/sos", "host": ["{{baseUrl}}"], "path": ["api", "sos"] }
+          }
+        },
+        { "name": "GET /api/sos", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/sos", "host": ["{{baseUrl}}"], "path": ["api", "sos"] } } },
+        { "name": "GET /api/sos/:id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/sos/{{sosId}}", "host": ["{{baseUrl}}"], "path": ["api", "sos", "{{sosId}}"] } } },
+        {
+          "name": "PATCH /api/sos/:id/status",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"in_progress\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/sos/{{sosId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "sos", "{{sosId}}", "status"] }
+          }
+        },
+        {
+          "name": "POST /api/sos/:id/assign",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"unitIds\": [\"<officer-uuid>\"]\n}" },
+            "url": { "raw": "{{baseUrl}}/api/sos/{{sosId}}/assign", "host": ["{{baseUrl}}"], "path": ["api", "sos", "{{sosId}}", "assign"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Persons (Missing / Wanted / Sightings)",
+      "item": [
+        { "name": "GET /api/persons/missing", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/persons/missing", "host": ["{{baseUrl}}"], "path": ["api", "persons", "missing"] } } },
+        {
+          "name": "POST /api/persons/missing",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Jane Doe\",\n  \"age\": 14,\n  \"gender\": \"female\",\n  \"lastSeenAddress\": \"Arada, Addis Ababa\",\n  \"description\": \"Last seen wearing a red dress\",\n  \"contactPhone\": \"0911000005\",\n  \"region\": \"Addis Ababa\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/persons/missing", "host": ["{{baseUrl}}"], "path": ["api", "persons", "missing"] }
+          }
+        },
+        { "name": "GET /api/persons/missing/:id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/persons/missing/{{missingId}}", "host": ["{{baseUrl}}"], "path": ["api", "persons", "missing", "{{missingId}}"] } } },
+        { "name": "GET /api/persons/wanted", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/persons/wanted", "host": ["{{baseUrl}}"], "path": ["api", "persons", "wanted"] } } },
+        {
+          "name": "POST /api/persons/wanted",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"John Roe\",\n  \"crimeDescription\": \"Armed robbery\",\n  \"dangerLevel\": \"high\",\n  \"region\": \"Dire Dawa\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/persons/wanted", "host": ["{{baseUrl}}"], "path": ["api", "persons", "wanted"] }
+          }
+        },
+        { "name": "GET /api/persons/sightings", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/persons/sightings", "host": ["{{baseUrl}}"], "path": ["api", "persons", "sightings"] } } },
+        {
+          "name": "POST /api/persons/sightings",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"missingPersonId\": \"{{missingId}}\",\n  \"description\": \"Seen near the bus station\",\n  \"latitude\": 9.03,\n  \"longitude\": 38.74\n}" },
+            "url": { "raw": "{{baseUrl}}/api/persons/sightings", "host": ["{{baseUrl}}"], "path": ["api", "persons", "sightings"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Announcements",
+      "item": [
+        { "name": "GET /api/announcements", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/announcements", "host": ["{{baseUrl}}"], "path": ["api", "announcements"] } } },
+        {
+          "name": "POST /api/announcements",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Road closure on Bole Road\",\n  \"body\": \"Bole Road is closed for maintenance today.\",\n  \"category\": \"road_closure\",\n  \"region\": \"Addis Ababa\",\n  \"language\": \"en\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/announcements", "host": ["{{baseUrl}}"], "path": ["api", "announcements"] }
+          }
+        },
+        { "name": "GET /api/announcements/:id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/announcements/{{announcementId}}", "host": ["{{baseUrl}}"], "path": ["api", "announcements", "{{announcementId}}"] } } },
+        { "name": "POST /api/announcements/:id/retranslate", "request": { "method": "POST", "url": { "raw": "{{baseUrl}}/api/announcements/{{announcementId}}/retranslate", "host": ["{{baseUrl}}"], "path": ["api", "announcements", "{{announcementId}}", "retranslate"] } } },
+        {
+          "name": "PATCH /api/announcements/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Updated title\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/announcements/{{announcementId}}", "host": ["{{baseUrl}}"], "path": ["api", "announcements", "{{announcementId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Legal",
+      "item": [
+        { "name": "GET /api/legal?include_all=true", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/legal?include_all=true", "host": ["{{baseUrl}}"], "path": ["api", "legal"], "query": [{ "key": "include_all", "value": "true" }] } } },
+        {
+          "name": "POST /api/legal",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Rights during arrest\",\n  \"body\": \"You have the right to remain silent...\",\n  \"category\": \"rights\",\n  \"language\": \"en\",\n  \"region\": \"Addis Ababa\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/legal", "host": ["{{baseUrl}}"], "path": ["api", "legal"] }
+          }
+        },
+        { "name": "GET /api/legal/:id/history", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/legal/{{legalId}}/history", "host": ["{{baseUrl}}"], "path": ["api", "legal", "{{legalId}}", "history"] } } },
+        {
+          "name": "PATCH /api/legal/:id/review",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"review_status\": \"published\",\n  \"note\": \"Approved by legal\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/legal/{{legalId}}/review", "host": ["{{baseUrl}}"], "path": ["api", "legal", "{{legalId}}", "review"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chat",
+      "item": [
+        { "name": "GET /api/chat/wait-time", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/chat/wait-time", "host": ["{{baseUrl}}"], "path": ["api", "chat", "wait-time"] } } },
+        {
+          "name": "POST /api/chat/conversations",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"participant_ids\": [\"<other-user-uuid>\"]\n}" },
+            "url": { "raw": "{{baseUrl}}/api/chat/conversations", "host": ["{{baseUrl}}"], "path": ["api", "chat", "conversations"] }
+          }
+        },
+        { "name": "GET /api/chat/conversations", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/chat/conversations", "host": ["{{baseUrl}}"], "path": ["api", "chat", "conversations"] } } },
+        { "name": "GET /api/chat/conversations/:id/messages", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/chat/conversations/{{conversationId}}/messages", "host": ["{{baseUrl}}"], "path": ["api", "chat", "conversations", "{{conversationId}}", "messages"] } } },
+        {
+          "name": "POST /api/chat/conversations/:id/messages",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"body\": \"Hello, I need help\",\n  \"message_type\": \"text\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/chat/conversations/{{conversationId}}/messages", "host": ["{{baseUrl}}"], "path": ["api", "chat", "conversations", "{{conversationId}}", "messages"] }
+          }
+        },
+        {
+          "name": "POST /api/chat/conversations/:id/rating",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"rating\": 5\n}" },
+            "url": { "raw": "{{baseUrl}}/api/chat/conversations/{{conversationId}}/rating", "host": ["{{baseUrl}}"], "path": ["api", "chat", "conversations", "{{conversationId}}", "rating"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "People of Determination (POD)",
+      "item": [
+        {
+          "name": "POST /api/pod/direct-call",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["const d = pm.response.json();", "if (d && d.data && d.data.request) pm.environment.set('directCallId', d.data.request.id);"] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"latitude\": 9.03,\n  \"longitude\": 38.74\n}" },
+            "url": { "raw": "{{baseUrl}}/api/pod/direct-call", "host": ["{{baseUrl}}"], "path": ["api", "pod", "direct-call"] }
+          }
+        },
+        { "name": "GET /api/pod/direct-call", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/pod/direct-call", "host": ["{{baseUrl}}"], "path": ["api", "pod", "direct-call"] } } },
+        {
+          "name": "PATCH /api/pod/direct-call/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"completed\",\n  \"notes\": \"Called the citizen\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/pod/direct-call/{{directCallId}}", "host": ["{{baseUrl}}"], "path": ["api", "pod", "direct-call", "{{directCallId}}"] }
+          }
+        },
+        {
+          "name": "POST /api/pod/sign-language",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"video_url\": \"http://localhost:5000/uploads/sample.mp4\",\n  \"note\": \"Sign language message\",\n  \"latitude\": 9.03,\n  \"longitude\": 38.74\n}" },
+            "url": { "raw": "{{baseUrl}}/api/pod/sign-language", "host": ["{{baseUrl}}"], "path": ["api", "pod", "sign-language"] }
+          }
+        },
+        { "name": "GET /api/pod/sign-language", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/pod/sign-language", "host": ["{{baseUrl}}"], "path": ["api", "pod", "sign-language"] } } },
+        { "name": "GET /api/pod/stations", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/pod/stations", "host": ["{{baseUrl}}"], "path": ["api", "pod", "stations"] } } },
+        {
+          "name": "POST /api/pod/stations",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Arada Police Station\",\n  \"phone\": \"+251911000000\",\n  \"region\": \"Addis Ababa\",\n  \"sub_city\": \"Arada\",\n  \"latitude\": 9.03,\n  \"longitude\": 38.74\n}" },
+            "url": { "raw": "{{baseUrl}}/api/pod/stations", "host": ["{{baseUrl}}"], "path": ["api", "pod", "stations"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Social Share Analytics",
+      "item": [
+        { "name": "GET /api/share/platforms", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/share/platforms", "host": ["{{baseUrl}}"], "path": ["api", "share", "platforms"] } } },
+        {
+          "name": "POST /api/share",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"content_type\": \"announcement\",\n  \"content_id\": \"{{announcementId}}\",\n  \"platform\": \"telegram\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/share", "host": ["{{baseUrl}}"], "path": ["api", "share"] }
+          }
+        },
+        { "name": "GET /api/share/stats", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/share/stats", "host": ["{{baseUrl}}"], "path": ["api", "share", "stats"] } } }
+      ]
+    },
+    {
+      "name": "Callbacks",
+      "item": [
+        {
+          "name": "POST /api/callbacks",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"reportId\": \"{{reportId}}\",\n  \"phone\": \"0911000005\",\n  \"reason\": \"Follow up on my report\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/callbacks", "host": ["{{baseUrl}}"], "path": ["api", "callbacks"] }
+          }
+        },
+        { "name": "GET /api/callbacks/mine", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/callbacks/mine", "host": ["{{baseUrl}}"], "path": ["api", "callbacks", "mine"] } } },
+        { "name": "GET /api/callbacks/officer", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/callbacks/officer", "host": ["{{baseUrl}}"], "path": ["api", "callbacks", "officer"] } } },
+        {
+          "name": "PATCH /api/callbacks/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"completed\",\n  \"response\": \"Called back\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/callbacks/{{callbackId}}", "host": ["{{baseUrl}}"], "path": ["api", "callbacks", "{{callbackId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dispatch",
+      "item": [
+        { "name": "GET /api/dispatch/:sosId/units", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/dispatch/{{sosId}}/units", "host": ["{{baseUrl}}"], "path": ["api", "dispatch", "{{sosId}}", "units"] } } },
+        {
+          "name": "POST /api/dispatch/:sosId/assign",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"units\": [\"<officer-uuid>\"]\n}" },
+            "url": { "raw": "{{baseUrl}}/api/dispatch/{{sosId}}/assign", "host": ["{{baseUrl}}"], "path": ["api", "dispatch", "{{sosId}}", "assign"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Geofences",
+      "item": [
+        { "name": "GET /api/geofences", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/geofences", "host": ["{{baseUrl}}"], "path": ["api", "geofences"] } } },
+        {
+          "name": "POST /api/geofences",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Home safe zone\",\n  \"latitude\": 9.03,\n  \"longitude\": 38.74,\n  \"radiusMeters\": 500\n}" },
+            "url": { "raw": "{{baseUrl}}/api/geofences", "host": ["{{baseUrl}}"], "path": ["api", "geofences"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Feedback",
+      "item": [
+        { "name": "GET /api/feedback", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/feedback", "host": ["{{baseUrl}}"], "path": ["api", "feedback"] } } },
+        {
+          "name": "POST /api/feedback",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"rating\": 5,\n  \"comment\": \"Great service\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/feedback", "host": ["{{baseUrl}}"], "path": ["api", "feedback"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        { "name": "GET /api/admin/stats", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/admin/stats", "host": ["{{baseUrl}}"], "path": ["api", "admin", "stats"] } } },
+        { "name": "GET /api/admin/users", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/admin/users", "host": ["{{baseUrl}}"], "path": ["api", "admin", "users"] } } },
+        {
+          "name": "POST /api/admin/users",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"phone\": \"0911000055\",\n  \"fullName\": \"New Officer\",\n  \"pin\": \"password123\",\n  \"role\": \"police\",\n  \"region\": \"Addis Ababa\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/admin/users", "host": ["{{baseUrl}}"], "path": ["api", "admin", "users"] }
+          }
+        },
+        {
+          "name": "PATCH /api/admin/users/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"role\": \"dispatcher\",\n  \"status\": \"active\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/admin/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "users", "{{userId}}"] }
+          }
+        },
+        { "name": "DELETE /api/admin/users/:id?confirm_active_cases=true", "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/admin/users/{{userId}}?confirm_active_cases=true", "host": ["{{baseUrl}}"], "path": ["api", "admin", "users", "{{userId}}"], "query": [{ "key": "confirm_active_cases", "value": "true" }] } } },
+        { "name": "GET /api/admin/audit", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/admin/audit", "host": ["{{baseUrl}}"], "path": ["api", "admin", "audit"] } } },
+        { "name": "GET /api/admin/dispatches", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/admin/dispatches", "host": ["{{baseUrl}}"], "path": ["api", "admin", "dispatches"] } } }
+      ]
+    },
+    {
+      "name": "Upload",
+      "item": [
+        {
+          "name": "POST /api/upload/single",
+          "request": {
+            "method": "POST",
+            "body": { "mode": "formdata", "formdata": [{ "key": "file", "type": "file", "src": [] }] },
+            "url": { "raw": "{{baseUrl}}/api/upload/single", "host": ["{{baseUrl}}"], "path": ["api", "upload", "single"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Verification",
+      "item": [
+        { "name": "GET /api/verification/status", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/verification/status", "host": ["{{baseUrl}}"], "path": ["api", "verification", "status"] } } },
+        {
+          "name": "POST /api/verification/qr",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"token\": \"<qr-token>\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/verification/qr", "host": ["{{baseUrl}}"], "path": ["api", "verification", "qr"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Translations",
+      "item": [
+        { "name": "GET /api/translations/:announcementId", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/translations/{{announcementId}}", "host": ["{{baseUrl}}"], "path": ["api", "translations", "{{announcementId}}"] } } },
+        {
+          "name": "POST /api/translations",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"announcement_id\": \"{{announcementId}}\",\n  \"language\": \"am\",\n  \"title\": \"የመንገድ መዝጊያ\",\n  \"body\": \"...\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/translations", "host": ["{{baseUrl}}"], "path": ["api", "translations"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Position",
+      "item": [
+        { "name": "GET /api/position/officers", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/position/officers", "host": ["{{baseUrl}}"], "path": ["api", "position", "officers"] } } }
+      ]
+    },
+    {
+      "name": "Policy / Security",
+      "item": [
+        { "name": "GET /api/policy", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/policy", "host": ["{{baseUrl}}"], "path": ["api", "policy"] } } }
+      ]
+    }
+  ]
+}

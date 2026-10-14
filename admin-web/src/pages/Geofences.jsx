@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
+import LiveMap from '../components/LiveMap';
 
 export default function Geofences() {
   const { t } = useTranslation();
@@ -48,6 +49,11 @@ export default function Geofences() {
           </div>
           <button className="btn">{t('geofences.create')}</button>
         </form>
+      </div>
+
+      <div className="panel">
+        <h2>🗺 {t('geofences.title')}</h2>
+        <LiveMap geofences={rows} height={340} />
       </div>
 
       <div className="panel">

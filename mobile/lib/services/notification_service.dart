@@ -1,14 +1,32 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart' show MaterialPageRoute, ScaffoldMessenger, SnackBar, Text;
 import 'package:flutter/foundation.dart' show kIsWeb;
+import '../screens/callbacks_screen.dart';
+import '../main.dart' show navigatorKey;
 import 'api.dart';
+
+/// Must be a top-level function so it survives when the app is terminated.
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // A notification payload is displayed by the OS automatically. This handler
+  // exists for app state changes / data-only messages in the background.
+}
 
 class NotificationService {
   static FirebaseMessaging? _messaging;
+  static const String channelId = 'zega_alert_channel';
 
   static Future<void> initialize() async {
     try {
       if (kIsWeb) return;
       _messaging = FirebaseMessaging.instance;
+
+      await _messaging!.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
       final settings = await _messaging!.requestPermission(
         alert: true,
         badge: true,
@@ -16,7 +34,8 @@ class NotificationService {
         provisional: false,
       );
 
-      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      if (settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional) {
         final token = await _messaging!.getToken();
         if (token != null) {
           await _registerToken(token);
@@ -50,15 +69,25 @@ class NotificationService {
 
   static void _handleForegroundMessage(RemoteMessage message) {
     final notification = message.notification;
-    if (notification != null) {
-      print('[FCM FOREGROUND] ${notification.title}: ${notification.body}');
-    }
+    if (notification == null) return;
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+    final text = [notification.title, notification.body]
+        .where((s) => s != null && s.isNotEmpty)
+        .join(': ');
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(content: Text(text.isEmpty ? 'New alert' : text)),
+    );
   }
 
   static void _handleMessageTap(RemoteMessage message) {
+    final nav = navigatorKey.currentState;
+    if (nav == null) return;
     final data = message.data;
-    if (data.containsKey('sosId')) {
-      // Could navigate to SOS details
+    final type = (data['type'] ?? '').toString();
+    if (type == 'callback' || data.containsKey('reportId')) {
+      nav.push(MaterialPageRoute(builder: (_) => const CallbacksScreen()));
     }
+    // SOS / other alerts keep the user on the home shell.
   }
 }

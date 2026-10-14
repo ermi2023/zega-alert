@@ -315,6 +315,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         const SizedBox(height: 8),
 
+        _section('Backend server', Icons.dns_outlined),
+        Semantics(
+          label: 'Backend server. Currently ${Api.baseUrl}. Double tap to change.',
+          child: Card(
+            child: ListTile(
+              leading: const Icon(Icons.dns_outlined, color: Colors.deepPurple),
+              title: const Text('Backend server'),
+              subtitle: Text(Api.baseUrl),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: _editServerUrl,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
         _section(loc.callbackRequests, Icons.phone_callback_outlined),
         Semantics(
           label: 'Callback requests. View police callback requests for your reports.',
@@ -355,6 +370,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
         OutlinedButton.icon(onPressed: _logout, icon: const Icon(Icons.logout), label: Text(loc.logoutLabel)),
       ],
     );
+  }
+
+  Future<void> _editServerUrl() async {
+    final controller = TextEditingController(text: Api.overrideBaseUrl ?? '');
+    final result = await showDialog<String?>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Backend server'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Current: ${Api.baseUrl}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.url,
+              decoration: const InputDecoration(
+                labelText: 'Server URL',
+                hintText: 'https://zega-api.example.et',
+                helperText: 'Leave blank to auto-detect on the local network.',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, ''), child: const Text('Auto-detect')),
+          TextButton(onPressed: () => Navigator.pop(ctx, null), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, controller.text), child: const Text('Save')),
+        ],
+      ),
+    );
+    if (result == null) return;
+    await Api.setBaseUrl(result);
+    setState(() => _status = result.trim().isEmpty
+        ? 'Backend set to auto-detect on the local network.'
+        : 'Backend server saved: ${Api.baseUrl}');
   }
 
   Future<void> _requestCall() async {

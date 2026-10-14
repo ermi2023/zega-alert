@@ -24,105 +24,105 @@ class AppLocalizationsTi extends AppLocalizations {
   String get news => 'ዜና';
 
   @override
-  String get messages => 'መልዕክቶች';
+  String get messages => 'መልእኽትታት';
 
   @override
-  String get settings => 'ማስተካከያ';
+  String get settings => 'ማስተካከል';
 
   @override
-  String get sosEmergency => 'SOS ኣደረ ጋዜጠ';
+  String get sosEmergency => 'SOS ድንገተኛ ሓደጋ';
 
   @override
-  String get sending => 'በመላክ ላይ…';
+  String get sending => 'ኣብ ምልኣኽ…';
 
   @override
-  String get sosDispatched => '🚨 SOS ተልኳል';
+  String get sosDispatched => '🚨 SOS ተላኢኹ';
 
   @override
   String unitsOnTheWay(Object count) {
-    return '$count ክፍሎች ብርህኪ እዮም።';
+    return '$count ክፍልታት ኣብ መገዲ እዮም።';
   }
 
   @override
-  String get announcements => 'ማሳወቂያ';
+  String get announcements => 'ማሳወቅታት';
 
   @override
-  String get missingPersons => 'የጠፉ ሰባት';
+  String get missingPersons => 'ዝጠፍኡ ሰባት';
 
   @override
-  String get wantedPersons => 'የሚፈለጉ ሰባት';
+  String get wantedPersons => 'ዝድለዩ ሰባት';
 
   @override
-  String get reportMissing => 'ጠፋውን ለማሳወቅ';
+  String get reportMissing => 'ዝጠፍአ ንምሕባር';
 
   @override
-  String get reportACrime => 'ወንጀል ሪፖርት አድርግ';
+  String get reportACrime => 'ገበን ሪፖርት ግበር';
 
   @override
-  String get yourReportGoesTo => 'ሪፖርትካ ናብ ክልላዊ ፖሊስ ይpadł።';
+  String get yourReportGoesTo => 'ሪፖርትካ ናብ ክልላዊ ፖሊስ ይኸይድ።';
 
   @override
-  String get newCrimeReport => 'አዲሱ የወንጀል ሪፖርት';
+  String get newCrimeReport => 'ሓድሽ ናይ ገበን ሪፖርት';
 
   @override
-  String get myReports => 'የእỔ decentral ሪፖርቶች';
+  String get myReports => 'ናተይ ሪፖርታት';
 
   @override
-  String get noReportsYet => 'ሪፖርት ኣልቦ።';
+  String get noReportsYet => 'ክሳብ ሕጂ ሪፖርት ኣየቕረብካን።';
 
   @override
-  String get title => 'ርእስ';
+  String get title => 'ኣርእስቲ';
 
   @override
-  String get description => 'መግለጫ';
+  String get description => 'መግለጺ';
 
   @override
   String get category => 'ምድብ';
 
   @override
-  String get severity => 'እርምጃ';
+  String get severity => 'ደረጃ ኣሳሳብነት';
 
   @override
-  String get reportAnonymously => 'በስም ሳይ ሪፖርት አድርግ';
+  String get reportAnonymously => 'ብስም ዘይተገልጸ ሪፖርት ግበር';
 
   @override
-  String get evidenceOptional => 'ማስረጃ (አማራጭ)';
+  String get evidenceOptional => 'መረጋገጺ (ኣማራጺ)';
 
   @override
-  String get submitReport => 'ሪፖርት አስ佺';
+  String get submitReport => 'ሪፖርት ኣቕርብ';
 
   @override
-  String get submitting => 'በማስ佺 ላይ…';
+  String get submitting => 'ኣብ ምቕራብ…';
 
   @override
-  String get newsAndInformation => 'ዜና መረዳእታ';
+  String get newsAndInformation => 'ዜናን ሓበሬታን';
 
   @override
-  String get announcementsTab => 'ማሳወቂያ';
+  String get announcementsTab => 'ማሳወቅታት';
 
   @override
-  String get legalTab => 'ሕግ';
+  String get legalTab => 'ሕጊ';
 
   @override
-  String get missingTab => 'ጠፋ';
+  String get missingTab => 'ጠፊኡ';
 
   @override
-  String get sightingsTab => 'ዓይኒ ረ饸ብҡ';
+  String get sightingsTab => 'ትርኢታት';
 
   @override
-  String get reportAMissingPerson => 'ጠፋውን ሰው ሪፖርት አድርግ';
+  String get reportAMissingPerson => 'ዝጠፍአ ሰብ ሪፖርት ግበር';
 
   @override
-  String get settingsTitle => 'ማስተካከያ';
+  String get settingsTitle => 'ቅጥዕታት';
 
   @override
-  String get settingsSubtitle => 'መለያኺ ያስተካክሉ፣ ቋንቋ ይምረጡ';
+  String get settingsSubtitle => 'ቁጽርኻ፣ ቋንቋ፣ ዞባታት ድሕነትን ተበጻሕነትን ኣማሓድር';
 
   @override
-  String get account => 'መለያ';
+  String get account => 'ቁጽሪ';
 
   @override
-  String get fullName => 'ሙሉ ስም';
+  String get fullName => 'ምሉእ ስም';
 
   @override
   String get location => 'ኣድራሻ';
@@ -137,432 +137,431 @@ class AppLocalizationsTi extends AppLocalizations {
   String get regionLabel => 'ክልል';
 
   @override
-  String get subCity => 'ንዑስ ከተማ / ወረዳ';
+  String get subCity => 'ንኡስ ከተማ / ወረዳ';
 
   @override
-  String get subCityLabel => 'ንዑስ ከተማ / ወረዳ';
+  String get subCityLabel => 'ንኡስ ከተማ / ወረዳ';
 
   @override
   String get languageLabel => 'ቋንቋ';
 
   @override
-  String get preferredLanguage => 'የመረጡት ቋንቋ';
+  String get preferredLanguage => 'ዝመረጽካዮ ቋንቋ';
 
   @override
-  String get safetyZones => 'የደህንነት ቦታ';
+  String get safetyZones => 'ዞባታት ድሕነት (ጂኦፌንስ)';
 
   @override
-  String get addSafetyZone => 'የደህንነት ቦታ አክል';
+  String get addSafetyZone => 'ዞባ ድሕነት ወስኽ';
 
   @override
-  String get legalInformation => 'የሕግ መረዳእታ';
+  String get legalInformation => 'ሓበሬታ ሕጊ';
 
   @override
-  String get accessibilityTitle => 'ተጠቃሚነት';
+  String get accessibilityTitle => 'ተበጻሕነት (ሰባት ኣካል ጉድኣት)';
 
   @override
-  String get accessibilitySubtitle => 'ትልቅ ጽሁፍ፣ ከፍተኛ ቅል ቅርጽ';
+  String get accessibilitySubtitle => 'ዓቢ ጽሑፍ፣ ልዑል ንጽጽር';
 
   @override
-  String get darkMode => 'ጨለማ ሁኔታ';
+  String get darkMode => 'ጸልማት ዘይቤ';
 
   @override
-  String get darkModeSubtitle => 'በመተግበሪያ ውስጥ ጨለማ ገጽ ይጠቀሙ';
+  String get darkModeSubtitle => 'ኣብ መተግበሪ ጸልማት ገጽ ተጠቐም';
 
   @override
-  String get callbackRequests => 'የተመላሽ ጥያቄ';
+  String get callbackRequests => 'ሕቶታት ተመላሽ';
 
   @override
-  String get callbackSubtitle => 'ፖሊሱ በሪፖርትኺ ላይ የሚድርገצותን ጥራብ ይመልሱ';
+  String get callbackSubtitle => 'ፖሊስ ኣብ ሪፖርትካ ንዝገብሮ ምክትታል መልሲ ሃብ';
 
   @override
-  String get requestDirectCall => 'ቀጥታ ጥራብ ጠይቅ';
+  String get requestDirectCall => 'ቀጥታ ጻውዒት ሕተት';
 
   @override
-  String get recordSignLanguage => 'የምልል ቋንቋ ቪዲዮ ቀርጽ';
+  String get recordSignLanguage => 'ቪዲዮ ቋንቋ ምልክት ቅረጽ';
 
   @override
-  String get saveSettings => 'ማስተካከያ አስቀምጥ';
+  String get saveSettings => 'ቅጥዕታት ዓቅብ';
 
   @override
-  String get logout => 'መውጣት';
+  String get logout => 'ውጻእ';
 
   @override
-  String get logoutLabel => 'መውጣት';
+  String get logoutLabel => 'ውጻእ';
 
   @override
-  String get signingIn => 'ኩ踯';
+  String get signingIn => 'ኣቲ';
 
   @override
-  String get createAccount => 'መለያ ፍጠር';
+  String get createAccount => 'ቁጽሪ ፍጠር';
 
   @override
-  String get emergencyAndCrime => 'ዘጋ-አለርት · ድንገተኛ አደጋ እና ወንጀል ሪፖርት';
+  String get emergencyAndCrime => 'ዘጋ-አለርት · ድንገተኛ ሓደጋን ገበንን ሪፖርት';
 
   @override
-  String get phone => 'ስልክ';
+  String get phone => 'ተሌፎን';
 
   @override
-  String get password => 'የይለፍ ቃል';
+  String get password => 'መእተዊ ቃል';
 
   @override
   String get register => 'ተመዝገብ';
 
   @override
-  String get alreadyHaveAccount => 'መለያ ኣለካ? ኩ踯';
+  String get alreadyHaveAccount => 'ቁጽሪ ኣለካ? ኣቲ';
 
   @override
-  String get newHere => 'አዲስ ኢኻ? መለያ ፍጠር';
+  String get newHere => 'ሓድሽ ዲኻ? ቁጽሪ ፍጠር';
 
   @override
-  String get callbackTitle => 'የተመላሽ ጥያቄ';
+  String get callbackTitle => 'ሕቶታት ተመላሽ';
 
   @override
-  String get callbackDescription => 'ፖሊሱ በሪፖርትኺ ላይ የሚድርገצותን ጥራብ ይመልሱ።';
+  String get callbackDescription => 'ፖሊስ ኣብ ሪፖርትካ ንዝገብሮ ምክትታል ጻውዒት ይገብር።';
 
   @override
-  String get noCallbacksYet => 'የተመላሽ ጥያቄ ኣይ喟ድነን።';
+  String get noCallbacksYet => 'ክሳብ ሕጂ ሕቶ ተመላሽ የለን።';
 
   @override
-  String get accept => 'ተቀበል';
+  String get accept => 'ተቐበል';
 
   @override
-  String get decline => 'ውድቅ አድርግ';
+  String get decline => 'ንጸግ';
 
   @override
-  String get offlineMode => 'ከመስመር ውጪ — የተቀመጠ መረጃ በማሳየት ላይ';
+  String get offlineMode => 'ካብ መስመር ወጻኢ — ዝተዓቀበ ሓበሬታ ይርአ ኣሎ';
 
   @override
-  String get ok => 'እሺ';
+  String get ok => 'ሕራይ';
 
   @override
-  String get sosSent => 'SOS ተልኳል። ክፍሎች ተልክዮዋል። በተገኘበት ቦታ ይĶ remain';
+  String get sosSent => 'SOS ተላኢኹ። ክፍልታት ተላኢኾም። ኣብቲ ቦታ ጸንሕ።';
 
   @override
-  String get share => 'አካፍል';
+  String get share => 'ኣካፍል';
 
   @override
   String shareAnnouncement(Object title) {
-    return 'ማሳወቂያ አካፍል: $title';
+    return 'ማሳወቂ ኣካፍል: $title';
   }
 
   @override
-  String get missing => 'ጠፋ';
+  String get missing => 'ጠፊኡ';
 
   @override
-  String get wanted => 'የሚፈለግ';
+  String get wanted => 'ዝድለ';
 
   @override
-  String get reportSighting => 'የተየethe ሪፖርት';
+  String get reportSighting => 'ትርኢት ሪፖርት ግበር';
 
   @override
   String shareMissingPerson(Object name) {
-    return 'የጠፋ ሰው አካፍል: $name';
+    return 'ዝጠፍአ ሰብ ኣካፍል: $name';
   }
 
   @override
   String shareWantedPerson(Object name) {
-    return 'የሚፈለግ ሰው አካፍል: $name';
+    return 'ዝድለ ሰብ ኣካፍል: $name';
   }
 
   @override
   String lastSeen(Object location) {
-    return 'የመጨረሻ ትዕይንት: $location';
+    return 'ናይ መወዳእታ ትርኢት: $location';
   }
 
   @override
-  String get nothingHereYet => 'እዚህ ምንም የለም።';
+  String get nothingHereYet => 'ኣብዚ ክሳብ ሕጂ ዋላ ሓደ የለን።';
 
   @override
-  String get citizenSightingsInfo => 'የዜግነት ትዕይንቶች ለፖሊስ በቀጥታ ይታያሉ።';
+  String get citizenSightingsInfo => 'ትርኢታት ዜጋታት ንፖሊስ ብቐጥታ ይርአ።';
 
   @override
-  String get unknownLocation => 'ያልታወቀ ቦታ';
+  String get unknownLocation => 'ዘይተፈልጠ ቦታ';
 
   @override
-  String get pleaseWait => 'እባክካ ትጽበявǎ…';
+  String get pleaseWait => 'በጃኻ ተጸበ…';
 
   @override
-  String get enterOtp => 'OTP ኣስገብ';
+  String get enterOtp => 'OTP ኣእቱ';
 
   @override
-  String get checkOtpHint => 'ለ开发 OTP ሰርቨር ይመልከት';
+  String get checkOtpHint => 'ንልምዓት OTP ናይ ሰርቨር ኮንሶል ተመልከት';
 
   @override
-  String get verify => 'ረጋግጽ';
+  String get verify => 'ኣረጋግጽ';
 
   @override
-  String get required => 'ያስፈልጋል';
+  String get required => 'ኣድላዪ';
 
   @override
   String get cancel => 'ሰርዝ';
 
   @override
-  String get add => 'ኣክል';
+  String get add => 'ወስኽ';
 
   @override
-  String get rateResponse => 'ምላሽ ደረጃ ይስጥ';
+  String get rateResponse => 'ንመልሲ ደረጃ ሃብ';
 
   @override
-  String get commentOptional => 'አስተያየት (አማራጭ)';
+  String get commentOptional => 'ርኢቶ (ኣማራጺ)';
 
   @override
-  String get thanksFeedback => 'ለግልጽ ግብረ ጸዓቶኺ እናመሰግናለን!';
+  String get thanksFeedback => 'ንርኢቶኻ ኣመስግነካ!';
 
   @override
-  String get rateThisResponse => 'ይህን ምላሽ ደረጃ ይስጥ';
+  String get rateThisResponse => 'ነዚ መልሲ ደረጃ ሃብ';
 
   @override
-  String get reportSubmitted => 'ሪፖርት ተልኳል። እናመሰግናለን።';
+  String get reportSubmitted => 'ሪፖርት ተቐሪቡ። ኣመስግነካ።';
 
   @override
   String uploadFailed(Object error) {
-    return 'Upload ኣይስዓልን: $error';
+    return 'ምጽዓን ኣይተዓወተን: $error';
   }
 
   @override
   String addType(Object type) {
-    return '$type ኣክል';
+    return '$type ወስኽ';
   }
 
   @override
   String get url => 'URL';
 
   @override
-  String get filePathNote => 'የፋይል መንገድ / ማስታወሻ';
+  String get filePathNote => 'መንገዲ ፋይል / መዝገብ';
 
   @override
-  String get noScheduledSlot => 'የታደሰ ጊዜ የለም';
+  String get noScheduledSlot => 'ዝተመደበ ግዜ የለን';
 
   @override
-  String get reportFollowUp => 'የ跟进 ሪፖርት';
+  String get reportFollowUp => 'ምክትታል ሪፖርት';
 
   @override
   String get mode => 'ዘይቤ';
 
   @override
-  String get contactStaff => 'ሰራተኛ ዕይን';
+  String get contactStaff => 'ሰራሕተኛ ተዛረብ';
 
   @override
-  String get staffPhoneHint => 'የሰራተኛ ስልክ፣ ማሳ example 0911000003';
+  String get staffPhoneHint => 'ተሌፎን ሰራሕተኛ፣ ኣብነት 0911000003';
 
   @override
-  String get startChat => 'ውይይት ጀምር';
+  String get startChat => 'ዕላል ጀምር';
 
   @override
-  String get userNotFound => 'ተጠቃሚ ኣይተገኘን';
+  String get userNotFound => 'ተጠቃሚ ኣይተረኽበን';
 
   @override
-  String get noConversations => 'ውይይቶች የሉም';
+  String get noConversations => 'ዕላል የለን';
 
   @override
-  String get newChat => 'አዲስ ውይይት';
+  String get newChat => 'ሓድሽ ዕላል';
 
   @override
-  String get typeMessage => 'መልዕክት ትግበር…';
+  String get typeMessage => 'መልእኽቲ ጽሓፍ…';
 
   @override
-  String get send => 'ላክ';
+  String get send => 'ስደድ';
 
   @override
-  String get missingPersonReportSubmitted => 'የጠፋ ሰው ሪፖርት ተልኳል።';
+  String get missingPersonReportSubmitted => 'ናይ ዝጠፍአ ሰብ ሪፖርት ተቐሪቡ።';
 
   @override
-  String get fullNameMissingPerson => 'የጠፋ ሰው ሙሉ ስም';
+  String get fullNameMissingPerson => 'ምሉእ ስም ናይ ዝጠፍአ ሰብ';
 
   @override
-  String get ageOptional => 'እድሜ (አማራጭ)';
+  String get ageOptional => 'ዕድመ (ኣማራጺ)';
 
   @override
   String get gender => 'ጾታ';
 
   @override
-  String get male => 'ወንድ';
+  String get male => 'ተባዕታይ';
 
   @override
-  String get female => 'ሴት';
+  String get female => 'ኣንስተይቲ';
 
   @override
-  String get unknown => 'ያልታወቀ';
+  String get unknown => 'ዘይተፈልጠ';
 
   @override
-  String get lastSeenLocation => 'የመጨረሻ ትዕይንት ቦታ (አድራሻ)';
+  String get lastSeenLocation => 'ናይ መወዳእታ ትርኢት ቦታ (ኣድራሻ)';
 
   @override
-  String get lastSeenDateTime => 'የመጨረሻ ትዕይንት ቀን እና ሰዓት (አማራጭ)';
+  String get lastSeenDateTime => 'ናይ መወዳእታ ትርኢት ዕለትን ግዜን (ኣማራጺ)';
 
   @override
   String lastSeenPrefix(Object datetime) {
-    return 'የመጨረሻ ትዕይንት: $datetime';
+    return 'ናይ መወዳእታ ትርኢት: $datetime';
   }
 
   @override
-  String get descriptionIdentifying => 'መግለጫ / ማንኛውም ዝርዝር';
+  String get descriptionIdentifying => 'መግለጺ / መለለዪ ዝርዝራት';
 
   @override
-  String get sightingReported => 'ትዕይንት ተመዝግብዋል። ለመርዳት እናመሰግናለን።';
+  String get sightingReported => 'ትርኢት ተመዝጊቡ። ስለ ዝሓገዝካ ኣመስግነካ።';
 
   @override
-  String get whereSeen => 'የእርስን የተየetheው የት ነበር?';
+  String get whereSeen => 'ኣበይ ረኺብካዮ?';
 
   @override
-  String get whenOptional => 'መቼ? (አማራጭ)';
+  String get whenOptional => 'መዓስ? (ኣማራጺ)';
 
   @override
   String seenAt(Object datetime) {
-    return 'የተየetheው: $datetime';
+    return 'ዝተረኽበ: $datetime';
   }
 
   @override
-  String get descriptionOptional => 'መግለጫ (አማራጭ)';
+  String get descriptionOptional => 'መግለጺ (ኣማራጺ)';
 
   @override
-  String get submitSighting => 'ትዕይንት አስ佺';
+  String get submitSighting => 'ትርኢት ኣቕርብ';
 
   @override
-  String get takePhoto => 'ፎቶ ያንብብ';
+  String get takePhoto => 'ፎቶ ኣንሳ';
 
   @override
-  String get chooseFromGallery => 'ከአሎብም ይምረጥ';
+  String get chooseFromGallery => 'ካብ ጋለሪ ምረጽ';
 
   @override
-  String get idNumberPhotoRequired => 'እባክካ የID ቁጥር ኣስገብ እና የID ካርድ ፎቶ ያንብብ።';
+  String get idNumberPhotoRequired => 'በጃኻ ቁጽሪ ID ኣእቱ እሞ ፎቶ ናይ ID ካርድ ኣንሳ።';
 
   @override
-  String get verificationSubmitted => 'ማረጋገጫ ተልኳል።';
+  String get verificationSubmitted => 'መረጋገጺ ተቐሪቡ።';
 
   @override
-  String get faydaIdVerification => 'ፋይዳ ብሔራዊ ID ማረጋገጫ';
+  String get faydaIdVerification => 'መረጋገጺ ብሄራዊ ID ፋይዳ';
 
   @override
-  String get verified => 'የተረጋገጧል';
+  String get verified => 'ተረጋጊጹ';
 
   @override
-  String get notVerified => 'ኣይተረጋገጠን';
+  String get notVerified => 'ኣይተረጋገጸን';
 
   @override
-  String get identityVerifiedDesc => 'መለያኺ በፋይዳ ብሔራዊ ID ተረጋገጧል።';
+  String get identityVerifiedDesc => 'ቁጽርኻ ብፋይዳ ብሄራዊ ID ተረጋጊጹ።';
 
   @override
-  String get verifyIdentityDesc =>
-      'መለያኺን ያረጋግጽ እምነት ለመፍጠር እና ሁሉንም ባህሪያት ለማስቻል።';
+  String get verifyIdentityDesc => 'እምነት ንምፍጣርን ኩሉ ኣገልግሎት ንምኽፋትን ቁጽርኻ ኣረጋግጽ።';
 
   @override
-  String get scanFaydaId => 'ፋይዳ ብሔራዊ ID ካርድኺ ይቃ扫黑';
+  String get scanFaydaId => 'ናይ ፋይዳ ብሄራዊ ID ካርድካ ስካን ግበር';
 
   @override
   String get scanIdInstruction =>
-      'የID ካርድኺን ንዑስ ፎቶ ያንብብ። መረጃኺ ከፋይዳ ቅርሽ ጋር ይረጋገጣል።';
+      'ንግራህ ገጽ ID ካርድካ ንጹር ፎቶ ኣንሳ። ሓበሬታኻ ምስ ዳታቤዝ ፋይዳ ይረጋገጽ።';
 
   @override
-  String get tapToScanId => 'ID ካርድ ለቃ扫黑 ይንክ';
+  String get tapToScanId => 'ID ካርድ ንምስካን ተንክፍ';
 
   @override
-  String get faydaIdNumber => 'ፋይዳ ID ቁጥር';
+  String get faydaIdNumber => 'ቁጽሪ ID ፋይዳ';
 
   @override
-  String get faydaIdHint => 'ማሳ example 1234567890123';
+  String get faydaIdHint => 'ኣብነት 1234567890123';
 
   @override
-  String get fullNameAsOnId => 'ሙሉ ስም (በID ላይ ያለው)';
+  String get fullNameAsOnId => 'ምሉእ ስም (ኣብ ID ከም ዘሎ)';
 
   @override
-  String get verifying => 'በማረጋገጥ ላይ...';
+  String get verifying => 'ኣብ ምርጋጋጽ...';
 
   @override
-  String get submitForVerification => 'ለማረጋገጥ አስ佺';
+  String get submitForVerification => 'ንመረጋገጺ ኣቕርብ';
 
   @override
-  String get connecting => 'በማገናኘት ላይ...';
+  String get connecting => 'ኣብ ምርካብ...';
 
   @override
-  String get ringing => 'በመlene ላይ...';
+  String get ringing => 'ኣብ ምድዋል...';
 
   @override
-  String get uploading => 'በመጫን ላይ…';
+  String get uploading => 'ኣብ ምጽዓን…';
 
   @override
-  String get newSafetyZone => 'አዲስ የደህንነት ቦታ';
+  String get newSafetyZone => 'ሓድሽ ዞባ ድሕነት';
 
   @override
   String get name => 'ስም';
 
   @override
-  String get type => 'አይነት';
+  String get type => 'ዓይነት';
 
   @override
-  String get centerLatitude => 'ማዕከላዊ ዓ rộng';
+  String get centerLatitude => 'ማእከላይ ላቲቲዩድ';
 
   @override
-  String get centerLongitude => 'ማዕከላዊ ርቀት';
+  String get centerLongitude => 'ማእከላይ ሎንጂቲዩድ';
 
   @override
-  String get radiusMeters => ' safegu (ሜትር)';
+  String get radiusMeters => 'ራዲየስ (ሜተር)';
 
   @override
   String get create => 'ፍጠር';
 
   @override
-  String get safetyZoneCreated => 'የደህንነት ቦታ ተፈጥሯል።';
+  String get safetyZoneCreated => 'ዞባ ድሕነት ተፈጢሩ።';
 
   @override
-  String get safetyZoneDeleted => 'የደህንነት ቦታ ጠፍቷል።';
+  String get safetyZoneDeleted => 'ዞባ ድሕነት ተሰሪዙ።';
 
   @override
-  String get noLegalContent => 'ንግግር ያለው ሕግ የለም።';
+  String get noLegalContent => 'ሓበሬታ ሕጊ የለን።';
 
   @override
-  String get identityVerification => 'መለያ ማረጋገጫ';
+  String get identityVerification => 'መረጋገጺ መንነት';
 
   @override
-  String get faydaVerificationSubtitle => 'መለያኺን በብሔራዊ ID ካርድ ያረጋግጽ';
+  String get faydaVerificationSubtitle => 'ቁጽርኻ ብብሄራዊ ID ካርድ ኣረጋግጽ';
 
   @override
-  String get accessibilityModePoD => 'ተጠቃሚነት ሁኔታ (PoD)';
+  String get accessibilityModePoD => 'ዘይቤ ተበጻሕነት (PoD)';
 
   @override
   String callingNumber(Object number) {
-    return '$number እየደ致电 ነው…';
+    return '$number ኣብ ምድዋል…';
   }
 
   @override
   String couldNotStartCall(Object error) {
-    return 'ጥሪውን ማስጀመር ኣይተቻለን: $error';
+    return 'ነቲ ጻውዒት ምጅማር ኣይተኻእለን: $error';
   }
 
   @override
-  String get recordingCancelled => 'መመዝገብ ተሰርቧል።';
+  String get recordingCancelled => 'ምቕራጽ ተሰሪዙ።';
 
   @override
   String signLanguageUploaded(Object name) {
-    return 'የምልል ቋንቋ ቪዲዮ ተጭኗል ($name)።';
+    return 'ቪዲዮ ቋንቋ ምልክት ተጻዒኑ ($name)።';
   }
 
   @override
-  String get signLanguageRecorded => 'የምልል ቋንቋ ቪዲዮ ተመዝግብዋል እና ተጭኗል።';
+  String get signLanguageRecorded => 'ቪዲዮ ቋንቋ ምልክት ተቐሪጹን ተጻዒኑን።';
 
   @override
   String couldNotRecordVideo(Object error) {
-    return 'ቪዲዮ መመዝገብ/መጫን ኣይተቻለን: $error';
+    return 'ቪዲዮ ምቕራጽ/ምጽዓን ኣይተኻእለን: $error';
   }
 
   @override
-  String get incomingCall => 'የመ来找 ጥሪ';
+  String get incomingCall => 'ዝምጽእ ጻውዒት';
 
   @override
   String callerIsCalling(Object name) {
-    return '$name እየደ致电 ነው';
+    return '$name ይድውለልካ ኣሎ';
   }
 
   @override
-  String get photoOfPerson => 'የሰው ፎቶ (አማራጭ)';
+  String get photoOfPerson => 'ፎቶ ናይቲ ሰብ (ኣማራጺ)';
 
   @override
-  String get photoOfSighting => 'የትዕይንት ፎቶ (አማራጭ)';
+  String get photoOfSighting => 'ፎቶ ናይቲ ትርኢት (ኣማራጺ)';
 
   @override
   String newCallbackRequest(Object title) {
-    return 'አዲስ የተመላሽ ጥያቄ \"$title\"';
+    return 'ሓድሽ ሕቶ ተመላሽ ን \"$title\"';
   }
 
   @override
@@ -570,6 +569,6 @@ class AppLocalizationsTi extends AppLocalizations {
 
   @override
   String sosUpdated(Object status) {
-    return 'SOSኺ አሁን $status ነው';
+    return 'SOSኻ ሕጂ $status እዩ';
   }
 }

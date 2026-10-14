@@ -30,7 +30,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get settings => 'ማስተካከያ';
 
   @override
-  String get sosEmergency => 'SOS አደረ ጋዜጠ';
+  String get sosEmergency => 'SOS ድንገተኛ አደጋ';
 
   @override
   String get sending => 'በመላክ ላይ…';
@@ -40,7 +40,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String unitsOnTheWay(Object count) {
-    return '$count ክፍሎች መንገድ ላይ ናቸው።';
+    return '$count ክፍሎች በመንገድ ላይ ናቸው።';
   }
 
   @override
@@ -68,7 +68,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get myReports => 'የእኔ ሪፖርቶች';
 
   @override
-  String get noReportsYet => 'ሪፖርት አልላችሁም።';
+  String get noReportsYet => 'እስካሁን ምንም ሪፖርት አላስገቡም።';
 
   @override
   String get title => 'ርዕስ';
@@ -80,22 +80,22 @@ class AppLocalizationsAm extends AppLocalizations {
   String get category => 'ምድብ';
 
   @override
-  String get severity => 'እርምጃ';
+  String get severity => 'የአሳሳቢነት ደረጃ';
 
   @override
-  String get reportAnonymously => 'በስም ሳይ ሪፖርት አድርግ';
+  String get reportAnonymously => 'በስም ሳይገልጹ ሪፖርት አድርግ';
 
   @override
   String get evidenceOptional => 'ማስረጃ (አማራጭ)';
 
   @override
-  String get submitReport => 'ሪፖርት አስ佺';
+  String get submitReport => 'ሪፖርት አስገባ';
 
   @override
-  String get submitting => 'በማስ佺 ላይ…';
+  String get submitting => 'በማስገባት ላይ…';
 
   @override
-  String get newsAndInformation => 'ዜና መረጃ';
+  String get newsAndInformation => 'ዜና እና መረጃ';
 
   @override
   String get announcementsTab => 'ማሳወቂያዎች';
@@ -107,16 +107,16 @@ class AppLocalizationsAm extends AppLocalizations {
   String get missingTab => 'ጠፋ';
 
   @override
-  String get sightingsTab => 'የተየetheen';
+  String get sightingsTab => 'ትዕይንቶች';
 
   @override
-  String get reportAMissingPerson => 'ጠፋውን ሰው ሪፖርት አድርግ';
+  String get reportAMissingPerson => 'የጠፋ ሰው ሪፖርት አድርግ';
 
   @override
   String get settingsTitle => 'ማስተካከያ';
 
   @override
-  String get settingsSubtitle => 'መለያዎ ያስተካክሉ፣ ቋንቋ ይምረጡ';
+  String get settingsSubtitle => 'መለያዎን፣ ቋንቋ፣ የደህንነት ቦታዎችን እና ተጠቃሚነትን ያስተዳድሩ';
 
   @override
   String get account => 'መለያ';
@@ -149,7 +149,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get preferredLanguage => 'የመረጡት ቋንቋ';
 
   @override
-  String get safetyZones => 'የደህንነት ቦታዎች';
+  String get safetyZones => 'የደህንነት ቀጠናዎች (ጂኦፌንስ)';
 
   @override
   String get addSafetyZone => 'የደህንነት ቦታ አክል';
@@ -158,34 +158,34 @@ class AppLocalizationsAm extends AppLocalizations {
   String get legalInformation => 'የሕግ መረጃ';
 
   @override
-  String get accessibilityTitle => 'ተጠቃሚነት';
+  String get accessibilityTitle => 'ተጠቃሚነት (የአካል ጉዳተኞች)';
 
   @override
-  String get accessibilitySubtitle => 'ትልቅ ጽሁፍ፣ ከፍተኛ ቅል ቅርጽ';
+  String get accessibilitySubtitle => 'ትልቅ ጽሁፍ፣ ከፍተኛ ንጽጽር';
 
   @override
   String get darkMode => 'ጨለማ ሁኔታ';
 
   @override
-  String get darkModeSubtitle => 'በመተግበሪያ ውስጥ ጨለማ ገጽ ይጠቀሙ';
+  String get darkModeSubtitle => 'በመተግበሪያው ውስጥ ጨለማ ገጽታ ይጠቀሙ';
 
   @override
   String get callbackRequests => 'የተመላሽ ጥያቄዎች';
 
   @override
-  String get callbackSubtitle => 'ፖሊሱ በሪፖርትዎ ላይ የሚደርጉትን ጥራብ ይመልሱ';
+  String get callbackSubtitle => 'ፖሊስ በሪፖርትዎ ላይ ለሚያደርገው ክትትል ምላሽ ይስጡ';
 
   @override
-  String get requestDirectCall => 'ቀጥታ ጥራብ ጠይቅ';
+  String get requestDirectCall => 'ቀጥታ ጥሪ ጠይቅ';
 
   @override
-  String get recordSignLanguage => 'የምልል ቋንቋ ቪዲዮ ቀርጽ';
+  String get recordSignLanguage => 'የምልክት ቋንቋ ቪዲዮ ቀርጽ';
 
   @override
   String get saveSettings => 'ማስተካከያ አስቀምጥ';
 
   @override
-  String get logout => 'መውጣት';
+  String get logout => 'ውጣ';
 
   @override
   String get logoutLabel => 'መውጣት';
@@ -218,10 +218,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get callbackTitle => 'የተመላሽ ጥያቄዎች';
 
   @override
-  String get callbackDescription => 'ፖሊሱ በሪፖርትዎ ላይ የሚደርጉትን ጥራብ ይመልሱ።';
+  String get callbackDescription => 'ፖሊስ በሪፖርትዎ ላይ ለሚያደርገው ክትትል ጥሪ ይጠይቃል።';
 
   @override
-  String get noCallbacksYet => 'የተመላሽ ጥያቄዎች አልተፈተጉም።';
+  String get noCallbacksYet => 'እስካሁን ምንም የተመላሽ ጥያቄ የለም።';
 
   @override
   String get accept => 'ተቀበል';
@@ -236,7 +236,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get ok => 'እሺ';
 
   @override
-  String get sosSent => 'SOS ተልኳል። ክፍሎች ተልክョዋል። በተገኘበት ቦታ ይ pozostał';
+  String get sosSent => 'SOS ተልኳል። ክፍሎች ተልከዋል። በቦታው ይቆዩ።';
 
   @override
   String get share => 'አካፍል';
@@ -253,7 +253,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get wanted => 'የሚፈለግ';
 
   @override
-  String get reportSighting => 'የተየethe ሪፖርት';
+  String get reportSighting => 'ትዕይንት ሪፖርት አድርግ';
 
   @override
   String shareMissingPerson(Object name) {
@@ -267,14 +267,14 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String lastSeen(Object location) {
-    return 'የመጨረሻ ትዕይንት: $location';
+    return 'ለመጨረሻ የታየው: $location';
   }
 
   @override
-  String get nothingHereYet => 'እዚህ ምንም የለም።';
+  String get nothingHereYet => 'እዚህ እስካሁን ምንም የለም።';
 
   @override
-  String get citizenSightingsInfo => 'የዜግነት ትዕይንቶች ለፖሊስ በቀጥታ ይታያሉ።';
+  String get citizenSightingsInfo => 'የዜጎች ትዕይንቶች ለፖሊስ በቀጥታ ይታያሉ።';
 
   @override
   String get unknownLocation => 'ያልታወቀ ቦታ';
@@ -286,10 +286,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get enterOtp => 'OTP ያስገቡ';
 
   @override
-  String get checkOtpHint => 'ለ开发 OTP ሰርቨሩን ይመልከቱ';
+  String get checkOtpHint => 'ለልማት OTP የሰርቨር ኮንሶልን ይመልከቱ';
 
   @override
-  String get verify => 'ረጋግጥ';
+  String get verify => 'አረጋግጥ';
 
   @override
   String get required => 'ያስፈልጋል';
@@ -301,13 +301,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get add => 'አክል';
 
   @override
-  String get rateResponse => 'ምላሽ ደረጃ ይስጡ';
+  String get rateResponse => 'ምላሹን ደረጃ ይስጡ';
 
   @override
   String get commentOptional => 'አስተያየት (አማራጭ)';
 
   @override
-  String get thanksFeedback => 'ለግልጽ ግብረ ስ⸜ዎ እናመሰግናለን!';
+  String get thanksFeedback => 'ለአስተያየትዎ እናመሰግናለን!';
 
   @override
   String get rateThisResponse => 'ይህን ምላሽ ደረጃ ይስጡ';
@@ -317,7 +317,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String uploadFailed(Object error) {
-    return 'Upload አልተሳካም: $error';
+    return 'መጫን አልተሳካም: $error';
   }
 
   @override
@@ -332,19 +332,19 @@ class AppLocalizationsAm extends AppLocalizations {
   String get filePathNote => 'የፋይል መንገድ / ማስታወሻ';
 
   @override
-  String get noScheduledSlot => 'የታደሰ ጊዜ የለም';
+  String get noScheduledSlot => 'የተያዘ ጊዜ የለም';
 
   @override
-  String get reportFollowUp => 'የ跟进 ሪፖርት';
+  String get reportFollowUp => 'የሪፖርት ክትትል';
 
   @override
-  String get mode => 'ዘይቤ';
+  String get mode => 'ዘዴ';
 
   @override
-  String get contactStaff => 'ሰራተኛን ያግኙ';
+  String get contactStaff => 'ሰራተኛ ያግኙ';
 
   @override
-  String get staffPhoneHint => 'የሰራተኛ ስልክ፣ ማሳ example 0911000003';
+  String get staffPhoneHint => 'የሰራተኛ ስልክ፣ ምሳሌ 0911000003';
 
   @override
   String get startChat => 'ውይይት ጀምር';
@@ -368,7 +368,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get missingPersonReportSubmitted => 'የጠፋ ሰው ሪፖርት ተልኳል።';
 
   @override
-  String get fullNameMissingPerson => 'የጠፈ ሰው ሙሉ ስም';
+  String get fullNameMissingPerson => 'የጠፋው ሰው ሙሉ ስም';
 
   @override
   String get ageOptional => 'እድሜ (አማራጭ)';
@@ -386,97 +386,97 @@ class AppLocalizationsAm extends AppLocalizations {
   String get unknown => 'ያልታወቀ';
 
   @override
-  String get lastSeenLocation => 'የመጨረሻ ትዕይንት ቦታ (አድራሻ)';
+  String get lastSeenLocation => 'ለመጨረሻ የታየበት ቦታ (አድራሻ)';
 
   @override
-  String get lastSeenDateTime => 'የመጨረሻ ትዕይንት ቀን እና ሰዓት (አማራጭ)';
+  String get lastSeenDateTime => 'ለመጨረሻ የታየበት ቀን እና ሰዓት (አማራጭ)';
 
   @override
   String lastSeenPrefix(Object datetime) {
-    return 'የመጨረሻ ትዕይንት: $datetime';
+    return 'ለመጨረሻ የታየው: $datetime';
   }
 
   @override
-  String get descriptionIdentifying => 'መግለጫ / ማǹገኛ ዝርዝሮች';
+  String get descriptionIdentifying => 'መግለጫ / መለያ ዝርዝሮች';
 
   @override
-  String get sightingReported => 'ትዕይንት ተመዝግብቧል። ለመርዳት እናመሰግናለን።';
+  String get sightingReported => 'ትዕይንት ተመዝግቧል። ስለረዱ እናመሰግናለን።';
 
   @override
-  String get whereSeen => 'የእርሶን የተየetheው የት ነበር?';
+  String get whereSeen => 'የት ነበር ያዩት?';
 
   @override
   String get whenOptional => 'መቼ? (አማራጭ)';
 
   @override
   String seenAt(Object datetime) {
-    return 'የተየetheው: $datetime';
+    return 'የታየው: $datetime';
   }
 
   @override
   String get descriptionOptional => 'መግለጫ (አማራጭ)';
 
   @override
-  String get submitSighting => 'ትዕይንት አስ佺';
+  String get submitSighting => 'ትዕይንት አስገባ';
 
   @override
-  String get takePhoto => 'ፎቶ ያንብቡ';
+  String get takePhoto => 'ፎቶ ያንሱ';
 
   @override
-  String get chooseFromGallery => 'ከአሎብም ይምረጡ';
+  String get chooseFromGallery => 'ከጋለሪ ይምረጡ';
 
   @override
-  String get idNumberPhotoRequired => 'እባክዎ የID ቁጥር ያስገቡ እና የID ካርድ ፎቶ ያንብቡ።';
+  String get idNumberPhotoRequired => 'እባክዎ የID ቁጥር ያስገቡ እና የID ካርድ ፎቶ ያንሱ።';
 
   @override
   String get verificationSubmitted => 'ማረጋገጫ ተልኳል።';
 
   @override
-  String get faydaIdVerification => 'ፋይዳ ብሔራዊ ID ማረጋገጫ';
+  String get faydaIdVerification => 'የፋይዳ ብሔራዊ መታወቂያ ማረጋገጫ';
 
   @override
-  String get verified => 'የተረጋገጧል';
+  String get verified => 'የተረጋገጠ';
 
   @override
-  String get notVerified => 'አልተረጋገጠም';
+  String get notVerified => 'ያልተረጋገጠ';
 
   @override
-  String get identityVerifiedDesc => 'መለያዎ በፋይዳ ብሔራዊ ID ተረጋግጧል።';
+  String get identityVerifiedDesc => 'መለያዎ በፋይዳ ብሔራዊ መታወቂያ ተረጋግጧል።';
 
   @override
   String get verifyIdentityDesc =>
-      'መለያዎን ያረጋግጡ እምነት ለመፍጠር እና ሁሉንም ባህሪያት ለማስቻል።';
+      'እምነት ለመፍጠር እና ሁሉንም ባህሪያት ለማስቻል መለያዎን ያረጋግጡ።';
 
   @override
-  String get scanFaydaId => 'ፋይዳ ብሔራዊ ID ካርድዎን ይቃ扫黑';
+  String get scanFaydaId => 'የፋይዳ ብሔራዊ መታወቂያ ካርድዎን ይቃኙ';
 
   @override
   String get scanIdInstruction =>
-      'የID ካርድዎን ንዑስ ፎቶ ያንብቡ። መረጃዎ ከፋይዳ ቅርሶ ጋር ይረጋገጣል።';
+      'የመታወቂያ ካርድዎን የፊት ጎን ግልጽ ፎቶ ያንሱ። መረጃዎ ከፋይዳ ዳታቤዝ ጋር ይረጋገጣል።';
 
   @override
-  String get tapToScanId => 'ID ካርድ ለቃ扫黑 ይንኩ';
+  String get tapToScanId => 'መታወቂያ ካርድ ለመቃኘት ይንኩ';
 
   @override
-  String get faydaIdNumber => 'ፋይዳ ID ቁጥር';
+  String get faydaIdNumber => 'የፋይዳ መታወቂያ ቁጥር';
 
   @override
-  String get faydaIdHint => 'ማሳ example 1234567890123';
+  String get faydaIdHint => 'ምሳሌ 1234567890123';
 
   @override
-  String get fullNameAsOnId => 'ሙሉ ስም (በID ላይ ያለው)';
+  String get fullNameAsOnId => 'ሙሉ ስም (በመታወቂያው ላይ እንዳለ)';
 
   @override
   String get verifying => 'በማረጋገጥ ላይ...';
 
   @override
-  String get submitForVerification => 'ለማረጋገጥ አስ佺';
+  String get submitForVerification => 'ለማረጋገጥ አስገባ';
 
   @override
-  String get connecting => 'በማገናኘት ላይ...';
+  String get connecting => 'በመገናኘት ላይ...';
 
   @override
-  String get ringing => 'በመlene ላይ...';
+  String get ringing => 'በመደወል ላይ...';
 
   @override
   String get uploading => 'በመጫን ላይ…';
@@ -491,13 +491,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get type => 'አይነት';
 
   @override
-  String get centerLatitude => 'ማዕከላዊ ዓ rộng';
+  String get centerLatitude => 'የማዕከል ኬክሮስ';
 
   @override
-  String get centerLongitude => 'ማዕከላዊ ርቀት';
+  String get centerLongitude => 'የማዕከል ኬንትሮስ';
 
   @override
-  String get radiusMeters => '_StaticFields (ሜትር)';
+  String get radiusMeters => 'ራዲየስ (ሜትር)';
 
   @override
   String get create => 'ፍጠር';
@@ -506,23 +506,23 @@ class AppLocalizationsAm extends AppLocalizations {
   String get safetyZoneCreated => 'የደህንነት ቦታ ተፈጥሯል።';
 
   @override
-  String get safetyZoneDeleted => 'የደህንነት ቦታ ጠፍቷል።';
+  String get safetyZoneDeleted => 'የደህንነት ቦታ ተሰርዟል።';
 
   @override
-  String get noLegalContent => 'ንግግር ያለው ሕግ የለም።';
+  String get noLegalContent => 'ምንም የሕግ መረጃ የለም።';
 
   @override
-  String get identityVerification => 'መለያ ማረጋገጫ';
+  String get identityVerification => 'የማንነት ማረጋገጫ';
 
   @override
-  String get faydaVerificationSubtitle => 'መለያዎን በብሔራዊ ID ካርድ ያረጋግጡ';
+  String get faydaVerificationSubtitle => 'መለያዎን በብሔራዊ መታወቂያ ካርድ ያረጋግጡ';
 
   @override
-  String get accessibilityModePoD => 'ተጠቃሚነት ሁኔታ (PoD)';
+  String get accessibilityModePoD => 'የተጠቃሚነት ሁኔታ (PoD)';
 
   @override
   String callingNumber(Object number) {
-    return '$number እየደ致电 ነው…';
+    return '$number በመደወል ላይ…';
   }
 
   @override
@@ -531,31 +531,31 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get recordingCancelled => 'መመዝገብ ተሰርቧል።';
+  String get recordingCancelled => 'መመዝገብ ተሰርዟል።';
 
   @override
   String signLanguageUploaded(Object name) {
-    return 'የምልል ቋንቋ ቪዲዮ ተጭኗል ($name)።';
+    return 'የምልክት ቋንቋ ቪዲዮ ተጭኗል ($name)።';
   }
 
   @override
-  String get signLanguageRecorded => 'የምልል ቋንቋ ቪዲዮ ተመዝግብቧል እና ተጭኗል።';
+  String get signLanguageRecorded => 'የምልክት ቋንቋ ቪዲዮ ተቀርጾ ተጭኗል።';
 
   @override
   String couldNotRecordVideo(Object error) {
-    return 'ቪዲዮ መመዝገብ/መጫን አልተቻለም: $error';
+    return 'ቪዲዮ መቅረጽ/መጫን አልተቻለም: $error';
   }
 
   @override
-  String get incomingCall => 'የመ来找 ጥሪ';
+  String get incomingCall => 'ገቢ ጥሪ';
 
   @override
   String callerIsCalling(Object name) {
-    return '$name እየደ致电 ነው';
+    return '$name በመደወል ላይ ነው';
   }
 
   @override
-  String get photoOfPerson => 'የሰው ፎቶ (አማራጭ)';
+  String get photoOfPerson => 'የሰውየው ፎቶ (አማራጭ)';
 
   @override
   String get photoOfSighting => 'የትዕይንት ፎቶ (አማራጭ)';

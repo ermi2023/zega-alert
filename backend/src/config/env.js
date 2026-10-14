@@ -34,4 +34,8 @@ export const env = {
   // Automatic translation engine (doc 4.3.3 / SD-8). LibreTranslate-compatible.
   translateApiUrl: process.env.TRANSLATE_API_URL || '',
   translateApiKey: process.env.TRANSLATE_API_KEY || '',
+  // Fayda National ID verification (spec §4.4). Blank = dev auto-approve.
+  faydaApiUrl: process.env.FAYDA_API_URL || '',
+  faydaApiKey: process.env.FAYDA_API_KEY || '',
+  faydaApiEnabled: Boolean(process.env.FAYDA_API_URL),
 };

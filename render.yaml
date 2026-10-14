@@ -1,18 +1,76 @@
+# ZEGA-ALERT deployment blueprint (Render)
+# Docs: https://render.com/docs/blueprint-spec
+#
+# 1. Push this repo to GitHub.
+# 2. Render dashboard -> New -> Blueprint -> pick the repo.
+# 3. Paste values for the `sync: false` env vars when prompted
+#    (Firebase service account JSON, Fayda keys, Africa's Talking keys).
+# 4. After the API is live, set the admin static site's VITE_API_URL to the
+#    API URL, e.g. https://zega-alert-api.onrender.com
+
+databases:
+  - name: zega-alert-db
+    plan: free
+    databaseName: zega_alert
+    user: zega
+
 services:
+  # ---------- Backend API ----------
   - type: web
     name: zega-alert-api
-    runtime: node
+    runtime: docker
     plan: free
-    rootDir: backend
-    buildCommand: npm install
-    startCommand: npm run db:schema && npm start
+    region: frankfurt
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
     healthCheckPath: /health
+    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
       - key: JWT_SECRET
         generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: zega-alert-db
+          property: connectionString
       - key: CORS_ORIGINS
+        value: "*"
+      # --- Firebase (mobile push + Firestore mirror + file storage) ---
+      # Paste the full service-account JSON as a single-line string.
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
         sync: false
+      - key: FIREBASE_STORAGE_BUCKET
+        value: zega-alert.firebasestorage.app
+      # --- Fayda National ID (blank = dev auto-approve) ---
+      - key: FAYDA_API_URL
+        sync: false
+      - key: FAYDA_API_KEY
+        sync: false
+      # --- Africa's Talking SMS ---
+      - key: AT_USERNAME
+        sync: false
+      - key: AT_API_KEY
+        sync: false
+      - key: AT_SENDER_ID
+        sync: false
+
+  # ---------- Admin web (static) ----------
+  - type: web
+    name: zega-alert-admin
+    runtime: static
+    rootDir: admin-web
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    autoDeploy: true
+    envVars:
+      - key: VITE_API_URL
+        sync: false
+      - key: VITE_GOOGLE_MAPS_API_KEY
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

@@ -1,41 +1,6 @@
 import { query } from '../config/db.js';
 import { ok, fail } from '../utils/response.js';
-
-// In production, this would integrate with Fayda API
-// For now, we store the ID image and mark as pending review
-
-export const submitVerification = async (req, res) => {
-  const { id_number, id_image_url, full_name, date_of_birth } = req.body;
-  if (!id_number || !id_image_url) {
-    return fail(res, 'id_number and id_image_url are required');
-  }
-
-  // Store verification request
-  await query(
-    `INSERT INTO audit_log (user_id, action, entity, detail)
-     VALUES ($1, 'submit_id_verification', 'users', $2)`,
-    [req.user.id, JSON.stringify({ id_number, id_image_url, full_name, date_of_birth })],
-  );
-
-  // In a real system, this would call the Fayda API
-  // For now, auto-verify for demo purposes
-  await query(
-    `UPDATE users SET is_verified = true WHERE id = $1`,
-    [req.user.id],
-  );
-
-  ok(res, {
-    status: 'verified',
-    message: 'ID verification submitted. For demo purposes, verification is automatic.',
-    id_number: id_number.substring(0, 4) + '****' + id_number.substring(id_number.length - 4),
-  });
-};
-
-const maskId = (id) => {
-  const s = String(id || '');
-  if (s.length <= 8) return s;
-  return s.substring(0, 4) + '****' + s.substring(s.length - 4);
-};
+import { verifyFin, faydaEnabled, maskId } from '../services/fayda.service.js';
 
 const extractFin = (raw) => {
   if (!raw) return null;
@@ -51,6 +16,46 @@ const extractFin = (raw) => {
   return match ? match[1] : null;
 };
 
+// Manual ID submission (photo + number). Verifies against the Fayda National ID
+// service when configured; otherwise records the request for review.
+export const submitVerification = async (req, res) => {
+  const { id_number, id_image_url, full_name, date_of_birth } = req.body;
+  if (!id_number || !id_image_url) {
+    return fail(res, 'id_number and id_image_url are required');
+  }
+
+  const result = await verifyFin(String(id_number), { fullName: full_name, dateOfBirth: date_of_birth });
+
+  await query(
+    `INSERT INTO audit_log (user_id, action, entity, detail)
+     VALUES ($1, 'submit_id_verification', 'users', $2)`,
+    [req.user.id, JSON.stringify({ id_number: maskId(id_number), id_image_url, full_name, fayda_status: result.status })],
+  );
+
+  if (result.status === 'error') {
+    return fail(res, result.error || 'Fayda verification failed', 502);
+  }
+
+  if (result.verified) {
+    await query(`UPDATE users SET is_verified = true, updated_at = now() WHERE id = $1`, [req.user.id]);
+    return ok(res, {
+      status: 'verified',
+      verified: true,
+      message: faydaEnabled()
+        ? 'Fayda National ID verified.'
+        : 'ID verification submitted. Development mode: verification is automatic.',
+      id_number: maskId(id_number),
+    });
+  }
+
+  ok(res, {
+    status: 'rejected',
+    verified: false,
+    message: 'Fayda National ID could not be verified.',
+    id_number: maskId(id_number),
+  });
+};
+
 // Scan a Fayda National ID QR code and verify the account.
 // `qr_data` may be raw QR text or a JSON payload containing the FIN.
 export const verifyByQr = async (req, res) => {
@@ -62,11 +67,26 @@ export const verifyByQr = async (req, res) => {
     return fail(res, 'Could not read a valid Fayda FIN from the QR code', 422);
   }
 
+  const result = await verifyFin(fin, { fullName: full_name });
+
   await query(
     `INSERT INTO audit_log (user_id, action, entity, detail)
      VALUES ($1, 'verify_fayda_qr', 'users', $2)`,
-    [req.user.id, JSON.stringify({ fin_masked: maskId(fin), full_name: full_name || null })],
+    [req.user.id, JSON.stringify({ fin_masked: maskId(fin), full_name: full_name || null, fayda_status: result.status })],
   );
+
+  if (result.status === 'error') {
+    return fail(res, result.error || 'Fayda verification failed', 502);
+  }
+
+  if (!result.verified) {
+    return ok(res, {
+      status: 'rejected',
+      verified: false,
+      fin_masked: maskId(fin),
+      message: 'Fayda National ID could not be verified.',
+    });
+  }
 
   await query(
     `UPDATE users SET is_verified = true, updated_at = now() WHERE id = $1`,
@@ -77,7 +97,9 @@ export const verifyByQr = async (req, res) => {
     status: 'verified',
     verified: true,
     fin_masked: maskId(fin),
-    message: 'Fayda National ID verified via QR scan.',
+    message: faydaEnabled()
+      ? 'Fayda National ID verified via QR scan.'
+      : 'Fayda National ID verified via QR scan (development mode).',
   });
 };
 
@@ -91,5 +113,6 @@ export const getVerificationStatus = async (req, res) => {
   ok(res, {
     verified: rows[0].is_verified,
     status: rows[0].is_verified ? 'verified' : 'not_verified',
+    fayda_configured: faydaEnabled(),
   });
 };

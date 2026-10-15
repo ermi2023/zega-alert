@@ -6,20 +6,22 @@ import {
 } from '../controllers/person.controller.js';
 
 const router = Router();
-router.use(authenticate);
 
+// Public (guest) read access.
 router.get('/missing', listMissing);
-router.post('/missing', createMissing);
 router.get('/missing/:id', getMissing);
-router.patch('/missing/:id', requireRole('police', 'dispatcher', 'regional_admin', 'system_admin'), updateMissing);
-router.patch('/missing/:id/approve', requireRole('regional_admin', 'system_admin'), approveMissing);
-router.patch('/missing/:id/reject', requireRole('regional_admin', 'system_admin'), rejectMissing);
-
 router.get('/wanted', listWanted);
-router.post('/wanted', requireRole('police', 'regional_admin', 'system_admin'), createWanted);
-router.patch('/wanted/:id', requireRole('police', 'regional_admin', 'system_admin'), updateWanted);
-
 router.get('/sightings', listSightings);
-router.post('/sightings', createSighting);
+
+// Writes and staff-only views require an authenticated account.
+router.post('/missing', authenticate, createMissing);
+router.patch('/missing/:id', authenticate, requireRole('police', 'dispatcher', 'regional_admin', 'system_admin'), updateMissing);
+router.patch('/missing/:id/approve', authenticate, requireRole('regional_admin', 'system_admin'), approveMissing);
+router.patch('/missing/:id/reject', authenticate, requireRole('regional_admin', 'system_admin'), rejectMissing);
+
+router.post('/wanted', authenticate, requireRole('police', 'regional_admin', 'system_admin'), createWanted);
+router.patch('/wanted/:id', authenticate, requireRole('police', 'regional_admin', 'system_admin'), updateWanted);
+
+router.post('/sightings', authenticate, createSighting);
 
 export default router;

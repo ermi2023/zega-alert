@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api.dart';
+import '../widgets/auth_gate.dart';
 import 'missing_report_screen.dart';
 
 class NewsScreen extends StatefulWidget {
@@ -106,11 +107,15 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
     return RefreshIndicator(onRefresh: _load, child: ListView.builder(itemCount: items.length, itemBuilder: (_, i) => Card(child: tile(items[i]))));
   }
 
-  void _openMissingReport() {
+  Future<void> _openMissingReport() async {
+    if (!await ensureAuthed(context, reason: 'Sign in to report a missing person.')) return;
+    if (!mounted) return;
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => MissingReportScreen(onDone: _load)));
   }
 
-  void _openSighting(dynamic person, {String? wantedId}) {
+  Future<void> _openSighting(dynamic person, {String? wantedId}) async {
+    if (!await ensureAuthed(context, reason: 'Sign in to report a sighting.')) return;
+    if (!mounted) return;
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => SightingReportScreen(
       missingPersonId: person['id'] as String?,
       wantedPersonId: wantedId,

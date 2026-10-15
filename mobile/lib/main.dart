@@ -19,6 +19,7 @@ import 'services/socket_service.dart';
 import 'services/notification_service.dart';
 import 'services/officer_position_service.dart';
 import 'services/sync_service.dart';
+import 'widgets/auth_gate.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -138,21 +139,31 @@ class _MainShellState extends State<MainShell> {
 
   static const _tabs = [
     HomeScreen(),
-    ReportScreen(),
+    AuthGate(
+      child: ReportScreen(),
+      title: 'Sign in to file a report',
+      message: 'You can browse announcements, missing & wanted persons as a guest. Sign in to submit crime reports.',
+    ),
     NewsScreen(),
-    CommunicationScreen(),
+    AuthGate(
+      child: CommunicationScreen(),
+      title: 'Sign in to send messages',
+      message: 'Messaging and callbacks are available once you create a free account or sign in.',
+    ),
     SettingsScreen(),
   ];
 
   @override
   void initState() {
     super.initState();
-    SocketService.connect();
-    SocketService.onCallbackNew = _onCallbackNew;
-    SocketService.onSosStatus = _onSosStatus;
-    SocketService.onIncomingCall = _onIncomingCall;
-    SyncService.onSynced = _onSynced;
-    SyncService.start();
+    if (Api.isLoggedIn) {
+      SocketService.connect();
+      SocketService.onCallbackNew = _onCallbackNew;
+      SocketService.onSosStatus = _onSosStatus;
+      SocketService.onIncomingCall = _onIncomingCall;
+      SyncService.onSynced = _onSynced;
+      SyncService.start();
+    }
   }
 
   void _onSynced(int pending) {

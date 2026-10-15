@@ -151,6 +151,9 @@ class Api {
   static String? get userId => _userId;
   static String? get refreshToken => _refreshToken;
 
+  /// True once a real account is signed in (false while browsing as a guest).
+  static bool get isLoggedIn => _token != null;
+
   /// Region / sub-city chosen by the signed-in user (used on report, SOS and
   /// missing-person submissions). Null when the user has not set a location.
   static String? get region => _region;

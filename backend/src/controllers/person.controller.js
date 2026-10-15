@@ -32,9 +32,12 @@ export const listMissing = async (req, res) => {
   const params = [];
   if (status) { params.push(status); where.push(`status = $${params.length}`); }
   const isStaff = req.user && req.user.role !== 'citizen';
-  if (!isStaff) {
+  if (!isStaff && req.user) {
     params.push(req.user.id);
     where.push(`(is_approved = true OR reporter_id = $${params.length})`);
+  } else if (!isStaff) {
+    // Guests (not signed in) only ever see approved records.
+    where.push(`is_approved = true`);
   } else if (approval === 'pending') {
     where.push(`is_approved = false AND rejection_reason IS NULL`);
   } else if (approval === 'approved') {
@@ -52,7 +55,9 @@ export const getMissing = async (req, res) => {
   const row = rows[0];
   if (!row) return fail(res, 'Not found', 404);
   const isStaff = req.user && req.user.role !== 'citizen';
-  if (!isStaff && !row.is_approved && row.reporter_id !== req.user.id) return fail(res, 'Not found', 404);
+  if (!isStaff && !row.is_approved && row.reporter_id !== (req.user && req.user.id)) {
+    return fail(res, 'Not found', 404);
+  }
   ok(res, decryptRow(row));
 };
 

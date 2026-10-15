@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api.dart';
 import '../services/database_service.dart';
+import '../widgets/auth_gate.dart';
 
 import 'missing_report_screen.dart';
 
@@ -83,6 +84,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _sos() async {
+    if (!await ensureAuthed(context, reason: 'Sign in to send an SOS alert with your live location.')) return;
+    if (!mounted) return;
     setState(() { _sending = true; _status = null; });
     try {
       Position pos = await Geolocator.getCurrentPosition();
@@ -188,7 +191,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 button: true,
                 label: loc.reportAMissingPerson,
                 child: TextButton.icon(
-                  onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => MissingReportScreen(onDone: _load))),
+                  onPressed: () async {
+                    if (!await ensureAuthed(context, reason: 'Sign in to report a missing person.')) return;
+                    if (!context.mounted) return;
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => MissingReportScreen(onDone: _load)));
+                  },
                   icon: const Icon(Icons.person_add_alt_1, size: 16),
                   label: Text(loc.reportMissing),
                 ),
@@ -225,7 +232,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: IconButton(
                         icon: const Icon(Icons.visibility, size: 18),
                         tooltip: loc.reportSighting,
-                        onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => SightingReportScreen(missingPersonId: m['id'] as String, onDone: _load))),
+                        onPressed: () async {
+                          if (!await ensureAuthed(context, reason: 'Sign in to report a sighting.')) return;
+                          if (!context.mounted) return;
+                          Navigator.of(context).push(MaterialPageRoute(builder: (_) => SightingReportScreen(missingPersonId: m['id'] as String, onDone: _load)));
+                        },
                       ),
                     ),
                   ],
@@ -265,7 +276,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: IconButton(
                         icon: const Icon(Icons.visibility, size: 18),
                         tooltip: loc.reportSighting,
-                        onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => SightingReportScreen(wantedPersonId: w['id'] as String, onDone: _load))),
+                        onPressed: () async {
+                          if (!await ensureAuthed(context, reason: 'Sign in to report a sighting.')) return;
+                          if (!context.mounted) return;
+                          Navigator.of(context).push(MaterialPageRoute(builder: (_) => SightingReportScreen(wantedPersonId: w['id'] as String, onDone: _load)));
+                        },
                       ),
                     ),
                   ],

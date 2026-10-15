@@ -6,13 +6,15 @@ import {
 } from '../controllers/announcement.controller.js';
 
 const router = Router();
-router.use(authenticate);
 
+// Public (guest) read access so people can browse without an account.
 router.get('/', listAnnouncements);
 router.get('/:id', getAnnouncement);
-router.post('/', requireRole('police', 'regional_admin', 'system_admin'), createAnnouncement);
-router.post('/:id/retranslate', requireRole('regional_admin', 'system_admin'), retranslateAnnouncement);
-router.patch('/:id', requireRole('regional_admin', 'system_admin'), updateAnnouncement);
-router.delete('/:id', requireRole('system_admin'), deleteAnnouncement);
+
+// Writes require an authenticated account.
+router.post('/', authenticate, requireRole('police', 'regional_admin', 'system_admin'), createAnnouncement);
+router.post('/:id/retranslate', authenticate, requireRole('regional_admin', 'system_admin'), retranslateAnnouncement);
+router.patch('/:id', authenticate, requireRole('regional_admin', 'system_admin'), updateAnnouncement);
+router.delete('/:id', authenticate, requireRole('system_admin'), deleteAnnouncement);
 
 export default router;

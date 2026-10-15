@@ -7,6 +7,7 @@ import '../main.dart';
 import 'auth_screen.dart';
 import 'id_verification_screen.dart';
 import '../services/api.dart';
+import '../widgets/auth_gate.dart';
 import 'callbacks_screen.dart';
 import '../config/constants.dart';
 
@@ -39,26 +40,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   String? _loadError;
 
+  bool get _loggedIn => Api.isLoggedIn;
+
   Future<void> _load() async {
     try {
-      final results = await Future.wait([
-        Api.get('/auth/me'),
-        Api.get('/geofences'),
-        Api.get('/legal'),
-      ]);
-      final me = results[0] as Map<String, dynamic>;
-      _name.text = me['full_name'] ?? '';
-      _accessibility = me['accessibility_mode'] ?? false;
-      _language = me['preferred_language'] ?? 'en';
-      _region = me['region'] ?? 'Addis Ababa';
-      _subCity = me['sub_city'] ?? (subCitiesByRegion[_region]?.first ?? '');
-      await Api.setProfile(me);
-      _geofences = results[1] as List<dynamic>;
-      _legal = results[2] as List<dynamic>;
-      setState(() => _loadError = null);
-      ZegaAlertApp.of(context)?.setLanguage(_language);
+      _geofences = [];
+      final legal = await Api.get('/legal');
+      _legal = legal as List<dynamic>;
+      if (_loggedIn) {
+        final me = await Api.get('/auth/me') as Map<String, dynamic>;
+        _name.text = me['full_name'] ?? '';
+        _accessibility = me['accessibility_mode'] ?? false;
+        _language = me['preferred_language'] ?? 'en';
+        _region = me['region'] ?? 'Addis Ababa';
+        _subCity = me['sub_city'] ?? (subCitiesByRegion[_region]?.first ?? '');
+        await Api.setProfile(me);
+        _geofences = await Api.get('/geofences') as List<dynamic>;
+        if (mounted) ZegaAlertApp.of(context)?.setLanguage(_language);
+      }
+      if (mounted) setState(() => _loadError = null);
     } catch (e) {
-      setState(() => _loadError = 'Failed to load settings: $e');
+      if (mounted) setState(() => _loadError = 'Failed to load settings: $e');
     }
   }
 
@@ -178,44 +180,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (_loadError != null) Card(color: Colors.red.shade50, child: Padding(padding: const EdgeInsets.all(10), child: Row(children: [const Icon(Icons.error_outline, color: Colors.red), const SizedBox(width: 8), Expanded(child: Text(_loadError!, style: const TextStyle(color: Colors.red)))]))),
         const SizedBox(height: 4),
 
-        _section(loc.account, Icons.person_outline),
-        Semantics(
-          label: 'Full name input',
-          child: Form(
-            key: _form,
-            child: TextFormField(controller: _name, decoration: InputDecoration(labelText: loc.fullName, border: const OutlineInputBorder())),
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        _section(loc.locationLabel, Icons.location_on_outlined),
-        Semantics(
-          label: 'Region dropdown. Currently set to $_region.',
-          child: DropdownButtonFormField<String>(
-            value: ethiopianRegions.contains(_region) ? _region : null,
-            decoration: InputDecoration(labelText: loc.regionLabel, border: const OutlineInputBorder()),
-            items: ethiopianRegions.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
-            onChanged: (v) {
-              if (v != null) setState(() {
-                _region = v;
-                _subCity = subCitiesByRegion[v]?.first ?? '';
-              });
-            },
-          ),
-        ),
-        if ((subCitiesByRegion[_region] ?? []).isNotEmpty) ...[
-          const SizedBox(height: 12),
+        if (!_loggedIn) _guestBanner(loc),
+        if (_loggedIn) ...[
+          _section(loc.account, Icons.person_outline),
           Semantics(
-            label: 'Sub city dropdown. Currently set to $_subCity.',
-            child: DropdownButtonFormField<String>(
-              value: (subCitiesByRegion[_region] ?? const []).contains(_subCity) ? _subCity : null,
-              decoration: InputDecoration(labelText: loc.subCityLabel, border: const OutlineInputBorder()),
-              items: subCitiesByRegion[_region]!.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-              onChanged: (v) => setState(() => _subCity = v ?? ''),
+            label: 'Full name input',
+            child: Form(
+              key: _form,
+              child: TextFormField(controller: _name, decoration: InputDecoration(labelText: loc.fullName, border: const OutlineInputBorder())),
             ),
           ),
+          const SizedBox(height: 16),
+
+          _section(loc.locationLabel, Icons.location_on_outlined),
+          Semantics(
+            label: 'Region dropdown. Currently set to $_region.',
+            child: DropdownButtonFormField<String>(
+              value: ethiopianRegions.contains(_region) ? _region : null,
+              decoration: InputDecoration(labelText: loc.regionLabel, border: const OutlineInputBorder()),
+              items: ethiopianRegions.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+              onChanged: (v) {
+                if (v != null) setState(() {
+                  _region = v;
+                  _subCity = subCitiesByRegion[v]?.first ?? '';
+                });
+              },
+            ),
+          ),
+          if ((subCitiesByRegion[_region] ?? []).isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Semantics(
+              label: 'Sub city dropdown. Currently set to $_subCity.',
+              child: DropdownButtonFormField<String>(
+                value: (subCitiesByRegion[_region] ?? const []).contains(_subCity) ? _subCity : null,
+                decoration: InputDecoration(labelText: loc.subCityLabel, border: const OutlineInputBorder()),
+                items: subCitiesByRegion[_region]!.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                onChanged: (v) => setState(() => _subCity = v ?? ''),
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
         ],
-        const SizedBox(height: 16),
 
         _section(loc.languageLabel, Icons.language),
         Semantics(
@@ -229,33 +234,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         const SizedBox(height: 16),
 
-        _section(loc.safetyZones, Icons.location_on_outlined),
-        ..._geofences.map((g) => Semantics(
-          label: 'Safety zone: ${g['name'] ?? 'Zone'}. Type: ${g['type'] ?? 'zone'}. Radius: ${g['radius_m'] != null ? '${g['radius_m']} meters' : 'not set'}.',
-          child: Card(
-            child: ListTile(
-              dense: true,
-              leading: const Icon(Icons.radar, color: Colors.green),
-              title: Text(g['name'] ?? 'Zone'),
-              subtitle: Text('${g['type'] ?? 'zone'} · ${g['radius_m'] != null ? '${g['radius_m']}m' : 'radius not set'}'),
-              trailing: Semantics(
-                button: true,
-                label: 'Delete safety zone: ${g['name'] ?? 'Zone'}',
-                child: IconButton(icon: const Icon(Icons.delete_outline), onPressed: () => _deleteGeofence(g['id'] as String)),
+        if (_loggedIn) ...[
+          _section(loc.safetyZones, Icons.location_on_outlined),
+          ..._geofences.map((g) => Semantics(
+            label: 'Safety zone: ${g['name'] ?? 'Zone'}. Type: ${g['type'] ?? 'zone'}. Radius: ${g['radius_m'] != null ? '${g['radius_m']} meters' : 'not set'}.',
+            child: Card(
+              child: ListTile(
+                dense: true,
+                leading: const Icon(Icons.radar, color: Colors.green),
+                title: Text(g['name'] ?? 'Zone'),
+                subtitle: Text('${g['type'] ?? 'zone'} · ${g['radius_m'] != null ? '${g['radius_m']}m' : 'radius not set'}'),
+                trailing: Semantics(
+                  button: true,
+                  label: 'Delete safety zone: ${g['name'] ?? 'Zone'}',
+                  child: IconButton(icon: const Icon(Icons.delete_outline), onPressed: () => _deleteGeofence(g['id'] as String)),
+                ),
               ),
             ),
+          )),
+          Semantics(
+            button: true,
+            label: 'Add safety zone',
+            child: OutlinedButton.icon(
+              onPressed: _addGeofence,
+              icon: const Icon(Icons.add_location_alt_outlined),
+              label: Text(loc.addSafetyZone),
+            ),
           ),
-        )),
-        Semantics(
-          button: true,
-          label: 'Add safety zone',
-          child: OutlinedButton.icon(
-            onPressed: _addGeofence,
-            icon: const Icon(Icons.add_location_alt_outlined),
-            label: Text(loc.addSafetyZone),
-          ),
-        ),
-        const SizedBox(height: 16),
+          const SizedBox(height: 16),
+        ],
 
         _section(loc.legalInformation, Icons.gavel),
         ..._legal.take(5).map((l) => Semantics(
@@ -273,20 +280,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (_legal.isEmpty) Padding(padding: const EdgeInsets.only(bottom: 12), child: Text(loc.noLegalContent, style: const TextStyle(color: Colors.grey))),
         const SizedBox(height: 16),
 
-        _section(loc.identityVerification, Icons.verified_user),
-        Semantics(
-          label: 'Identity verification. Verify your identity with your national ID card.',
-          child: Card(
-            child: ListTile(
-              leading: const Icon(Icons.verified_user_outlined, color: Colors.teal),
-              title: Text(loc.faydaIdVerification),
-              subtitle: Text(loc.faydaVerificationSubtitle),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const IdVerificationScreen())),
+        if (_loggedIn) ...[
+          _section(loc.identityVerification, Icons.verified_user),
+          Semantics(
+            label: 'Identity verification. Verify your identity with your national ID card.',
+            child: Card(
+              child: ListTile(
+                leading: const Icon(Icons.verified_user_outlined, color: Colors.teal),
+                title: Text(loc.faydaIdVerification),
+                subtitle: Text(loc.faydaVerificationSubtitle),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const IdVerificationScreen())),
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 16),
+          const SizedBox(height: 16),
+        ],
 
         _section(loc.accessibilityTitle, Icons.accessible_forward),
         Semantics(
@@ -330,45 +339,82 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         const SizedBox(height: 16),
 
-        _section(loc.callbackRequests, Icons.phone_callback_outlined),
-        Semantics(
-          label: 'Callback requests. View police callback requests for your reports.',
-          child: Card(
-            child: ListTile(
-              leading: const Icon(Icons.phone_callback_outlined, color: Colors.indigo),
-              title: Text(loc.callbackRequests),
-              subtitle: Text(loc.callbackSubtitle),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CallbacksScreen())),
+        if (_loggedIn) ...[
+          _section(loc.callbackRequests, Icons.phone_callback_outlined),
+          Semantics(
+            label: 'Callback requests. View police callback requests for your reports.',
+            child: Card(
+              child: ListTile(
+                leading: const Icon(Icons.phone_callback_outlined, color: Colors.indigo),
+                title: Text(loc.callbackRequests),
+                subtitle: Text(loc.callbackSubtitle),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CallbacksScreen())),
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 16),
-        Semantics(
-          button: true,
-          label: 'Request direct call. Double tap to call the emergency hotline.',
-          child: FilledButton.tonalIcon(
-            onPressed: _requestCall,
-            icon: const Icon(Icons.phone_in_talk_outlined),
-            label: Text(loc.requestDirectCall),
+          const SizedBox(height: 16),
+          Semantics(
+            button: true,
+            label: 'Request direct call. Double tap to call the emergency hotline.',
+            child: FilledButton.tonalIcon(
+              onPressed: _requestCall,
+              icon: const Icon(Icons.phone_in_talk_outlined),
+              label: Text(loc.requestDirectCall),
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Semantics(
-          button: true,
-          label: 'Record sign language video. Double tap to open camera for sign language recording.',
-          child: FilledButton.tonalIcon(
-            onPressed: _recordSignLanguage,
-            icon: const Icon(Icons.videocam_outlined),
-            label: Text(loc.recordSignLanguage),
+          const SizedBox(height: 8),
+          Semantics(
+            button: true,
+            label: 'Record sign language video. Double tap to open camera for sign language recording.',
+            child: FilledButton.tonalIcon(
+              onPressed: _recordSignLanguage,
+              icon: const Icon(Icons.videocam_outlined),
+              label: Text(loc.recordSignLanguage),
+            ),
           ),
-        ),
-        const SizedBox(height: 20),
+          const SizedBox(height: 20),
 
-        FilledButton(onPressed: _save, child: Text(loc.saveSettings)),
-        const SizedBox(height: 12),
-        OutlinedButton.icon(onPressed: _logout, icon: const Icon(Icons.logout), label: Text(loc.logoutLabel)),
+          FilledButton(onPressed: _save, child: Text(loc.saveSettings)),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(onPressed: _logout, icon: const Icon(Icons.logout), label: Text(loc.logoutLabel)),
+        ] else ...[
+          FilledButton.icon(
+            onPressed: () => openAuth(context),
+            icon: const Icon(Icons.login),
+            label: const Text('Sign in / Create account'),
+          ),
+        ],
       ],
+    );
+  }
+
+  Widget _guestBanner(AppLocalizations loc) {
+    final scheme = Theme.of(context).colorScheme;
+    return Card(
+      color: scheme.primaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            Icon(Icons.explore_outlined, color: scheme.onPrimaryContainer),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Browsing as guest', style: TextStyle(fontWeight: FontWeight.bold, color: scheme.onPrimaryContainer)),
+                  const SizedBox(height: 2),
+                  Text('Sign in to file reports, send SOS, message officers and verify your ID.',
+                      style: TextStyle(fontSize: 12, color: scheme.onPrimaryContainer)),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            FilledButton(onPressed: () => openAuth(context), child: const Text('Sign in')),
+          ],
+        ),
+      ),
     );
   }
 

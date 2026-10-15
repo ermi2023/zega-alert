@@ -202,3 +202,14 @@ VITE_GOOGLE_MAPS_API_KEY=                      # Google Maps JavaScript API key
 - To connect the app after deploy: set Server in-app to the public URL, or build with
   `--dart-define=ZEGA_API_BASE=https://<host>`.
 
+### LIVE (deployed)
+- API: https://zega-alert-api.onrender.com  (`/health` -> `{"ok":true}`; login works)
+- Admin web: https://zega-alert-admin.onrender.com
+- DB: Render Postgres (external URL in the API's `DATABASE_URL` env var; schema+seed applied)
+- Mobile: APK built with `--dart-define=ZEGA_API_BASE=https://zega-alert-api.onrender.com`
+  so it works on any network (delivered as `zega-alert-updated-v5-public.zip`).
+- Fixes that made deploy work: external DB URL (region), firestore/storage added as real
+  deps + lazy-loaded (they are optionalDependencies of firebase-admin and were skipped by
+  `npm ci --omit=dev`).
+
+

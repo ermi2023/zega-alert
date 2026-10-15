@@ -2,16 +2,21 @@ import { readFileSync } from 'fs';
 import { env } from '../config/env.js';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getMessaging as fbMessaging } from 'firebase-admin/messaging';
-import { getFirestore as fbFirestore } from 'firebase-admin/firestore';
-import { getStorage as fbStorage } from 'firebase-admin/storage';
 
 // Firebase is entirely optional. When FIREBASE_SERVICE_ACCOUNT is not set
 // (or cannot be parsed) every helper below degrades to a safe no-op so the
 // platform keeps running on PostgreSQL alone.
+//
+// Firestore and Storage live in optional packages (@google-cloud/firestore,
+// @google-cloud/storage) that a production `npm ci --omit=dev` may not install.
+// They are loaded lazily so a missing package can never crash the process.
 
 let _app = null;
 let _enabled = false;
 let _attempted = false;
+
+let _firestoreMod = undefined; // undefined = not tried, null = unavailable
+let _storageMod = undefined;
 
 function parseCredential(raw) {
   if (!raw) return null;
@@ -66,19 +71,46 @@ export function firebaseMessaging() {
   return firebaseEnabled() ? fbMessaging(_app) : null;
 }
 
-export function firestore() {
-  return firebaseEnabled() ? fbFirestore(_app) : null;
+async function loadFirestore() {
+  if (_firestoreMod !== undefined) return _firestoreMod;
+  try {
+    _firestoreMod = await import('firebase-admin/firestore');
+  } catch (e) {
+    console.warn('[Firebase] Firestore unavailable (optional dep missing):', e.message);
+    _firestoreMod = null;
+  }
+  return _firestoreMod;
 }
 
-export function storageBucket() {
-  return firebaseEnabled() && env.firebaseStorageBucket ? fbStorage(_app).bucket() : null;
+async function loadStorage() {
+  if (_storageMod !== undefined) return _storageMod;
+  try {
+    _storageMod = await import('firebase-admin/storage');
+  } catch (e) {
+    console.warn('[Firebase] Storage unavailable (optional dep missing):', e.message);
+    _storageMod = null;
+  }
+  return _storageMod;
+}
+
+async function firestore() {
+  if (!firebaseEnabled()) return null;
+  const mod = await loadFirestore();
+  return mod ? mod.getFirestore(_app) : null;
+}
+
+export async function storageBucket() {
+  if (!firebaseEnabled() || !env.firebaseStorageBucket) return null;
+  const mod = await loadStorage();
+  return mod ? mod.getStorage(_app).bucket() : null;
 }
 
 /** Mirror a row into a Firestore collection (hybrid PostgreSQL + Firestore store). */
 export async function mirrorSet(collection, id, data) {
-  if (!firebaseEnabled()) return false;
+  const fs = await firestore();
+  if (!fs) return false;
   try {
-    await firestore()
+    await fs
       .collection(collection)
       .doc(String(id))
       .set({ ...data, _mirroredAt: new Date().toISOString() }, { merge: true });
@@ -90,9 +122,10 @@ export async function mirrorSet(collection, id, data) {
 }
 
 export async function mirrorDelete(collection, id) {
-  if (!firebaseEnabled()) return false;
+  const fs = await firestore();
+  if (!fs) return false;
   try {
-    await firestore().collection(collection).doc(String(id)).delete();
+    await fs.collection(collection).doc(String(id)).delete();
     return true;
   } catch (e) {
     console.error(`[Firestore] delete ${collection}/${id} failed:`, e.message);
@@ -102,7 +135,7 @@ export async function mirrorDelete(collection, id) {
 
 /** Upload a buffer to Firebase Cloud Storage and return its public URL (or null). */
 export async function uploadBufferToStorage(remotePath, buffer, contentType) {
-  const bucket = storageBucket();
+  const bucket = await storageBucket();
   if (!bucket) return null;
   try {
     const file = bucket.file(remotePath);
@@ -120,7 +153,7 @@ export async function uploadBufferToStorage(remotePath, buffer, contentType) {
 }
 
 export async function deleteFromStorage(remotePath) {
-  const bucket = storageBucket();
+  const bucket = await storageBucket();
   if (!bucket) return false;
   try {
     await bucket.file(remotePath).delete();

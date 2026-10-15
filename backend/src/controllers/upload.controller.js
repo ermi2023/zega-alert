@@ -30,7 +30,7 @@ export function ensureUploadDir() {
 // When Firebase Storage is configured, mirror the file there and return its
 // public URL; otherwise fall back to the local /uploads static path.
 async function storageUrl(file) {
-  if (!storageBucket()) return null;
+  if (!(await storageBucket())) return null;
   try {
     const buffer = file.buffer || (file.path ? fs.readFileSync(file.path) : null);
     if (!buffer) return null;

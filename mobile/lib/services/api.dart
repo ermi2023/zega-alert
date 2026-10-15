@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb, TargetPlatform, defaultTar
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'database_service.dart';
+import 'net_info_stub.dart' if (dart.library.io) 'net_info_io.dart' as netinfo;
 
 class Api {
   static const int port = 5000;
@@ -20,15 +21,11 @@ class Api {
   static String? get overrideBaseUrl => _overrideBase;
   static bool get hasEnvBase => _envBase.isNotEmpty;
 
-  /// Candidate backend hosts on the local network, tried in order until one
-  /// answers `/health`. The first entry is the typical Ethernet LAN IP; the
-  /// others cover the Windows Mobile Hotspot gateway and VirtualBox networks.
+  /// Well-known backend hosts probed before scanning the local subnet.
   static const List<String> _candidateHosts = [
-    '10.235.107.49',
-    '192.168.137.1',
-    '192.168.137.90',
-    '192.168.56.1',
-    '10.0.2.2',
+    '192.168.137.1', // Windows Mobile Hotspot gateway
+    '10.0.2.2',      // Android emulator host loopback
+    '192.168.56.1',  // VirtualBox host-only network
   ];
 
   static String _lanHost = _candidateHosts.first;
@@ -48,7 +45,9 @@ class Api {
   }
 
   /// Resolve which backend to use at startup: a saved/compiled explicit URL
-  /// wins; otherwise probe the LAN hosts. Safe no-op on web and desktop.
+  /// wins; otherwise probe well-known hosts, then scan the device's own subnet
+  /// (the PC's IP changes with DHCP, so we can't hardcode it). Safe no-op on
+  /// web and desktop.
   static Future<void> resolveHost() async {
     _overrideBase = null;
     try {
@@ -62,31 +61,71 @@ class Api {
 
     String? cached;
     try {
-      final prefs = await SharedPreferences.getInstance();
-      cached = prefs.getString('lanHost');
+      cached = (await SharedPreferences.getInstance()).getString('lanHost');
     } catch (_) {}
-    final candidates = <String>[
+
+    // 1) Probe known hosts (and the last known-good one) concurrently.
+    final known = <String>[
       if (cached != null && cached.isNotEmpty) cached,
       ..._candidateHosts,
     ];
-    for (final host in candidates) {
-      if (await _hostAlive(host)) {
-        _lanHost = host;
-        try {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('lanHost', host);
-        } catch (_) {}
-        return;
-      }
+    final probed = await Future.wait(
+      known.map((h) => _hostAlive(h, ms: 1500).then((ok) => ok ? h : null)),
+    );
+    final hit = probed.firstWhere((h) => h != null, orElse: () => null);
+    if (hit != null) {
+      await _useHost(hit);
+      return;
     }
+
+    // 2) Scan the network(s) the phone is actually on.
+    final scanned = await _scanLocalSubnets();
+    if (scanned != null) {
+      await _useHost(scanned);
+      return;
+    }
+
     if (cached != null && cached.isNotEmpty) _lanHost = cached;
   }
 
-  static Future<bool> _hostAlive(String host) async {
+  static Future<void> _useHost(String host) async {
+    _lanHost = host;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('lanHost', host);
+    } catch (_) {}
+  }
+
+  static Future<String?> _scanLocalSubnets() async {
+    final subnets = await netinfo.localIpv4Subnets();
+    for (final subnet in subnets) {
+      final host = await _scanSubnet(subnet);
+      if (host != null) return host;
+    }
+    return null;
+  }
+
+  static Future<String?> _scanSubnet(String subnet) async {
+    const batchSize = 48;
+    for (var start = 1; start <= 254; start += batchSize) {
+      final end = start + batchSize - 1 > 254 ? 254 : start + batchSize - 1;
+      final futures = <Future<String?>>[
+        for (var h = start; h <= end; h++)
+          _hostAlive('$subnet.$h', ms: 900).then((ok) => ok ? '$subnet.$h' : null),
+      ];
+      final results = await Future.wait(futures);
+      for (final r in results) {
+        if (r != null) return r;
+      }
+    }
+    return null;
+  }
+
+  static Future<bool> _hostAlive(String host, {int ms = 2000}) async {
     try {
       final res = await http
           .get(Uri.parse('http://$host:$port/health'))
-          .timeout(const Duration(seconds: 2));
+          .timeout(Duration(milliseconds: ms));
       return res.statusCode == 200;
     } catch (_) {
       return false;

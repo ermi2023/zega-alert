@@ -49,7 +49,10 @@ export default function Layout({ children }) {
     <div className="layout">
       <aside className="sidebar">
         <div className="brand">
-          <strong>ZEGA-ALERT</strong>
+          <div className="brand-row">
+            <img className="brand-flag" src="/brand/ethiopia-flag.png" alt="Ethiopia" />
+            <strong>ZEGA-ALERT</strong>
+          </div>
           <span>{t(`roles.${user?.role}`) || user?.role}</span>
         </div>
         <nav>

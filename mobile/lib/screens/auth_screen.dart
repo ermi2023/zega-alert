@@ -199,16 +199,26 @@ class _AuthScreenState extends State<AuthScreen> {
     final loc = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [scheme.primary, scheme.primary.withValues(alpha: 0.85), scheme.surface],
-            stops: const [0.0, 0.32, 0.32],
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset('assets/ethiopia_flag.png', fit: BoxFit.cover),
           ),
-        ),
-        child: SafeArea(
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    const Color(0xFF052e16).withValues(alpha: 0.74),
+                    scheme.primary.withValues(alpha: 0.92),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
@@ -344,6 +354,7 @@ class _AuthScreenState extends State<AuthScreen> {
             ),
           ),
         ),
+        ],
       ),
     );
   }
@@ -355,15 +366,56 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget _header(ColorScheme scheme) {
     return Column(
       children: [
+        _shieldBadge(),
+        const SizedBox(height: 14),
         Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), shape: BoxShape.circle),
-          child: const Icon(Icons.shield_moon_outlined, size: 56, color: Colors.white),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _FlagStripe(),
+              SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  'Official emergency & crime reporting',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 12),
-        const Text('ZEGA-ALERT', style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold, letterSpacing: 2)),
-        const Text('Emergency & crime reporting for every Ethiopian', style: TextStyle(color: Colors.white70, fontSize: 13), textAlign: TextAlign.center),
+        const SizedBox(height: 14),
+        const Text('ZEGA-ALERT', style: TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.bold, letterSpacing: 3)),
+        const SizedBox(height: 4),
+        const Text('Emergency & crime reporting for every Ethiopian',
+            style: TextStyle(color: Colors.white70, fontSize: 13), textAlign: TextAlign.center),
       ],
+    );
+  }
+
+  Widget _shieldBadge() {
+    return SizedBox(
+      width: 72,
+      height: 84,
+      child: Stack(
+        children: [
+          ClipPath(clipper: _ShieldClipper(), child: Container(color: Colors.white)),
+          Padding(
+            padding: const EdgeInsets.all(3),
+            child: ClipPath(
+              clipper: _ShieldClipper(),
+              child: Image.asset('assets/ethiopia_flag.png', fit: BoxFit.cover),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -402,6 +454,48 @@ class _AuthScreenState extends State<AuthScreen> {
               fontWeight: FontWeight.w600,
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ShieldClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final w = size.width;
+    final h = size.height;
+    final path = Path()
+      ..moveTo(w * 0.5, 0)
+      ..lineTo(w, h * 0.16)
+      ..lineTo(w, h * 0.52)
+      ..quadraticBezierTo(w, h * 0.86, w * 0.5, h)
+      ..quadraticBezierTo(0, h * 0.86, 0, h * 0.52)
+      ..lineTo(0, h * 0.16)
+      ..close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+class _FlagStripe extends StatelessWidget {
+  const _FlagStripe();
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(2),
+      child: const SizedBox(
+        width: 20,
+        height: 12,
+        child: Column(
+          children: [
+            Expanded(child: ColoredBox(color: Color(0xFF078930), child: SizedBox.expand())),
+            Expanded(child: ColoredBox(color: Color(0xFFFCDD09), child: SizedBox.expand())),
+            Expanded(child: ColoredBox(color: Color(0xFFDA121A), child: SizedBox.expand())),
+          ],
         ),
       ),
     );

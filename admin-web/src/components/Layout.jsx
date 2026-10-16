@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
+import Icon from './Icon';
 
 const LANGUAGES = [
   { code: 'en', label: 'English' },
@@ -14,20 +15,20 @@ export default function Layout({ children }) {
   const { user, logout } = useAuth();
 
   const nav = [
-    { to: '/', label: t('nav.dashboard'), icon: '▦' },
-    { to: '/sos', label: t('nav.sos'), icon: 'SOS' },
-    { to: '/reports', label: t('nav.reports'), icon: '⚑' },
-    { to: '/persons', label: t('nav.persons'), icon: '◉' },
-    { to: '/callbacks', label: t('nav.callbacks'), icon: '✆' },
-    { to: '/pod', label: t('nav.pod'), icon: '♿' },
-    { to: '/feedback', label: t('nav.feedback'), icon: '★' },
-    { to: '/announcements', label: t('nav.announcements'), icon: '📢' },
-    { to: '/chat', label: t('nav.chat'), icon: '💬' },
-    { to: '/legal', label: t('nav.legal'), icon: '⚖' },
-    { to: '/geofences', label: t('nav.geofences'), icon: '◎' },
-    { to: '/users', label: t('nav.users'), icon: '👤' },
-    { to: '/audit', label: t('nav.audit'), icon: '🔎' },
-    { to: '/security', label: t('nav.security'), icon: '🔐' },
+    { to: '/', label: t('nav.dashboard'), icon: 'dashboard' },
+    { to: '/sos', label: t('nav.sos'), icon: 'sos' },
+    { to: '/reports', label: t('nav.reports'), icon: 'reports' },
+    { to: '/persons', label: t('nav.persons'), icon: 'persons' },
+    { to: '/callbacks', label: t('nav.callbacks'), icon: 'callbacks' },
+    { to: '/pod', label: t('nav.pod'), icon: 'pod' },
+    { to: '/feedback', label: t('nav.feedback'), icon: 'feedback' },
+    { to: '/announcements', label: t('nav.announcements'), icon: 'announcements' },
+    { to: '/chat', label: t('nav.chat'), icon: 'chat' },
+    { to: '/legal', label: t('nav.legal'), icon: 'legal' },
+    { to: '/geofences', label: t('nav.geofences'), icon: 'geofences' },
+    { to: '/users', label: t('nav.users'), icon: 'users' },
+    { to: '/audit', label: t('nav.audit'), icon: 'audit' },
+    { to: '/security', label: t('nav.security'), icon: 'security' },
   ];
 
   const ROLE_NAV = {
@@ -58,7 +59,7 @@ export default function Layout({ children }) {
         <nav>
           {visibleNav.map((n) => (
             <NavLink key={n.to} to={n.to} className={({ isActive }) => (isActive ? 'active' : '')}>
-              <span className="icon">{n.icon}</span> {n.label}
+              <span className="icon"><Icon name={n.icon} /></span> {n.label}
             </NavLink>
           ))}
         </nav>

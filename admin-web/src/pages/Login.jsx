@@ -30,8 +30,8 @@ export default function Login() {
   const { t } = useTranslation();
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [phone, setPhone] = useState('0911000001');
-  const [password, setPassword] = useState('password123');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -106,7 +106,6 @@ export default function Login() {
           </button>
 
           <div className="auth-foot">
-            <span className="pill demo">Demo · 0911000001 / password123</span>
             <span className="pill secure"><Icon name="shield" size={13} /> Secured login</span>
           </div>
         </form>

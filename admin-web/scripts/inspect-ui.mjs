@@ -6,6 +6,8 @@ import path from 'node:path';
 const ROOT = path.normalize('C:/Users/hp g7/ZEGA-ALERT/admin-web/dist');
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const PORT = 4399;
+const QA_PHONE = process.env.QA_PHONE || '0911000001';
+const QA_PASSWORD = process.env.QA_PASSWORD || 'password123';
 const MIME = {
   '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript',
   '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml',
@@ -130,7 +132,7 @@ const AUDIT = () => {
     };
   };
   out.contrast = ['.hero-tagline', '.hero-features li', '.hero-langs span', '.auth-form-head p',
-                  '.auth-form label', '.pill.demo', '.pill.secure', '.btn-gradient',
+                  '.auth-form label', '.pill.secure', '.btn-gradient',
                   '.brand strong', '.brand span', '.sidebar nav a', '.card .lbl', 'th'].map(contrast);
 
   out.fonts = {
@@ -218,8 +220,11 @@ async function run() {
       const errors = [];
       page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
       page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+      page.on('response', (r) => { if (r.status() >= 400) errors.push(`HTTP ${r.status()} ${r.url()}`); });
       await page.setViewport({ width: vp.w, height: vp.h });
       await page.goto(`http://localhost:${PORT}/login`, { waitUntil: 'networkidle2', timeout: 45000 });
+      await page.type('input[placeholder="09..."]', QA_PHONE);
+      await page.type('input[type="password"]', QA_PASSWORD);
       await page.click('.btn-gradient');
       await page.waitForFunction(() => location.pathname !== '/login', { timeout: 120000 }).catch(() => {});
       await new Promise((r) => setTimeout(r, 5000));

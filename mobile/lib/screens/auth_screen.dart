@@ -5,6 +5,12 @@ import '../services/api.dart';
 import '../services/biometric_service.dart';
 import '../main.dart';
 
+const Color _etGreen = Color(0xFF078930);
+const Color _etYellow = Color(0xFFFCDD09);
+const Color _etRed = Color(0xFFDA121A);
+const Color _deepGreen = Color(0xFF04140E);
+const Color _ink = Color(0xFF070B14);
+
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
 
@@ -198,163 +204,43 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+    final bottomPad = (bottomInset - 22).clamp(10.0, 60.0).toDouble();
+
     return Scaffold(
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Image.asset('assets/ethiopia_flag.png', fit: BoxFit.cover),
-          ),
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    const Color(0xFF052e16).withValues(alpha: 0.74),
-                    scheme.primary.withValues(alpha: 0.92),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 440),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _header(scheme),
-                    const SizedBox(height: 20),
-                    Card(
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      child: Padding(
-                        padding: const EdgeInsets.all(22),
-                        child: Form(
-                          key: _form,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _modeToggle(loc),
-                              const SizedBox(height: 18),
-                              if (_register) ...[
-                                TextFormField(
-                                  controller: _name,
-                                  textInputAction: TextInputAction.next,
-                                  decoration: InputDecoration(labelText: loc.fullName, prefixIcon: const Icon(Icons.person_outline), border: const OutlineInputBorder()),
-                                ),
-                                const SizedBox(height: 12),
-                                TextFormField(
-                                  controller: _phone,
-                                  keyboardType: TextInputType.phone,
-                                  textInputAction: TextInputAction.next,
-                                  decoration: InputDecoration(labelText: loc.phone, prefixIcon: const Icon(Icons.phone_outlined), border: const OutlineInputBorder()),
-                                ),
-                                const SizedBox(height: 12),
-                                TextFormField(
-                                  controller: _email,
-                                  keyboardType: TextInputType.emailAddress,
-                                  textInputAction: TextInputAction.next,
-                                  decoration: const InputDecoration(labelText: 'Email (optional)', helperText: 'Add an email so you can also sign in with it', prefixIcon: Icon(Icons.email_outlined), border: OutlineInputBorder()),
-                                ),
-                                const SizedBox(height: 12),
-                                DropdownButtonFormField<String>(
-                                  value: _region,
-                                  decoration: InputDecoration(labelText: loc.regionLabel, prefixIcon: const Icon(Icons.location_on_outlined), border: const OutlineInputBorder()),
-                                  items: ethiopianRegions.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
-                                  onChanged: (v) => setState(() {
-                                    _region = v;
-                                    _subCity = subCitiesByRegion[v]?.first;
-                                  }),
-                                ),
-                                if ((subCitiesByRegion[_region] ?? []).isNotEmpty) ...[
-                                  const SizedBox(height: 12),
-                                  DropdownButtonFormField<String>(
-                                    value: _subCity,
-                                    decoration: InputDecoration(labelText: loc.subCityLabel, prefixIcon: const Icon(Icons.location_city_outlined), border: const OutlineInputBorder()),
-                                    items: subCitiesByRegion[_region]!.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                                    onChanged: (v) => setState(() => _subCity = v),
-                                  ),
-                                ],
-                                const SizedBox(height: 12),
-                              ] else ...[
-                                TextFormField(
-                                  controller: _id,
-                                  keyboardType: TextInputType.emailAddress,
-                                  textInputAction: TextInputAction.next,
-                                  decoration: const InputDecoration(labelText: 'Email or phone number', hintText: 'e.g. you@example.et or 0911000005', prefixIcon: Icon(Icons.alternate_email), border: OutlineInputBorder()),
-                                ),
-                                const SizedBox(height: 12),
-                              ],
-                              TextFormField(
-                                controller: _password,
-                                obscureText: !_showPassword,
-                                textInputAction: TextInputAction.done,
-                                onFieldSubmitted: (_) => _busy ? null : _submit(),
-                                decoration: InputDecoration(
-                                  labelText: loc.password,
-                                  prefixIcon: const Icon(Icons.lock_outline),
-                                  suffixIcon: IconButton(
-                                    icon: Icon(_showPassword ? Icons.visibility_off : Icons.visibility),
-                                    onPressed: () => setState(() => _showPassword = !_showPassword),
-                                  ),
-                                  border: const OutlineInputBorder(),
-                                ),
-                              ),
-                              if (_error.isNotEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 12),
-                                  child: Row(children: [const Icon(Icons.error_outline, color: Colors.red, size: 18), const SizedBox(width: 6), Expanded(child: Text(_error, style: const TextStyle(color: Colors.red, fontSize: 13)))]),
-                                ),
-                              const SizedBox(height: 20),
-                              SizedBox(
-                                height: 50,
-                                child: FilledButton(
-                                  onPressed: _busy ? null : _submit,
-                                  child: _busy
-                                      ? const SizedBox(height: 22, width: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                      : Text(_register ? loc.register : loc.signingIn, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                                ),
-                              ),
-                              if (_canBioLogin && !_register) ...[
-                                const SizedBox(height: 10),
-                                OutlinedButton.icon(
-                                  onPressed: _busy ? null : _biometricLogin,
-                                  icon: const Icon(Icons.fingerprint),
-                                  label: const Text('Sign in with biometrics'),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    if (!_register)
-                      TextButton.icon(
-                        onPressed: _busy ? null : _enterAsGuest,
-                        style: TextButton.styleFrom(foregroundColor: Colors.white),
-                        icon: const Icon(Icons.explore_outlined),
-                        label: const Text('Browse as guest — no account needed'),
-                      ),
+      backgroundColor: _ink,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            _hero(),
+            Transform.translate(
+              offset: const Offset(0, -34),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _card(scheme, loc),
+                  ),
+                  const SizedBox(height: 14),
+                  if (!_register)
                     TextButton.icon(
-                      onPressed: _busy ? null : _editServerUrl,
-                      style: TextButton.styleFrom(foregroundColor: Colors.white70),
-                      icon: const Icon(Icons.dns_outlined, size: 16),
-                      label: Text('Server: ${Api.baseUrl}', style: const TextStyle(fontSize: 11)),
+                      onPressed: _busy ? null : _enterAsGuest,
+                      style: TextButton.styleFrom(foregroundColor: Colors.white),
+                      icon: const Icon(Icons.explore_outlined),
+                      label: const Text('Browse as guest — no account needed'),
                     ),
-                  ],
-                ),
+                  TextButton.icon(
+                    onPressed: _busy ? null : _editServerUrl,
+                    style: TextButton.styleFrom(foregroundColor: Colors.white70),
+                    icon: const Icon(Icons.dns_outlined, size: 16),
+                    label: Text('Server: ${Api.baseUrl}', style: const TextStyle(fontSize: 11)),
+                  ),
+                  SizedBox(height: bottomPad),
+                ],
               ),
             ),
-          ),
+          ],
         ),
-        ],
       ),
     );
   }
@@ -363,58 +249,233 @@ class _AuthScreenState extends State<AuthScreen> {
     await _goHome();
   }
 
-  Widget _header(ColorScheme scheme) {
-    return Column(
-      children: [
-        _shieldBadge(),
-        const SizedBox(height: 14),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+  Widget _hero() {
+    return SizedBox(
+      height: 336,
+      width: double.infinity,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          const Image(image: AssetImage('assets/ethiopia_flag.png'), fit: BoxFit.cover, alignment: Alignment.center),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  _deepGreen.withValues(alpha: 0.72),
+                  _deepGreen.withValues(alpha: 0.90),
+                  _ink,
+                ],
+                stops: const [0.0, 0.58, 1.0],
+              ),
+            ),
           ),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _FlagStripe(),
-              SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  'Official emergency & crime reporting',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+          Positioned(
+            top: -80,
+            right: -52,
+            child: Transform.rotate(
+              angle: 0.65,
+              child: const SizedBox(
+                width: 56,
+                height: 310,
+                child: Column(
+                  children: [
+                    Expanded(child: ColoredBox(color: Color(0x8C078930))),
+                    Expanded(child: ColoredBox(color: Color(0x8CFCDD09))),
+                    Expanded(child: ColoredBox(color: Color(0x8CDA121A))),
+                  ],
                 ),
               ),
-            ],
+            ),
+          ),
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 22, 24, 54),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      _shieldBadge(),
+                      const SizedBox(width: 14),
+                      Expanded(child: _wordmark()),
+                    ],
+                  ),
+                  const Spacer(),
+                  const Text(
+                    'Emergency & crime reporting for every Ethiopian',
+                    style: TextStyle(color: Colors.white, fontSize: 14, height: 1.4),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _wordmark() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Text(
+          'ZEGA-ALERT',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: 2),
+        ),
+        const SizedBox(height: 9),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(3),
+          child: const SizedBox(
+            width: 104,
+            height: 5,
+            child: Row(
+              children: [
+                Expanded(child: ColoredBox(color: _etGreen)),
+                Expanded(child: ColoredBox(color: _etYellow)),
+                Expanded(child: ColoredBox(color: _etRed)),
+              ],
+            ),
           ),
         ),
-        const SizedBox(height: 14),
-        const Text('ZEGA-ALERT', style: TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.bold, letterSpacing: 3)),
-        const SizedBox(height: 4),
-        const Text('Emergency & crime reporting for every Ethiopian',
-            style: TextStyle(color: Colors.white70, fontSize: 13), textAlign: TextAlign.center),
       ],
     );
   }
 
   Widget _shieldBadge() {
     return SizedBox(
-      width: 72,
-      height: 84,
-      child: Stack(
-        children: [
-          ClipPath(clipper: _ShieldClipper(), child: Container(color: Colors.white)),
-          Padding(
-            padding: const EdgeInsets.all(3),
-            child: ClipPath(
-              clipper: _ShieldClipper(),
-              child: Image.asset('assets/ethiopia_flag.png', fit: BoxFit.cover),
-            ),
+      width: 76,
+      height: 88,
+      child: PhysicalShape(
+        clipper: _ShieldClipper(),
+        color: Colors.white,
+        elevation: 12,
+        shadowColor: Colors.black.withValues(alpha: 0.55),
+        child: Padding(
+          padding: const EdgeInsets.all(3),
+          child: ClipPath(
+            clipper: _ShieldClipper(),
+            child: Image.asset('assets/ethiopia_flag.png', fit: BoxFit.cover),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _card(ColorScheme scheme, AppLocalizations loc) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.38), blurRadius: 38, offset: const Offset(0, 18)),
         ],
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+      child: Form(
+        key: _form,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _modeToggle(loc),
+            const SizedBox(height: 18),
+            if (_register) ...[
+              TextFormField(
+                controller: _name,
+                textInputAction: TextInputAction.next,
+                decoration: InputDecoration(labelText: loc.fullName, prefixIcon: const Icon(Icons.person_outline), border: const OutlineInputBorder()),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _phone,
+                keyboardType: TextInputType.phone,
+                textInputAction: TextInputAction.next,
+                decoration: InputDecoration(labelText: loc.phone, prefixIcon: const Icon(Icons.phone_outlined), border: const OutlineInputBorder()),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _email,
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                decoration: const InputDecoration(labelText: 'Email (optional)', helperText: 'Add an email so you can also sign in with it', prefixIcon: Icon(Icons.email_outlined), border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: _region,
+                decoration: InputDecoration(labelText: loc.regionLabel, prefixIcon: const Icon(Icons.location_on_outlined), border: const OutlineInputBorder()),
+                items: ethiopianRegions.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+                onChanged: (v) => setState(() {
+                  _region = v;
+                  _subCity = subCitiesByRegion[v]?.first;
+                }),
+              ),
+              if ((subCitiesByRegion[_region] ?? []).isNotEmpty) ...[
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: _subCity,
+                  decoration: InputDecoration(labelText: loc.subCityLabel, prefixIcon: const Icon(Icons.location_city_outlined), border: const OutlineInputBorder()),
+                  items: subCitiesByRegion[_region]!.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                  onChanged: (v) => setState(() => _subCity = v),
+                ),
+              ],
+              const SizedBox(height: 12),
+            ] else ...[
+              TextFormField(
+                controller: _id,
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                decoration: const InputDecoration(labelText: 'Email or phone number', hintText: 'e.g. you@example.et or 0911000005', prefixIcon: Icon(Icons.alternate_email), border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 12),
+            ],
+            TextFormField(
+              controller: _password,
+              obscureText: !_showPassword,
+              textInputAction: TextInputAction.done,
+              onFieldSubmitted: (_) => _busy ? null : _submit(),
+              decoration: InputDecoration(
+                labelText: loc.password,
+                prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  icon: Icon(_showPassword ? Icons.visibility_off : Icons.visibility),
+                  onPressed: () => setState(() => _showPassword = !_showPassword),
+                ),
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            if (_error.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Row(children: [const Icon(Icons.error_outline, color: Colors.red, size: 18), const SizedBox(width: 6), Expanded(child: Text(_error, style: const TextStyle(color: Colors.red, fontSize: 13)))]),
+              ),
+            const SizedBox(height: 20),
+            SizedBox(
+              height: 52,
+              child: FilledButton(
+                onPressed: _busy ? null : _submit,
+                child: _busy
+                    ? const SizedBox(height: 22, width: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : Text(_register ? loc.register : loc.signingIn, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              ),
+            ),
+            if (_canBioLogin && !_register) ...[
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: _busy ? null : _biometricLogin,
+                icon: const Icon(Icons.fingerprint),
+                label: const Text('Sign in with biometrics'),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -423,9 +484,9 @@ class _AuthScreenState extends State<AuthScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
       ),
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(5),
       child: Row(
         children: [
           Expanded(child: _toggleButton('Sign in', !_register, () => setState(() => _register = false))),
@@ -441,14 +502,16 @@ class _AuthScreenState extends State<AuthScreen> {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: 11),
         decoration: BoxDecoration(
           color: selected ? scheme.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(9),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Center(
           child: Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: selected ? scheme.onPrimary : scheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
@@ -478,26 +541,4 @@ class _ShieldClipper extends CustomClipper<Path> {
 
   @override
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
-}
-
-class _FlagStripe extends StatelessWidget {
-  const _FlagStripe();
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(2),
-      child: const SizedBox(
-        width: 20,
-        height: 12,
-        child: Column(
-          children: [
-            Expanded(child: ColoredBox(color: Color(0xFF078930), child: SizedBox.expand())),
-            Expanded(child: ColoredBox(color: Color(0xFFFCDD09), child: SizedBox.expand())),
-            Expanded(child: ColoredBox(color: Color(0xFFDA121A), child: SizedBox.expand())),
-          ],
-        ),
-      ),
-    );
-  }
 }

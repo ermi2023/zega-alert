@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'firebase_options.dart';
 import 'package:geolocator/geolocator.dart';
 import 'l10n/app_localizations.dart';
+import 'l10n/fallback_localizations.dart';
 import 'screens/auth_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/report_screen.dart';
@@ -53,11 +55,15 @@ void main() async {
     } catch (_) {}
   }
 
-  runApp(const ZegaAlertApp());
+  final prefs = await SharedPreferences.getInstance();
+  final savedLanguage = prefs.getString('languageCode') ?? 'en';
+  runApp(ZegaAlertApp(initialLanguage: savedLanguage));
 }
 
 class ZegaAlertApp extends StatefulWidget {
-  const ZegaAlertApp({super.key});
+  const ZegaAlertApp({super.key, this.initialLanguage = 'en'});
+
+  final String initialLanguage;
 
   static ZegaAlertAppState? of(BuildContext context) =>
       context.findAncestorStateOfType<ZegaAlertAppState>();
@@ -71,9 +77,23 @@ class ZegaAlertAppState extends State<ZegaAlertApp> {
   bool _accessibility = false;
   String _languageCode = 'en';
 
+  String get languageCode => _languageCode;
+
+  @override
+  void initState() {
+    super.initState();
+    _languageCode = widget.initialLanguage;
+  }
+
   void toggleDarkMode(bool value) => setState(() => _darkMode = value);
   void toggleAccessibility(bool value) => setState(() => _accessibility = value);
-  void setLanguage(String code) => setState(() => _languageCode = code);
+
+  void setLanguage(String code) {
+    setState(() => _languageCode = code);
+    SharedPreferences.getInstance()
+        .then((p) => p.setString('languageCode', code))
+        .catchError((_) => false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,9 +121,9 @@ class ZegaAlertAppState extends State<ZegaAlertApp> {
       locale: Locale(_languageCode),
       localizationsDelegates: const [
         AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
+        FallbackMaterialLocalizationsDelegate(),
         GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
+        FallbackCupertinoLocalizationsDelegate(),
       ],
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) => Semantics(

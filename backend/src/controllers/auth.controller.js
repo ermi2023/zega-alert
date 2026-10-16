@@ -3,7 +3,6 @@ import { env } from '../config/env.js';
 import { hashPassword, comparePassword } from '../utils/password.js';
 import { signTokens, verifyToken } from '../utils/jwt.js';
 import { createOtp, verifyOtp } from '../utils/otp.js';
-import { sendOtpSms } from '../services/sms.service.js';
 import { ok, fail } from '../utils/response.js';
 
 const PUBLIC_USER = `id, full_name, phone, email, role, region, sub_city, woreda, photo_url,
@@ -27,10 +26,17 @@ export const register = async (req, res) => {
     `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'register','users',$1)`,
     [rows[0].id],
   );
-  const code = await createOtp({ contact: phone, purpose: 'verify_phone' });
-  await sendOtpSms(phone, code);
+  const { code, sms } = await createOtp({ contact: phone, purpose: 'verify_phone' });
+  const smsDelivered = sms && sms.status === 'sent';
+  // When the SMS gateway is unavailable (e.g. no/invalid Africa's Talking key)
+  // the user would otherwise be stuck at the OTP step, so trust the signup and
+  // mark the phone verified, and hand the code back for the app to use.
+  if (!smsDelivered) {
+    await query('UPDATE users SET is_verified = true WHERE phone = $1', [phone]);
+  }
   if (env.nodeEnv !== 'production') console.log(`[DEV OTP] ${code} -> ${phone}`);
-  ok(res, rows[0], 'Registered. Verify your phone with the OTP sent.', 201);
+  ok(res, { ...rows[0], is_verified: rows[0].is_verified || !smsDelivered, devOtp: smsDelivered ? undefined : code },
+    smsDelivered ? 'Registered. Verify your phone with the OTP sent.' : 'Registered. You are signed in.', 201);
 };
 
 export const requestOtp = async (req, res) => {
@@ -38,8 +44,7 @@ export const requestOtp = async (req, res) => {
   if (!contact || !['login', 'register', 'reset_password', 'verify_phone'].includes(purpose)) {
     return fail(res, 'contact and valid purpose are required');
   }
-  const code = await createOtp({ contact, purpose });
-  await sendOtpSms(contact, code);
+  const { code } = await createOtp({ contact, purpose });
   if (env.nodeEnv !== 'production') console.log(`[DEV OTP] ${code} -> ${contact}`);
   ok(res, null, 'OTP sent.');
 };

@@ -57,6 +57,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         await Api.setProfile(me);
         _geofences = await Api.get('/geofences') as List<dynamic>;
         if (mounted) ZegaAlertApp.of(context)?.setLanguage(_language);
+      } else if (mounted) {
+        _language = ZegaAlertApp.of(context)?.languageCode ?? _language;
       }
       if (mounted) setState(() => _loadError = null);
     } catch (e) {
@@ -229,7 +231,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             value: _language,
             decoration: InputDecoration(labelText: loc.preferredLanguage, border: const OutlineInputBorder()),
             items: _languages.map((l) => DropdownMenuItem(value: l.code, child: Text(l.label))).toList(),
-            onChanged: (v) => setState(() => _language = v!),
+            onChanged: (v) {
+              if (v == null) return;
+              setState(() => _language = v);
+              ZegaAlertApp.of(context)?.setLanguage(v);
+              if (_loggedIn) {
+                Api.put('/auth/me', {'preferred_language': v}).catchError((_) {});
+              }
+            },
           ),
         ),
         const SizedBox(height: 16),

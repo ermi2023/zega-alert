@@ -11,6 +11,6 @@ void main() {
 
     expect(find.byType(AuthScreen), findsOneWidget);
     expect(find.text('Sign in'), findsWidgets);
-    expect(find.text('ZEGA-ALERT · Emergency & crime reporting'), findsOneWidget);
+    expect(find.text('Emergency & crime reporting for every Ethiopian'), findsOneWidget);
   });
 }

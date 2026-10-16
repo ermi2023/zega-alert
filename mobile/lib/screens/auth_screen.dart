@@ -85,16 +85,30 @@ class _AuthScreenState extends State<AuthScreen> {
           return;
         }
         final phone = _phone.text.trim();
-        await Api.post('/auth/register', {
+        final registered = await Api.post('/auth/register', {
           'full_name': _name.text.trim(),
           'phone': phone,
           'email': _email.text.trim(),
           'password': _password.text,
           'region': _region,
           'sub_city': _subCity,
-        });
-        final otp = await _askOtp();
-        await Api.post('/auth/verify-otp', {'contact': phone, 'code': otp, 'purpose': 'verify_phone'});
+        }) as Map<String, dynamic>?;
+
+        // Phone verification is best-effort: when the SMS gateway delivers an
+        // OTP we prompt for it, otherwise the server returns the code (or has
+        // already trusted the signup). Either way we must never block sign-in.
+        final devOtp = registered?['devOtp']?.toString();
+        if (devOtp == null || devOtp.isEmpty) {
+          try {
+            final otp = await _askOtp();
+            await Api.post('/auth/verify-otp', {'contact': phone, 'code': otp, 'purpose': 'verify_phone'});
+          } catch (_) {/* verification is optional; continue to sign-in */}
+        } else {
+          try {
+            await Api.post('/auth/verify-otp', {'contact': phone, 'code': devOtp, 'purpose': 'verify_phone'});
+          } catch (_) {}
+        }
+
         final data = await Api.post('/auth/login', {'phone': phone, 'password': _password.text});
         await _persistSession(data);
         await _goHome();

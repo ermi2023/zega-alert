@@ -12,8 +12,8 @@ export const createOtp = async ({ contact, purpose, ttlMinutes = 10 }) => {
      VALUES ($1, $2, $3, $4)`,
     [contact, code, purpose, expiresAt],
   );
-  await sendOtpSms(contact, code);
-  return code;
+  const sms = await sendOtpSms(contact, code);
+  return { code, sms };
 };
 
 export const verifyOtp = async ({ contact, code, purpose }) => {

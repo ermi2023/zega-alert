@@ -2,7 +2,14 @@ export const TOKEN_KEY = 'zega_admin_token';
 export const REFRESH_KEY = 'zega_admin_refresh';
 export const USER_KEY = 'zega_admin_user';
 
-export const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+// Public URL of the deployed backend. Used as a fallback for production builds
+// when VITE_API_URL was not provided, so the static site does not silently call
+// its own domain (which is rewritten to index.html and returns HTML, not JSON).
+const PROD_API_BASE = 'https://zega-alert-api.onrender.com';
+export const API_BASE = (
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? PROD_API_BASE : '')
+).replace(/\/$/, '');
 
 const request = async (path, options = {}) => {
   const token = localStorage.getItem(TOKEN_KEY);

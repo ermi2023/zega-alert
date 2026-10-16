@@ -410,8 +410,9 @@ class _AuthScreenState extends State<AuthScreen> {
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: _region,
+                isExpanded: true,
                 decoration: InputDecoration(labelText: loc.regionLabel, prefixIcon: const Icon(Icons.location_on_outlined), border: const OutlineInputBorder()),
-                items: ethiopianRegions.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+                items: ethiopianRegions.map((r) => DropdownMenuItem(value: r, child: Text(r, overflow: TextOverflow.ellipsis))).toList(),
                 onChanged: (v) => setState(() {
                   _region = v;
                   _subCity = subCitiesByRegion[v]?.first;
@@ -421,8 +422,9 @@ class _AuthScreenState extends State<AuthScreen> {
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   value: _subCity,
+                  isExpanded: true,
                   decoration: InputDecoration(labelText: loc.subCityLabel, prefixIcon: const Icon(Icons.location_city_outlined), border: const OutlineInputBorder()),
-                  items: subCitiesByRegion[_region]!.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                  items: subCitiesByRegion[_region]!.map((s) => DropdownMenuItem(value: s, child: Text(s, overflow: TextOverflow.ellipsis))).toList(),
                   onChanged: (v) => setState(() => _subCity = v),
                 ),
               ],

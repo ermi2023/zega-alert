@@ -35,7 +35,9 @@ git push origin main
 | `FAYDA_API_URL` / `FAYDA_API_KEY` | Your Fayda/NIDP credentials (leave blank for dev auto-approve) |
 | `AT_USERNAME` / `AT_API_KEY` / `AT_SENDER_ID` | Africa's Talking credentials |
 | `VITE_API_URL` (admin site) | `https://zega-alert-api.onrender.com` |
-| `VITE_GOOGLE_MAPS_API_KEY` (admin site) | Your Google Maps JS API key |
+
+> Maps use OpenStreetMap tiles via Leaflet — **no API key or billing**, so
+> there is nothing to add for the live map.
 
 `JWT_SECRET`, `ENCRYPTION_KEY`, `DATABASE_URL`, `CORS_ORIGINS`, and
 `FIREBASE_STORAGE_BUCKET` are set automatically by the blueprint.

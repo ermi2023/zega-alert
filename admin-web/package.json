@@ -10,11 +10,12 @@
     "qa:ui": "node scripts/inspect-ui.mjs"
   },
   "dependencies": {
-    "@react-google-maps/api": "^2.20.8",
     "i18next": "^26.3.6",
+    "leaflet": "^1.9.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^17.0.11",
+    "react-leaflet": "^4.2.1",
     "react-router-dom": "^6.28.0",
     "socket.io-client": "^4.8.1"
   },

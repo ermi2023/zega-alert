@@ -51,10 +51,9 @@ To bake in a public backend at build time (works nationwide, no per-phone setup)
 Precedence for the backend URL: saved override in Settings > `ZEGA_API_BASE` dart-define > LAN auto-detect > localhost.
 
 ## GAP-FILL ROUND 2 (framework alignment + nationwide access)
-1. **Google Maps (spec §4.4) replaces Leaflet (admin-web).** Installed `@react-google-maps/api@2.20.8`, removed `leaflet`+`react-leaflet`.
-   - New `admin-web/src/components/LiveMap.jsx` (GoogleMap/Marker/InfoWindow/Circle) with graceful "no key" fallback.
-   - `RoleDashboards.jsx` dispatcher live map now uses `LiveMap`; `Geofences.jsx` gained a zone map.
-   - Key env var `VITE_GOOGLE_MAPS_API_KEY` (see `admin-web/.env.example`). `npm run build` passes.
+1. **Maps use Leaflet + OpenStreetMap (admin-web), no key/billing.** Reverted the earlier Google Maps (spec §4.4) swap: reinstalled `leaflet@1.9.4`+`react-leaflet@4.2.1`, removed `@react-google-maps/api`, and rewrote `LiveMap.jsx` (MapContainer/TileLayer/Marker/Popup/Circle) with round `divIcon` pins (no image assets, no key fallback).
+   - `RoleDashboards.jsx` dispatcher live map and `Geofences.jsx` zone map both use `LiveMap`.
+   - No env var needed (`VITE_GOOGLE_MAPS_API_KEY` retired); `npm run build` passes.
 2. **Fayda National ID (spec §4.4) integration (backend).** New `services/fayda.service.js` (`verifyFin`).
    - `verification.controller.js` verifies the FIN against the Fayda API when `FAYDA_API_URL` is set; otherwise dev auto-approve (unchanged behaviour). `/verification/status` also reports `fayda_configured`.
    - `config/env.js` + `.env.example` add `FAYDA_API_URL` / `FAYDA_API_KEY`.
@@ -154,7 +153,7 @@ PII encrypted at rest (`enc:v1:`); missing-person + SOS create/read decrypt OK; 
 | **Supabase (hosted Postgres)** | ⚠️ Code ready, not configured | N/A | Set `SUPABASE_URL` + `SUPABASE_KEY` (+ optional `SUPABASE_DB_URL`) in `backend/.env`. Takes precedence over `DATABASE_URL`. |
 | **Africa's Talking (SMS)** | ⚠️ Code ready, dev-mode fallback | N/A | Set `AT_USERNAME` + `AT_API_KEY` (+ optional `AT_SENDER_ID`) in `backend/.env`. Without key, SMS logs to console instead of sending. |
 | **Translation engine** | ⚠️ Code ready, placeholder fallback | N/A | Set `TRANSLATE_API_URL` (LibreTranslate-compatible endpoint) + optional `TRANSLATE_API_KEY` in `backend/.env`. Without it, placeholder translations are stored. |
-| **Google Maps** | N/A (admin-web) | N/A | Set `VITE_GOOGLE_MAPS_API_KEY` in `admin-web/.env` (enable "Maps JavaScript API"). Without it the map shows a friendly placeholder; the rest of the app works. |
+| **Maps (admin-web)** | N/A | N/A | ✅ Done — Leaflet + OpenStreetMap tiles, **no API key or billing**. |
 | **Fayda National ID (NIDP)** | ⚠️ Code ready, dev auto-approve | N/A | Set `FAYDA_API_URL` (+ optional `FAYDA_API_KEY`) in `backend/.env`. Without it, ID submissions are auto-approved in dev. |
 
 ### .env keys reference (all in `backend/.env`)
@@ -184,7 +183,7 @@ FAYDA_API_KEY=
 ### admin-web/.env keys
 ```
 VITE_API_URL=                                  # public backend URL (no trailing slash)
-VITE_GOOGLE_MAPS_API_KEY=                      # Google Maps JavaScript API key
+# Maps use OpenStreetMap/Leaflet — no key required.
 ```
 
 ## Deployment (public URL)

@@ -36,7 +36,22 @@ export function SystemAdminDashboard() {
     api.get('/admin/users?limit=6').then(setUsers).catch(() => {});
     api.get('/admin/audit?limit=8').then(d => setAudit(d.items || [])).catch(() => {});
     api.get('/legal').then(setLegal).catch(() => {});
-    api.get('/meta/country').then(setCountry).catch(() => {});
+    // GeoAPI.info is called directly from the browser (CORS is open). The
+    // Render-hosted backend is blocked by GeoAPI's Cloudflare anti-bot layer,
+    // so we don't proxy this reference lookup through the API.
+    fetch('https://geoapi.info/api/country?code=ET')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setCountry({
+        name: d.name,
+        capital: d.capitalCity,
+        callingCode: d.callingCode,
+        currencyCode: d.currencyCode,
+        currencyName: d.currencyName,
+        languages: d.languages,
+        subdivisionCount: d.subdivisionCount,
+        attribution: { source: 'GeoAPI.info', license: 'CC BY-SA 4.0' },
+      }))
+      .catch(() => {});
   }, []);
 
   return (

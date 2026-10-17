@@ -13,8 +13,16 @@
 // are intentionally NOT surfaced.
 
 const BASE_URL = 'https://geoapi.info/api';
-const DEFAULT_TIMEOUT_MS = 5000;
+const DEFAULT_TIMEOUT_MS = 8000;
 const CACHE_LIMIT = 500;
+
+// GeoAPI.info sits behind Cloudflare, which is hostile to bare datacenter
+// requests, so send browser-like headers to look like a normal client.
+const REQUEST_HEADERS = {
+  Accept: 'application/json',
+  'Accept-Language': 'en',
+  'User-Agent': 'Mozilla/5.0 (compatible; ZEGA-ALERT/1.0; +https://zega-alert-admin.onrender.com)',
+};
 
 const cache = new Map();
 
@@ -34,7 +42,7 @@ const getJson = async (path, timeoutMs) => {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(`${BASE_URL}${path}`, { signal: controller.signal });
+    const res = await fetch(`${BASE_URL}${path}`, { signal: controller.signal, headers: REQUEST_HEADERS });
     if (!res.ok) return null;
     return await res.json();
   } catch {

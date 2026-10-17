@@ -40,4 +40,6 @@ export const env = {
   faydaApiUrl: process.env.FAYDA_API_URL || '',
   faydaApiKey: process.env.FAYDA_API_KEY || '',
   faydaApiEnabled: Boolean(process.env.FAYDA_API_URL),
+  // Geocoding/reverse geocoding (BigDataCloud)
+  bigDataCloudApiKey: process.env.BIGDATACLOUD_API_KEY || '',
 };

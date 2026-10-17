@@ -74,7 +74,12 @@ export default function Reports() {
                 </td>
                 <td>{r.category}</td>
                 <td><span className={`badge ${sev(r.severity)}`}>{r.severity}</span></td>
-                <td>{r.sub_city || r.region || '—'}</td>
+                <td>
+                  {r.sub_city || r.region || '—'}
+                  {r.address_text && r.address_text !== (r.sub_city || r.region) && (
+                    <div style={{ color: 'var(--muted)', fontSize: 12 }}>{r.address_text}</div>
+                  )}
+                </td>
                 <td><span className={`badge ${badge(r.status)}`}>{r.status}</span></td>
                 {canAssign && (
                   <td onClick={(e) => e.stopPropagation()}>

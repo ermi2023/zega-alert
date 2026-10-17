@@ -1,6 +1,7 @@
 import { query } from '../config/db.js';
 import { ok, fail } from '../utils/response.js';
 import { isUuid } from '../utils/uuid.js';
+import { resolveAddress } from '../services/geocode.service.js';
 
 const REPORT_COLS = `r.id, r.reporter_id, r.category, r.severity, r.status, r.title, r.description,
   r.latitude, r.longitude, r.address_text, r.region, r.sub_city, r.woreda, r.is_anonymous,
@@ -13,13 +14,14 @@ export const createReport = async (req, res) => {
     region, sub_city, woreda, is_anonymous, evidence,
   } = req.body;
   if (!category || !title) return fail(res, 'category and title are required');
+  const resolvedAddress = await resolveAddress({ latitude, longitude, address_text });
   const { rows } = await query(
     `INSERT INTO reports (reporter_id, category, severity, title, description, latitude, longitude,
        address_text, region, sub_city, woreda, is_anonymous, evidence, priority_score)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
      RETURNING *`,
     [req.user.id, category, severity || 'medium', title, description || null,
-      latitude || null, longitude || null, address_text || null, region || null,
+      latitude || null, longitude || null, resolvedAddress || null, region || null,
       sub_city || null, woreda || null, is_anonymous || false,
       evidence ? JSON.stringify(evidence) : '[]', priorityScore(severity, category)],
   );

@@ -6,6 +6,7 @@ import { io } from '../socket/socket.js';
 import { sendSosAlertSms } from '../services/sms.service.js';
 import { notifyGeofenceCitizens } from '../services/geofence-notify.service.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
+import { resolveAddress } from '../services/geocode.service.js';
 
 const SOS_COLS = `s.*, u.full_name AS user_name, u.phone AS user_phone`;
 
@@ -18,10 +19,11 @@ export const createSos = async (req, res) => {
     contacted_1, contacted_2,
   } = req.body;
   if (latitude == null || longitude == null) return fail(res, 'latitude and longitude are required');
+  const resolvedAddress = await resolveAddress({ latitude, longitude, address_text, timeoutMs: 3000 });
   const { rows } = await query(
     `INSERT INTO sos_alerts (user_id, latitude, longitude, address_text, description, region, sub_city, woreda, contacted_1, contacted_2)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-    [req.user.id, latitude, longitude, encrypt(address_text), description || null,
+    [req.user.id, latitude, longitude, encrypt(resolvedAddress), description || null,
       region || null, sub_city || null, woreda || null, contacted_1 || null, contacted_2 || null],
   );
   const alert = decryptRow(rows[0]);
@@ -39,11 +41,12 @@ export const createSos = async (req, res) => {
   }
 
   // Send SMS to emergency contacts
+  const smsLocation = resolvedAddress || `Lat: ${latitude}, Lng: ${longitude}`;
   if (contacted_1) {
-    await sendSosAlertSms(contacted_1, req.user.full_name || 'Citizen', `Lat: ${latitude}, Lng: ${longitude}`);
+    await sendSosAlertSms(contacted_1, req.user.full_name || 'Citizen', smsLocation);
   }
   if (contacted_2) {
-    await sendSosAlertSms(contacted_2, req.user.full_name || 'Citizen', `Lat: ${latitude}, Lng: ${longitude}`);
+    await sendSosAlertSms(contacted_2, req.user.full_name || 'Citizen', smsLocation);
   }
   
   await query(

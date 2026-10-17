@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:share_plus/share_plus.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api.dart';
 import '../services/database_service.dart';
+import '../services/location_service.dart';
 import '../widgets/auth_gate.dart';
 
 import 'missing_report_screen.dart';
@@ -44,7 +44,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _sosTimer?.cancel();
     _sosTimer = Timer.periodic(const Duration(seconds: 15), (_) async {
       try {
-        final pos = await Geolocator.getCurrentPosition();
+        final pos = await LocationService.best();
+        if (pos == null) return;
         await Api.post('/position/sos', {
           'sosId': sosId,
           'latitude': pos.latitude,
@@ -88,7 +89,11 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     setState(() { _sending = true; _status = null; });
     try {
-      Position pos = await Geolocator.getCurrentPosition();
+      final pos = await LocationService.best();
+      if (pos == null) {
+        setState(() => _status = 'Could not get your location. Turn on location services and try again.');
+        return;
+      }
       final data = await Api.post('/sos', {
         'latitude': pos.latitude,
         'longitude': pos.longitude,

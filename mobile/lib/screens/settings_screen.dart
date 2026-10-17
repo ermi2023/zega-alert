@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
@@ -7,6 +6,7 @@ import '../main.dart';
 import 'auth_screen.dart';
 import 'id_verification_screen.dart';
 import '../services/api.dart';
+import '../services/location_service.dart';
 import '../widgets/auth_gate.dart';
 import 'callbacks_screen.dart';
 import '../config/constants.dart';
@@ -471,9 +471,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     double? lat;
     double? lng;
     try {
-      final pos = await Geolocator.getCurrentPosition();
-      lat = pos.latitude;
-      lng = pos.longitude;
+      final pos = await LocationService.best();
+      if (pos != null) {
+        lat = pos.latitude;
+        lng = pos.longitude;
+      }
     } catch (_) {}
     try {
       final data = await Api.post('/pod/direct-call', {'latitude': lat, 'longitude': lng});
@@ -505,9 +507,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       double? lat;
       double? lng;
       try {
-        final pos = await Geolocator.getCurrentPosition();
-        lat = pos.latitude;
-        lng = pos.longitude;
+        final pos = await LocationService.best();
+        if (pos != null) {
+          lat = pos.latitude;
+          lng = pos.longitude;
+        }
       } catch (_) {}
       await Api.post('/pod/sign-language', {
         'video_url': absUrl,

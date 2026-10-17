@@ -25,6 +25,7 @@ import policyRoutes from './routes/policy.routes.js';
 import verificationRoutes from './routes/verification.routes.js';
 import podRoutes from './routes/pod.routes.js';
 import shareRoutes from './routes/share.routes.js';
+import metaRoutes from './routes/meta.routes.js';
 
 const app = express();
 
@@ -57,6 +58,7 @@ app.use('/api/policy', policyRoutes);
 app.use('/api/verification', verificationRoutes);
 app.use('/api/pod', podRoutes);
 app.use('/api/share', shareRoutes);
+app.use('/api/meta', metaRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

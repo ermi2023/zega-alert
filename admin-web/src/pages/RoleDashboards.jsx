@@ -29,12 +29,14 @@ export function SystemAdminDashboard() {
   const [users, setUsers] = useState([]);
   const [audit, setAudit] = useState([]);
   const [legal, setLegal] = useState([]);
+  const [country, setCountry] = useState(null);
 
   useEffect(() => {
     api.get('/admin/stats').then(setStats).catch(() => {});
     api.get('/admin/users?limit=6').then(setUsers).catch(() => {});
     api.get('/admin/audit?limit=8').then(d => setAudit(d.items || [])).catch(() => {});
     api.get('/legal').then(setLegal).catch(() => {});
+    api.get('/meta/country').then(setCountry).catch(() => {});
   }, []);
 
   return (
@@ -51,6 +53,18 @@ export function SystemAdminDashboard() {
         <div className="card"><h3 style={{ margin: 0 }}>{t('dashboard.staffAccounts')}</h3><p style={{ margin: '6px 0', color: 'var(--muted)' }}>{stats?.users?.staff ?? 0} non-citizen users across 4 roles</p></div>
         <div className="card"><h3 style={{ margin: 0 }}>{t('dashboard.dispatches')}</h3><p style={{ margin: '6px 0', color: 'var(--muted)' }}>{stats?.dispatches?.reduce((s, d) => s + d.n, 0) ?? 0} total assignments</p></div>
         <div className="card"><h3 style={{ margin: 0 }}>{t('dashboard.legalArticles')}</h3><p style={{ margin: '6px 0', color: 'var(--muted)' }}>{legal.length} entries in the rights library</p></div>
+        <div className="card">
+          <h3 style={{ margin: 0 }}>🌍 {country?.name || 'Ethiopia'} reference</h3>
+          {country ? (
+            <div style={{ margin: '6px 0', color: 'var(--muted)', fontSize: 13, display: 'grid', gap: 2 }}>
+              <span>Capital: <b style={{ color: 'var(--text)' }}>{country.capital || '—'}</b></span>
+              <span>Calling code: <b style={{ color: 'var(--text)' }}>+{country.callingCode ?? '—'}</b></span>
+              <span>Currency: <b style={{ color: 'var(--text)' }}>{country.currencyName || '—'} ({country.currencyCode || '—'})</b></span>
+              <span>Regions: <b style={{ color: 'var(--text)' }}>{country.subdivisionCount ?? '—'}</b></span>
+            </div>
+          ) : <p style={{ margin: '6px 0', color: 'var(--muted)' }}>Reference unavailable.</p>}
+          <small style={{ color: 'var(--muted)', fontSize: 11 }}>Source: {country?.attribution?.source || 'GeoAPI.info'} · {country?.attribution?.license || 'CC BY-SA 4.0'}</small>
+        </div>
       </div>
 
       <div className="grid-2">

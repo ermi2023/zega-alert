@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api.dart';
 import '../services/database_service.dart';
+import '../services/location_service.dart';
 
 
 class ReportScreen extends StatefulWidget {
@@ -216,7 +217,7 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
     setState(() { _busy = true; _status = null; });
     try {
       Position? pos;
-      try { pos = await Geolocator.getCurrentPosition(); } catch (_) {}
+      try { pos = await LocationService.best(); } catch (_) {}
       final result = await Api.postOrQueue('/reports', {
         'category': _category,
         'severity': _severity,

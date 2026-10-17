@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api.dart';
+import '../services/location_service.dart';
 import '../widgets/photo_upload.dart';
 
 class MissingReportScreen extends StatefulWidget {
@@ -31,7 +32,7 @@ class _MissingReportScreenState extends State<MissingReportScreen> {
     setState(() { _busy = true; _status = null; });
     try {
       Position? pos;
-      try { pos = await Geolocator.getCurrentPosition(); } catch (_) {}
+      try { pos = await LocationService.best(); } catch (_) {}
       final result = await Api.postOrQueue('/persons/missing', {
         'name': _name.text.trim(),
         'age': int.tryParse(_age.text),
@@ -151,7 +152,7 @@ class _SightingReportScreenState extends State<SightingReportScreen> {
     setState(() { _busy = true; _status = null; });
     try {
       Position? pos;
-      try { pos = await Geolocator.getCurrentPosition(); } catch (_) {}
+      try { pos = await LocationService.best(); } catch (_) {}
       await Api.post('/persons/sightings', {
         'missing_person_id': widget.missingPersonId,
         'wanted_person_id': widget.wantedPersonId,

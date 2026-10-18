@@ -20,10 +20,23 @@ import 'services/api.dart';
 import 'services/socket_service.dart';
 import 'services/notification_service.dart';
 import 'services/officer_position_service.dart';
+import 'package:workmanager/workmanager.dart';
+import 'services/database_service.dart';
 import 'services/sync_service.dart';
 import 'widgets/auth_gate.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+@pragma('vm:entry-point')
+void callbackDispatcher() {
+  Workmanager().executeTask((task, inputData) async {
+    // Background sync of the offline outbox. Runs even when the app is closed.
+    try {
+      await SyncService.flushInBackground();
+    } catch (_) {}
+    return true;
+  });
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,6 +44,15 @@ void main() async {
     try {
       await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    } catch (_) {}
+    try {
+      await Workmanager().initialize(callbackDispatcher, isInDebugMode: false);
+      await Workmanager().registerPeriodicTask(
+        'zega-outbox-sync',
+        'zega-outbox-sync',
+        frequency: const Duration(minutes: 15),
+        constraints: Constraints(networkType: NetworkType.connected),
+      );
     } catch (_) {}
   }
   if (!kIsWeb) {

@@ -66,5 +66,16 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSFaceIDUsageDescription</key>
+	<string>ZEGA-ALERT uses Face ID / Touch ID for secure sign-in.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>ZEGA-ALERT uses your location to attach GPS coordinates to crime reports and SOS alerts.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>ZEGA-ALERT streams your live location to dispatchers while an SOS is active.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>ZEGA-ALERT uses the camera to capture photos and sign-language video evidence.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>ZEGA-ALERT uses the microphone for audio evidence and video calls.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>ZEGA-ALERT saves captured media to your photo library.</string>
 </dict>
-</plist>

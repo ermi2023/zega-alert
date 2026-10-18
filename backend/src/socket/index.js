@@ -29,8 +29,23 @@ export function setupSocket() {
       socket.join(`conversation:${conversationId}`);
     });
 
+    socket.on('join', (room) => {
+      if (typeof room === 'string' && (room.startsWith('sos:') || room.startsWith('conversation:'))) {
+        socket.join(room);
+      }
+    });
+
     socket.on('chat:send', async ({ conversationId, body, message_type = 'text', attachment_url }, ack) => {
       try {
+        // Membership check: only conversation participants may send.
+        const { rows: part } = await query(
+          `SELECT 1 FROM conversation_participants WHERE conversation_id = $1 AND user_id = $2`,
+          [conversationId, socket.user.id],
+        );
+        if (part.length === 0) {
+          if (typeof ack === 'function') ack({ ok: false, error: 'Not a participant of this conversation' });
+          return;
+        }
         const { rows } = await query(
           `INSERT INTO messages (conversation_id, sender_id, body, message_type, attachment_url)
            VALUES ($1,$2,$3,$4,$5) RETURNING *`,

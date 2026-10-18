@@ -91,6 +91,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _addGeofence() async {
     final loc = AppLocalizations.of(context);
+    if (_geofences.length >= 10) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Maximum of 10 active safety zones reached. Delete one first.')));
+      return;
+    }
     final name = TextEditingController();
     final radius = TextEditingController();
     final lat = TextEditingController();
@@ -152,6 +156,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() => _status = 'Failed: $e');
     }
     _load();
+  }
+
+  Future<void> _toggleGeofence(String id, bool active) async {
+    try {
+      await Api.patch('/geofences/$id', {'is_active': active});
+      _load();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
+    }
   }
 
   Future<void> _logout() async {
@@ -256,7 +269,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 trailing: Semantics(
                   button: true,
                   label: 'Delete safety zone: ${g['name'] ?? 'Zone'}',
-                  child: IconButton(icon: const Icon(Icons.delete_outline), onPressed: () => _deleteGeofence(g['id'] as String)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Switch(value: g['is_active'] != false, onChanged: (v) => _toggleGeofence(g['id'] as String, v)),
+                      IconButton(icon: const Icon(Icons.delete_outline), onPressed: () => _deleteGeofence(g['id'] as String)),
+                    ],
+                  ),
                 ),
               ),
             ),

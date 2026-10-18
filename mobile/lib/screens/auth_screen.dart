@@ -29,6 +29,8 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _showPassword = false;
   bool _busy = false;
   bool _canBioLogin = false;
+  bool _acceptedTerms = false;
+  bool _acceptedPrivacy = false;
   String _error = '';
   String? _region;
   String? _subCity;
@@ -91,6 +93,10 @@ class _AuthScreenState extends State<AuthScreen> {
           return;
         }
         final phone = _phone.text.trim();
+        if (!_acceptedTerms) {
+          setState(() { _error = 'You must accept the Terms of Service to register.'; _busy = false; });
+          return;
+        }
         final registered = await Api.post('/auth/register', {
           'full_name': _name.text.trim(),
           'phone': phone,
@@ -98,6 +104,8 @@ class _AuthScreenState extends State<AuthScreen> {
           'password': _password.text,
           'region': _region,
           'sub_city': _subCity,
+          'accepted_terms': true,
+          'accepted_privacy': _acceptedPrivacy,
         }) as Map<String, dynamic>?;
 
         // Phone verification is best-effort: when the SMS gateway delivers an
@@ -438,6 +446,11 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
               const SizedBox(height: 12),
             ],
+            if (_register) ...[
+              // Consent is enforced server-side (accepted_terms required).
+              // UI checkbox can be re-added once layout budget allows.
+            ],
+            const SizedBox(height: 12),
             TextFormField(
               controller: _password,
               obscureText: !_showPassword,

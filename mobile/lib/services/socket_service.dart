@@ -67,6 +67,12 @@ class SocketService {
     _socket?.emit('chat:join', conversationId);
   }
 
+  /// Join the per-alert room so dispatch:updated / sos:location events are received.
+  static void joinSosRoom(String sosId) {
+    _socket?.emit('sos:join', sosId);
+    _socket?.emit('join', 'sos:$sosId');
+  }
+
   static void disconnect() {
     onSosStatus = null;
     onChatMessage = null;

@@ -18,6 +18,8 @@ class Report {
   final int priorityScore;
   final String? reportedAt;
   final String? resolvedAt;
+  final String? incidentAt;
+  final List<ReportStatusEvent> history;
 
   Report({
     required this.id,
@@ -39,6 +41,8 @@ class Report {
     this.priorityScore = 0,
     this.reportedAt,
     this.resolvedAt,
+    this.incidentAt,
+    this.history = const [],
   });
 
   factory Report.fromJson(Map<String, dynamic> json) => Report(
@@ -61,6 +65,26 @@ class Report {
     priorityScore: json['priority_score'] as int? ?? 0,
     reportedAt: json['reported_at'] as String?,
     resolvedAt: json['resolved_at'] as String?,
+    incidentAt: json['incident_at'] as String?,
+    history: (json['history'] as List<dynamic>? ?? [])
+        .map((e) => ReportStatusEvent.fromJson(e as Map<String, dynamic>))
+        .toList(),
+  );
+}
+
+class ReportStatusEvent {
+  final String? status;
+  final String? notes;
+  final String? changedBy;
+  final String? changedAt;
+
+  ReportStatusEvent({this.status, this.notes, this.changedBy, this.changedAt});
+
+  factory ReportStatusEvent.fromJson(Map<String, dynamic> json) => ReportStatusEvent(
+    status: json['status'] as String?,
+    notes: json['notes'] as String?,
+    changedBy: json['changed_by'] as String?,
+    changedAt: json['changed_at'] as String?,
   );
 }
 

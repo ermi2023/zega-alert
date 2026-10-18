@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import '../l10n/app_localizations.dart';
+import '../screens/report_detail_screen.dart';
 import '../services/api.dart';
 import '../services/database_service.dart';
 import '../services/location_service.dart';
@@ -153,12 +154,18 @@ class _ReportScreenState extends State<ReportScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  ListTile(
-                    leading: Icon(Icons.assignment_outlined, color: _statusColor(r['status'] ?? '')),
-                    title: Text(r['title'] ?? 'Untitled'),
-                    subtitle: Text('${r['category'] ?? ''} · ${_shortDate(r['reported_at'])}'),
-                    trailing: Text(_statusLabel(r['status'] ?? ''), style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _statusColor(r['status'] ?? ''))),
-                  ),
+              ListTile(
+                leading: Icon(Icons.assignment_outlined, color: _statusColor(r['status'] ?? '')),
+                title: Text(r['title'] ?? 'Untitled'),
+                subtitle: Text('${r['category'] ?? ''} · ${_shortDate(r['reported_at'])}'),
+                trailing: Text(_statusLabel(r['status'] ?? ''), style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _statusColor(r['status'] ?? ''))),
+                onTap: () {
+                  final id = r['id']?.toString();
+                  if (id != null && id.isNotEmpty) {
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => ReportDetailScreen(id: id)));
+                  }
+                },
+              ),
                   if (r['status'] == 'resolved')
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -211,20 +218,53 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
   bool _busy = false;
   String? _status;
   final List<Map<String, String>> _evidence = [];
+  DateTime _incidentAt = DateTime.now();
+  bool _useManualLocation = false;
+  final _manualAddress = TextEditingController();
+  final _manualLat = TextEditingController();
+  final _manualLng = TextEditingController();
+
+  String _fmtDt(DateTime d) {
+    final l = d.toLocal();
+    return '${l.year}-${l.month.toString().padLeft(2, '0')}-${l.day.toString().padLeft(2, '0')} ${l.hour.toString().padLeft(2, '0')}:${l.minute.toString().padLeft(2, '0')}';
+  }
 
   Future<void> _submit() async {
     if (!_form.currentState!.validate()) return;
     setState(() { _busy = true; _status = null; });
     try {
       Position? pos;
-      try { pos = await LocationService.best(); } catch (_) {}
+      try {
+        if (_useManualLocation) {
+          final lat = double.tryParse(_manualLat.text.trim());
+          final lng = double.tryParse(_manualLng.text.trim());
+          if (lat != null && lng != null) {
+            pos = Position(
+              latitude: lat,
+              longitude: lng,
+              timestamp: DateTime.now(),
+              accuracy: 100,
+              altitude: 0,
+              altitudeAccuracy: 0,
+              heading: 0,
+              headingAccuracy: 0,
+              speed: 0,
+              speedAccuracy: 0,
+            );
+          }
+        } else {
+          pos = await LocationService.best();
+        }
+      } catch (_) {}
       final result = await Api.postOrQueue('/reports', {
         'category': _category,
         'severity': _severity,
         'title': _title.text.trim(),
         'description': _desc.text.trim(),
+        'incident_at': _incidentAt.toUtc().toIso8601String(),
         'latitude': pos?.latitude,
         'longitude': pos?.longitude,
+        'address_text': _useManualLocation ? _manualAddress.text.trim() : null,
         'region': Api.region,
         'sub_city': Api.subCity,
         'is_anonymous': _anonymous,
@@ -233,9 +273,12 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
       setState(() => _status = result['queued'] == true
           ? 'You are offline. Report saved and will be submitted automatically when back online.'
           : 'Report submitted. Thank you.');
-      _title.clear();
-      _desc.clear();
-      _evidence.clear();
+  _title.clear();
+  _desc.clear();
+  _manualAddress.clear();
+  _manualLat.clear();
+  _manualLng.clear();
+  _evidence.clear();
       widget.onDone?.call();
     } catch (e) {
       setState(() => _status = 'Failed: $e');
@@ -320,14 +363,39 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
                 ),
                 const SizedBox(height: 12),
                 Semantics(
-                  label: 'Category dropdown. Currently set to $_category.',
-                  child: DropdownButtonFormField<String>(
-                    value: _category,
-                    decoration: InputDecoration(labelText: loc.category, border: const OutlineInputBorder()),
-                    items: ['theft', 'assault', 'fraud', 'property', 'drug', 'traffic', 'suspicious_activity', 'other'].map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                    onChanged: (v) => setState(() => _category = v!),
+                  label: 'Incident date and time picker. Currently set to ${_incidentAt.toLocal()}',
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.calendar_today),
+                    title: const Text('Incident date/time'),
+                    subtitle: Text(_fmtDt(_incidentAt)),
+                    onTap: () async {
+                      final d = await showDatePicker(context: context, initialDate: _incidentAt, firstDate: DateTime(2020), lastDate: DateTime.now().add(const Duration(days: 1)));
+                      if (d == null) return;
+                      final t = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(_incidentAt));
+                      if (t == null) return;
+                      setState(() => _incidentAt = DateTime(d.year, d.month, d.day, t.hour, t.minute));
+                    },
                   ),
                 ),
+                const SizedBox(height: 12),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Enter location manually'),
+                  subtitle: const Text('Otherwise use GPS'),
+                  value: _useManualLocation,
+                  onChanged: (v) => setState(() => _useManualLocation = v),
+                ),
+                if (_useManualLocation) ...[
+                  const SizedBox(height: 8),
+                  TextField(controller: _manualAddress, decoration: const InputDecoration(labelText: 'Address', border: OutlineInputBorder())),
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    Expanded(child: TextField(controller: _manualLat, decoration: const InputDecoration(labelText: 'Latitude', border: OutlineInputBorder()), keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true))),
+                    const SizedBox(width: 8),
+                    Expanded(child: TextField(controller: _manualLng, decoration: const InputDecoration(labelText: 'Longitude', border: OutlineInputBorder()), keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true))),
+                  ]),
+                ],
                 const SizedBox(height: 12),
                 Semantics(
                   label: 'Severity dropdown. Currently set to $_severity.',

@@ -292,6 +292,8 @@ class Api {
   static Future<dynamic> put(String path, [Map<String, dynamic>? body]) => _send('PUT', path, body);
   static Future<dynamic> delete(String path) => _send('DELETE', path);
 
+  static Future<dynamic> getReport(String id) => _send('GET', '/reports/$id');
+
   static Future<dynamic> upload(String path, List<MapEntry<String, String>> files,
       {Map<String, String>? fields}) async {
     final uri = Uri.parse('$baseUrl/api$path');

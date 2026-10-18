@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { query } from '../config/db.js';
 import { env } from '../config/env.js';
 import { hashPassword, comparePassword } from '../utils/password.js';
@@ -5,22 +6,41 @@ import { signTokens, verifyToken } from '../utils/jwt.js';
 import { createOtp, verifyOtp } from '../utils/otp.js';
 import { ok, fail } from '../utils/response.js';
 
+// In-memory single-use refresh-token jti store. For multi-instance deploys
+// replace with a Redis/DB table; this keeps the feature working on Render's
+// single-instance free plan.
+const REVOKED_JTI = new Set();
+const REVOKED_JTI_MAX = 10000;
+
+const revokeJti = (jti) => {
+  if (!jti) return;
+  if (REVOKED_JTI.size >= REVOKED_JTI_MAX) {
+    const it = REVOKED_JTI.values();
+    let n = 0;
+    while (n < 1000) { const r = it.next(); if (r.done) break; n++; }
+  }
+  REVOKED_JTI.add(jti);
+};
+
 const PUBLIC_USER = `id, full_name, phone, email, role, region, sub_city, woreda, photo_url,
   preferred_language, accessibility_mode, is_verified, is_active, last_login_at, created_at`;
 
 export const register = async (req, res) => {
-  const { full_name, phone, email, password, region, sub_city, woreda, preferred_language, accessibility_mode } = req.body;
+  const { full_name, phone, email, password, region, sub_city, woreda, preferred_language, accessibility_mode, accepted_terms, accepted_privacy } = req.body;
   if (!full_name || !phone || !password) return fail(res, 'full_name, phone and password are required');
+  if (!accepted_terms) return fail(res, 'You must accept the Terms of Service to register', 400);
   const existing = await query('SELECT id FROM users WHERE phone = $1 OR email = $2', [phone, email || '']);
   if (existing.rows.length) return fail(res, 'An account with this phone or email already exists', 409);
 
   const password_hash = await hashPassword(password);
   const { rows } = await query(
-    `INSERT INTO users (full_name, phone, email, password_hash, region, sub_city, woreda, preferred_language, accessibility_mode)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+    `INSERT INTO users (full_name, phone, email, password_hash, region, sub_city, woreda, preferred_language, accessibility_mode, accepted_terms_at, accepted_privacy_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9, $10, $11)
      RETURNING ${PUBLIC_USER}`,
     [full_name, phone, email || null, password_hash, region || null, sub_city || null, woreda || null,
-      preferred_language || 'en', accessibility_mode || false],
+      preferred_language || 'en', accessibility_mode || false,
+      accepted_terms ? new Date() : null,
+      accepted_privacy ? new Date() : null],
   );
   await query(
     `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'register','users',$1)`,
@@ -103,6 +123,12 @@ export const refresh = async (req, res) => {
     if ((payload.ver ?? 0) !== (rows[0].token_version ?? 0)) {
       return fail(res, 'Refresh token has been revoked', 401);
     }
+    // Single-use refresh token rotation: reject reuse of a consumed jti and
+    // revoke the presented jti so it cannot be replayed.
+    if (payload.jti && REVOKED_JTI.has(payload.jti)) {
+      return fail(res, 'Refresh token has been revoked', 401);
+    }
+    if (payload.jti) revokeJti(payload.jti);
     ok(res, signTokens(rows[0]), 'Tokens refreshed');
   } catch (e) {
     fail(res, 'Invalid refresh token', 401);
@@ -114,11 +140,18 @@ export const logout = async (req, res) => {
   const bearer = header.startsWith('Bearer ') ? header.slice(7) : null;
   const refreshToken = req.body?.refreshToken;
   let userId = null;
+  let refreshTokenJti = null;
   for (const token of [bearer, refreshToken]) {
     if (!token) continue;
-    try { userId = verifyToken(token).sub; break; } catch { /* try next */ }
+    try {
+      const p = verifyToken(token);
+      userId = p.sub;
+      if (p.jti) refreshTokenJti = p.jti;
+      break;
+    } catch { /* try next */ }
   }
   if (!userId) return fail(res, 'A valid access or refresh token is required to log out', 401);
+  if (refreshTokenJti) revokeJti(refreshTokenJti);
   const { rows } = await query(
     'UPDATE users SET token_version = token_version + 1 WHERE id = $1 RETURNING id',
     [userId],

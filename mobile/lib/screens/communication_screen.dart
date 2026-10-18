@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import '../l10n/app_localizations.dart';
+import '../models/models.dart';
+import '../screens/video_call_screen.dart';
 import '../services/api.dart';
 import '../services/socket_service.dart';
+import '../services/webrtc_service.dart';
 
 class CommunicationScreen extends StatefulWidget {
   const CommunicationScreen({super.key});
@@ -15,6 +20,9 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
   List<dynamic> _messages = [];
   String? _active;
   final _input = TextEditingController();
+  bool _sending = false;
+  String? _pendingAttachment;
+  String? _pendingType;
 
   String? _loadError;
   int? _waitMinutes;
@@ -44,14 +52,57 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
     if (mounted && _active == id) setState(() => _messages = data);
   }
 
+  Future<void> _pickAttachment(String kind) async {
+    String? path;
+    String type = kind;
+    try {
+      if (kind == 'Photo') {
+        final f = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 80);
+        path = f?.path;
+        type = 'image';
+      } else if (kind == 'Video') {
+        final f = await ImagePicker().pickVideo(source: ImageSource.gallery, maxDuration: const Duration(minutes: 2));
+        path = f?.path;
+        type = 'video';
+      } else {
+        final r = await FilePicker.platform.pickFiles(type: FileType.any);
+        path = r?.files.single.path;
+        type = 'file';
+        if (kind == 'Audio') type = 'audio';
+      }
+    } catch (_) {}
+    if (path == null) return;
+    setState(() => _sending = true);
+    try {
+      final res = await Api.upload('/upload/single', [MapEntry('file', path)]);
+      final url = res['url'] as String?;
+      if (url != null) {
+        setState(() {
+          _pendingAttachment = '${Api.baseUrl}$url';
+          _pendingType = type;
+        });
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
   Future<void> _send() async {
-    if (_input.text.trim().isEmpty || _active == null) return;
-    final msg = await Api.post('/chat/conversations/$_active/messages', {'body': _input.text.trim()});
+    if ((_input.text.trim().isEmpty && _pendingAttachment == null) || _active == null) return;
+    final body = <String, dynamic>{
+      'body': _input.text.trim(),
+      if (_pendingAttachment != null) 'attachment_url': _pendingAttachment,
+      if (_pendingAttachment != null) 'attachment_type': _pendingType,
+      'message_type': _pendingAttachment != null ? 'attachment' : 'text',
+    };
+    final msg = await Api.post('/chat/conversations/$_active/messages', body);
     final exists = _messages.any((m) => m['id'] == msg['id']);
     if (!exists) {
-      setState(() { _messages.add(msg); _input.clear(); });
+      setState(() { _messages.add(msg); _input.clear(); _pendingAttachment = null; _pendingType = null; });
     } else {
-      setState(() => _input.clear());
+      setState(() { _input.clear(); _pendingAttachment = null; _pendingType = null; });
     }
   }
 
@@ -130,6 +181,29 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
     }
   }
 
+  Future<void> _startVideoCall() async {
+    if (_active == null) return;
+    final conv = _conversations.firstWhere((c) => c['id'] == _active, orElse: () => null);
+    if (conv == null) return;
+    final participants = (conv['participant_ids'] as List<dynamic>?) ?? [];
+    final other = participants.firstWhere((p) => p != Api.userId, orElse: () => null);
+    if (other == null) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No other participant to call')));
+      return;
+    }
+    try {
+      if (mounted) {
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => VideoCallScreen(
+          targetUserId: other.toString(),
+          targetName: conv['title'] ?? 'Officer',
+          callType: 'video',
+        )));
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Call failed: $e')));
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -160,6 +234,7 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
               Row(
                 children: [
                   if (_active != null) IconButton(onPressed: _rateChat, icon: const Icon(Icons.star_border), tooltip: 'Rate this conversation'),
+                  if (_active != null) IconButton(onPressed: _startVideoCall, icon: const Icon(Icons.videocam), tooltip: 'Video call'),
                   IconButton(onPressed: _newChat, icon: const Icon(Icons.add_circle), tooltip: loc.newChat),
                 ],
               ),
@@ -205,11 +280,29 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
                         itemBuilder: (_, i) {
                           final m = _messages[i];
                           final mine = m['sender_id'] == Api.userId;
+                          final att = m['attachment_url'] as String?;
+                          final attType = m['attachment_type'] as String? ?? m['message_type'] as String?;
                           return Align(
                             alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
                             child: Card(
                               color: mine ? Colors.green.shade100 : Colors.white,
-                              child: Padding(padding: const EdgeInsets.all(10), child: Text(m['body'] ?? '')),
+                              child: Padding(
+                                padding: const EdgeInsets.all(10),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (att != null && att.isNotEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.only(bottom: 6),
+                                        child: attType == 'image'
+                                            ? ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(att, width: 200, fit: BoxFit.cover))
+                                            : Row(children: [const Icon(Icons.attach_file, size: 18), const SizedBox(width: 6), Expanded(child: Text(att.split('/').last, overflow: TextOverflow.ellipsis))]),
+                                      ),
+                                    if ((m['body'] ?? '').toString().isNotEmpty) Text(m['body'] ?? ''),
+                                  ],
+                                ),
+                              ),
                             ),
                           );
                         },
@@ -217,11 +310,38 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
                     ),
                     Padding(
                       padding: const EdgeInsets.all(12),
-                      child: Row(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Expanded(child: TextField(controller: _input, decoration: InputDecoration(hintText: loc.typeMessage, border: const OutlineInputBorder()) , onSubmitted: (_) => _send())),
-                          const SizedBox(width: 8),
-                          FilledButton(onPressed: _send, child: Text(loc.send)),
+                          if (_pendingAttachment != null)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Row(
+                                children: [
+                                  Icon(_pendingType == 'image' ? Icons.image : Icons.attach_file, size: 18),
+                                  const SizedBox(width: 6),
+                                  Expanded(child: Text(_pendingAttachment!.split('/').last, overflow: TextOverflow.ellipsis)),
+                                  IconButton(icon: const Icon(Icons.close, size: 18), onPressed: () => setState(() { _pendingAttachment = null; _pendingType = null; })),
+                                ],
+                              ),
+                            ),
+                          Row(
+                            children: [
+                              PopupMenuButton<String>(
+                                icon: const Icon(Icons.attach_file),
+                                onSelected: _pickAttachment,
+                                itemBuilder: (_) => const [
+                                  PopupMenuItem(value: 'Photo', child: Text('Photo')),
+                                  PopupMenuItem(value: 'Video', child: Text('Video')),
+                                  PopupMenuItem(value: 'Audio', child: Text('Audio')),
+                                  PopupMenuItem(value: 'File', child: Text('File')),
+                                ],
+                              ),
+                              Expanded(child: TextField(controller: _input, decoration: InputDecoration(hintText: loc.typeMessage, border: const OutlineInputBorder()), onSubmitted: (_) => _send())),
+                              const SizedBox(width: 8),
+                              FilledButton(onPressed: _sending ? null : _send, child: Text(loc.send)),
+                            ],
+                          ),
                         ],
                       ),
                     ),

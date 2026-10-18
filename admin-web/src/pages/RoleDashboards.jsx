@@ -4,19 +4,77 @@ import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { io } from 'socket.io-client';
 import LiveMap from '../components/LiveMap';
+import Icon from '../components/Icon';
 
-const badge = (v) => ({ pending: 'amber', under_review: 'blue', verified: 'green', resolved: 'green', rejected: 'red', closed: 'gray' }[v] || 'gray');
+// Reusable inline SVG bar chart (no external chart lib).
+const BarChart = ({ data, color = '#22c55e', height = 120, labelKey = 'label', valueKey = 'value' }) => {
+  if (!data || data.length === 0) return <div style={{ color: 'var(--muted)', fontSize: 13, padding: 12 }}>No data</div>;
+  const max = Math.max(...data.map((d) => d[valueKey] || 0), 1);
+  const barW = Math.max(8, Math.floor(280 / data.length) - 6);
+  return (
+    <svg width="100%" height={height} viewBox={`0 0 ${data.length * (barW + 6) + 10} ${height}`} style={{ overflow: 'visible' }}>
+      {data.map((d, i) => {
+        const v = d[valueKey] || 0;
+        const h = (v / max) * (height - 24);
+        const x = i * (barW + 6) + 4;
+        const y = height - h - 18;
+        return (
+          <g key={i}>
+            <rect x={x} y={y} width={barW} height={h} rx={4} fill={color} opacity={0.85} />
+            <text x={x + barW / 2} y={height - 4} textAnchor="middle" fontSize={9} fill="var(--muted)">{String(d[labelKey] || '').slice(0, 8)}</text>
+            <text x={x + barW / 2} y={y - 3} textAnchor="middle" fontSize={9} fill="var(--text)" fontWeight={600}>{v}</text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+};
 const badgeSos = (v) => ({ triggered: 'red', acknowledged: 'amber', dispatched: 'blue', resolved: 'green', cancelled: 'gray' }[v] || 'gray');
 const LANG_OPTIONS = ['English', 'አማርኛ (Amharic)', 'Afaan Oromoo', 'ትግርኛ (Tigrigna)'];
 const countBy = (rows, name) => rows?.find((r) => r.status === name)?.n || 0;
 
 const statCards = (stats, t) => (
-  <div className="cards">
-    <div className="card green"><div className="num">{stats.users?.total ?? 0}</div><div className="lbl">{t('dashboard.users')} ({stats.users?.citizens ?? 0} {t('dashboard.citizens')})</div></div>
-    <div className="card blue"><div className="num">{stats.reports?.reduce((s, r) => s + r.n, 0) ?? 0}</div><div className="lbl">{t('dashboard.crimeReports')}</div></div>
-    <div className="card red"><div className="num">{countBy(stats.sos, 'triggered')}</div><div className="lbl">{t('dashboard.activeSos')}</div></div>
-    <div className="card amber"><div className="num">{stats.missingPersons?.missing ?? 0}</div><div className="lbl">{t('dashboard.missingPersons')}</div></div>
-    <div className="card"><div className="num">{stats.wantedPersons?.wanted ?? 0}</div><div className="lbl">{t('dashboard.wantedPersons')}</div></div>
+  <div className="cards kpi-grid">
+    <div className="card kpi">
+      <div className="kpi-top">
+        <span className="kpi-icon green"><Icon name="users" size={18} /></span>
+        <span className="kpi-label">{t('dashboard.users')}</span>
+      </div>
+      <div className="kpi-value">{stats.users?.total ?? 0}</div>
+      <div className="kpi-meta">{stats.users?.citizens ?? 0} {t('dashboard.citizens')} · {stats.users?.staff ?? 0} staff</div>
+    </div>
+    <div className="card kpi">
+      <div className="kpi-top">
+        <span className="kpi-icon blue"><Icon name="reports" size={18} /></span>
+        <span className="kpi-label">{t('dashboard.crimeReports')}</span>
+      </div>
+      <div className="kpi-value">{stats.reports?.reduce((s, r) => s + r.n, 0) ?? 0}</div>
+      <div className="kpi-meta">Across all regions</div>
+    </div>
+    <div className="card kpi">
+      <div className="kpi-top">
+        <span className="kpi-icon red"><Icon name="sos" size={18} /></span>
+        <span className="kpi-label">{t('dashboard.activeSos')}</span>
+      </div>
+      <div className="kpi-value">{countBy(stats.sos, 'triggered')}</div>
+      <div className="kpi-meta">{countBy(stats.sos, 'dispatched')} dispatched · {countBy(stats.sos, 'acknowledged')} ack</div>
+    </div>
+    <div className="card kpi">
+      <div className="kpi-top">
+        <span className="kpi-icon amber"><Icon name="persons" size={18} /></span>
+        <span className="kpi-label">{t('dashboard.missingPersons')}</span>
+      </div>
+      <div className="kpi-value">{stats.missingPersons?.missing ?? 0}</div>
+      <div className="kpi-meta">Active cases</div>
+    </div>
+    <div className="card kpi">
+      <div className="kpi-top">
+        <span className="kpi-icon indigo"><Icon name="persons" size={18} /></span>
+        <span className="kpi-label">{t('dashboard.wantedPersons')}</span>
+      </div>
+      <div className="kpi-value">{stats.wantedPersons?.wanted ?? 0}</div>
+      <div className="kpi-meta">Open alerts</div>
+    </div>
   </div>
 );
 
@@ -31,12 +89,15 @@ export function SystemAdminDashboard() {
   const [legal, setLegal] = useState([]);
   const [country, setCountry] = useState(null);
 
+  const [policy, setPolicy] = useState(null);
+
   useEffect(() => {
     api.get('/admin/stats').then(setStats).catch(() => {});
     api.get('/admin/users?limit=6').then(setUsers).catch(() => {});
     api.get('/admin/audit?limit=8').then(d => setAudit(d.items || [])).catch(() => {});
     api.get('/legal').then(setLegal).catch(() => {});
-    // GeoAPI.info is called directly from the browser (CORS is open). The
+    api.get('/policy').then(setPolicy).catch(() => {});
+    fetch('https://geoapi.info/api/country?code=ET')
     // Render-hosted backend is blocked by GeoAPI's Cloudflare anti-bot layer,
     // so we don't proxy this reference lookup through the API.
     fetch('https://geoapi.info/api/country?code=ET')
@@ -56,35 +117,54 @@ export function SystemAdminDashboard() {
 
   return (
     <div>
-      <div className="page-head">
+      <div className="page-head hero">
         <div>
           <h1>{t('dashboard.systemAdmin')}</h1>
           <p>{t('dashboard.systemAdminSub')}</p>
         </div>
+        <div className="hero-meta">
+          <span className="pill"><Icon name="clock" size={14} /> {new Date().toLocaleDateString()}</span>
+          <span className="pill"><Icon name="shield" size={14} /> Live</span>
+        </div>
       </div>
       {stats && statCards(stats, t)}
 
-      <div className="cards">
-        <div className="card"><h3 style={{ margin: 0 }}>{t('dashboard.staffAccounts')}</h3><p style={{ margin: '6px 0', color: 'var(--muted)' }}>{stats?.users?.staff ?? 0} non-citizen users across 4 roles</p></div>
-        <div className="card"><h3 style={{ margin: 0 }}>{t('dashboard.dispatches')}</h3><p style={{ margin: '6px 0', color: 'var(--muted)' }}>{stats?.dispatches?.reduce((s, d) => s + d.n, 0) ?? 0} total assignments</p></div>
-        <div className="card"><h3 style={{ margin: 0 }}>{t('dashboard.legalArticles')}</h3><p style={{ margin: '6px 0', color: 'var(--muted)' }}>{legal.length} entries in the rights library</p></div>
-        <div className="card">
-          <h3 style={{ margin: 0 }}>🌍 {country?.name || 'Ethiopia'} reference</h3>
-          {country ? (
-            <div style={{ margin: '6px 0', color: 'var(--muted)', fontSize: 13, display: 'grid', gap: 2 }}>
-              <span>Capital: <b style={{ color: 'var(--text)' }}>{country.capital || '—'}</b></span>
-              <span>Calling code: <b style={{ color: 'var(--text)' }}>+{country.callingCode ?? '—'}</b></span>
-              <span>Currency: <b style={{ color: 'var(--text)' }}>{country.currencyName || '—'} ({country.currencyCode || '—'})</b></span>
-              <span>Regions: <b style={{ color: 'var(--text)' }}>{country.subdivisionCount ?? '—'}</b></span>
-            </div>
-          ) : <p style={{ margin: '6px 0', color: 'var(--muted)' }}>Reference unavailable.</p>}
-          <small style={{ color: 'var(--muted)', fontSize: 11 }}>Source: {country?.attribution?.source || 'GeoAPI.info'} · {country?.attribution?.license || 'CC BY-SA 4.0'}</small>
+      <div className="cards info-grid">
+        <div className="card info">
+          <span className="kpi-icon indigo"><Icon name="users" size={18} /></span>
+          <div><b>{stats?.users?.staff ?? 0}</b><p>{t('dashboard.staffAccounts')} · 4 roles</p></div>
+        </div>
+        <div className="card info">
+          <span className="kpi-icon blue"><Icon name="chart" size={18} /></span>
+          <div><b>{stats?.dispatches?.reduce((s, d) => s + d.n, 0) ?? 0}</b><p>{t('dashboard.dispatches')} · total assignments</p></div>
+        </div>
+        <div className="card info">
+          <span className="kpi-icon green"><Icon name="legal" size={18} /></span>
+          <div><b>{legal.length}</b><p>{t('dashboard.legalArticles')} · rights library</p></div>
+        </div>
+        <div className="card info country">
+          <span className="kpi-icon amber"><Icon name="globe" size={18} /></span>
+          <div className="country-body">
+            <b>{country?.name || 'Ethiopia'}</b>
+            {country ? (
+              <div className="country-meta">
+                <span>Capital <strong>{country.capital || '—'}</strong></span>
+                <span>Call <strong>+{country.callingCode ?? '—'}</strong></span>
+                <span>Currency <strong>{country.currencyCode || '—'}</strong></span>
+                <span>Regions <strong>{country.subdivisionCount ?? '—'}</strong></span>
+              </div>
+            ) : <p>Reference unavailable.</p>}
+            <small>Source: {country?.attribution?.source || 'GeoAPI.info'} · {country?.attribution?.license || 'CC BY-SA 4.0'}</small>
+          </div>
         </div>
       </div>
 
       <div className="grid-2">
         <div className="panel">
-          <h2>👤 {t('dashboard.userManagement')}</h2>
+          <div className="section-head">
+            <h2>{t('dashboard.userManagement')}<small>latest accounts</small></h2>
+            <a className="btn small ghost" href="/users">{t('dashboard.manageUsers')} →</a>
+          </div>
           <table>
             <thead><tr><th>Name</th><th>Phone</th><th>Role</th><th>Status</th></tr></thead>
             <tbody>
@@ -98,29 +178,26 @@ export function SystemAdminDashboard() {
               {users.length === 0 && <tr><td colSpan={4} style={{ color: 'var(--muted)' }}>{t('users.noUsers')}</td></tr>}
             </tbody>
           </table>
-          <a className="btn small" style={{ marginTop: 12, display: 'inline-block', textDecoration: 'none' }} href="/users">{t('dashboard.manageUsers')} →</a>
         </div>
 
         <div className="panel">
-          <h2>📡 {t('dashboard.carrierConfig')}</h2>
-          <div className="carrier-list">
-            <div className="carrier"><b>Ethio Telecom</b><span className="badge green">{t('users.active')}</span></div>
-            <div className="carrier"><b>Safaricom Ethiopia</b><span className="badge green">{t('users.active')}</span></div>
-            <div className="carrier"><b>Future entrants</b><span className="badge gray">pending</span></div>
-          </div>
-          <h2 style={{ marginTop: 18 }}>🔐 {t('dashboard.securityPolicy')}</h2>
-          <ul className="policy">
-            <li>TLS 1.3 encryption for all data in transit</li>
-            <li>bcrypt password hashing + AES-256-GCM at rest</li>
-            <li>Rate limiting · 100 requests / minute / user</li>
-            <li>RBAC with hierarchical role creation</li>
-          </ul>
+          <div className="section-head"><h2>Reports by status<small>distribution</small></h2></div>
+          <BarChart data={(stats?.reports || []).map((r) => ({ label: r.status, value: r.n }))} color="#38bdf8" />
+          <div className="section-head" style={{ marginTop: 18 }}><h2>Staff by role<small>breakdown</small></h2></div>
+          <BarChart data={(() => {
+            const byRole = {};
+            users.forEach((u) => { if (u.role !== 'citizen') byRole[u.role] = (byRole[u.role] || 0) + 1; });
+            return Object.entries(byRole).map(([k, v]) => ({ label: k, value: v }));
+          })()} color="#a5b4fc" />
         </div>
       </div>
 
       <div className="grid-2">
         <div className="panel">
-          <h2>🔎 {t('dashboard.auditLog')}</h2>
+          <div className="section-head">
+            <h2>{t('dashboard.auditLog')}<small>recent activity</small></h2>
+            <a className="btn small ghost" href="/audit">{t('dashboard.openAuditLog')} →</a>
+          </div>
           <table>
             <thead><tr><th>Time</th><th>User</th><th>Action</th></tr></thead>
             <tbody>
@@ -128,17 +205,38 @@ export function SystemAdminDashboard() {
                 <tr key={a.id}>
                   <td>{new Date(a.created_at).toLocaleString()}</td>
                   <td>{a.full_name || 'system'}</td>
-                  <td>{a.action}</td>
+                  <td><span className="badge gray">{a.action}</span></td>
                 </tr>
               ))}
               {audit.length === 0 && <tr><td colSpan={3} style={{ color: 'var(--muted)' }}>No activity yet.</td></tr>}
             </tbody>
           </table>
-          <a className="btn small" style={{ marginTop: 12, display: 'inline-block', textDecoration: 'none' }} href="/audit">{t('dashboard.openAuditLog')} →</a>
         </div>
 
         <div className="panel">
-          <h2>⚖ {t('dashboard.legalContent')}</h2>
+          <div className="section-head">
+            <h2>{t('dashboard.securityPolicy')}<small>from /api/policy</small></h2>
+          </div>
+          {policy ? (
+            <ul className="policy">
+              <li>TLS 1.3: <b>{String(policy.tls_enforced)}</b></li>
+              <li>bcrypt cost: <b>{policy.bcrypt_cost}</b></li>
+              <li>Rate limit: <b>{policy.rate_limit_per_minute}/min</b></li>
+              <li>Password min length: <b>{policy.password_min_length}</b></li>
+              <li>Session timeout: <b>{policy.session_timeout_minutes} min</b></li>
+              <li>MFA required: <b>{String(policy.mfa_required)}</b></li>
+              <li>Audit retention: <b>{policy.audit_retention_days} days</b></li>
+            </ul>
+          ) : <p style={{ color: 'var(--muted)' }}>Policy unavailable.</p>}
+        </div>
+      </div>
+
+      <div className="grid-2">
+        <div className="panel">
+          <div className="section-head">
+            <h2>{t('dashboard.legalContent')}<small>rights library</small></h2>
+            <a className="btn small ghost" href="/legal">{t('dashboard.manageLegal')} →</a>
+          </div>
           <table>
             <thead><tr><th>Title</th><th>Category</th><th>Language</th></tr></thead>
             <tbody>
@@ -148,12 +246,11 @@ export function SystemAdminDashboard() {
               {legal.length === 0 && <tr><td colSpan={3} style={{ color: 'var(--muted)' }}>{t('legal.empty')}</td></tr>}
             </tbody>
           </table>
-          <a className="btn small" style={{ marginTop: 12, display: 'inline-block', textDecoration: 'none' }} href="/legal">{t('dashboard.manageLegal')} →</a>
         </div>
       </div>
     </div>
   );
-}
+};
 
 /* ---------------------------------------------------------------- */
 /* 2. Regional Admin Dashboard                                       */
@@ -204,16 +301,21 @@ export function RegionalAdminDashboard() {
 
   return (
     <div>
-      <div className="page-head">
+      <div className="page-head hero">
         <div>
           <h1>{t('dashboard.regionalAdmin')}</h1>
           <p>{t('dashboard.regionalAdminSub')}</p>
+        </div>
+        <div className="hero-meta">
+          <span className="pill"><span className="dot amber" /> {reports.length} pending</span>
+          <span className="pill"><span className="dot green" /> {officers.length} officers</span>
+          <span className="pill"><Icon name="pin" size={14} /> {user?.region || '—'}</span>
         </div>
       </div>
       {stats && statCards(stats, t)}
 
       <div className="panel">
-        <h2>📢 {t('dashboard.announcementMgmt')}</h2>
+        <div className="section-head"><h2>{t('dashboard.announcementMgmt')}<small>auto-translated publishing</small></h2></div>
         {msg.text && <div className={`msg ${msg.type}`}>{msg.text}</div>}
         <form onSubmit={previewTranslation}>
           <div className="form-row">
@@ -233,29 +335,37 @@ export function RegionalAdminDashboard() {
           </div>
         </form>
 
-        {preview && (
-          <div className="translation-preview">
-            <h3>{t('dashboard.translationPreview')}</h3>
-            <div className="lang-grid">
-              {LANG_OPTIONS.map((lang, i) => (
-                <div key={lang} className="lang-card">
-                  <b>{lang}</b>
-                  <p>{i === 0 ? preview.title : `${preview.title} (${['Amharic', 'Oromifa', 'Tigrigna'][i - 1]})`}</p>
-                  <small>{preview.body}</small>
-                </div>
-              ))}
+          {preview && (
+            <div className="translation-preview">
+              <h3>{t('dashboard.translationPreview')}</h3>
+              <p style={{ color: 'var(--muted)', fontSize: 13 }}>
+                On publish, the backend auto-translates this announcement into Amharic, Oromifa and Tigrigna
+                using the configured translation engine (LibreTranslate-compatible). The preview below shows
+                the source text; translated variants are generated server-side and stored as separate rows.
+              </p>
+              <div className="lang-grid">
+                {LANG_OPTIONS.map((lang, i) => (
+                  <div key={lang} className="lang-card">
+                    <b>{lang}</b>
+                    <p>{preview.title}</p>
+                    <small>{preview.body}</small>
+                  </div>
+                ))}
+              </div>
+              <div className="form-actions" style={{ marginTop: 12 }}>
+                <button className="btn" onClick={publish}>{t('dashboard.publishWithTranslations')}</button>
+                <button className="btn ghost" onClick={() => setPreview(null)}>{t('dashboard.editAgain')}</button>
+              </div>
             </div>
-            <div className="form-actions" style={{ marginTop: 12 }}>
-              <button className="btn" onClick={publish}>{t('dashboard.publishWithTranslations')}</button>
-              <button className="btn ghost" onClick={() => setPreview(null)}>{t('dashboard.editAgain')}</button>
-            </div>
-          </div>
-        )}
+          )}
       </div>
 
       <div className="grid-2">
         <div className="panel">
-          <h2>⚑ {t('dashboard.reportAssignment')}</h2>
+          <div className="section-head">
+            <h2>{t('dashboard.reportAssignment')}<small>{reports.length} awaiting</small></h2>
+            <a className="btn small ghost" href="/reports">All reports →</a>
+          </div>
           <table>
             <thead><tr><th>{t('reports.reportTitle')}</th><th>{t('reports.severity')}</th><th>Assign to</th></tr></thead>
             <tbody>
@@ -277,7 +387,7 @@ export function RegionalAdminDashboard() {
         </div>
 
         <div className="panel">
-          <h2>🌍 {t('dashboard.crossRegional')}</h2>
+          <div className="section-head"><h2>{t('dashboard.crossRegional')}<small>reports by region</small></h2></div>
           <table>
             <thead><tr><th>{t('reports.location')}</th><th>Reports</th></tr></thead>
             <tbody>
@@ -360,25 +470,42 @@ export function DispatcherDashboard() {
 
   return (
     <div>
-      <div className="page-head">
+      <div className="page-head hero">
         <div>
           <h1>{t('dashboard.dispatcher')}</h1>
           <p>{t('dashboard.dispatcherSub')}</p>
         </div>
+        <div className="hero-meta">
+          <span className="pill"><span className={`dot ${active.length ? 'red' : 'green'}`} /> {active.length} active SOS</span>
+          <span className="pill"><span className="dot green" /> {officerPts.length} live officers</span>
+          <span className="pill"><Icon name="clock" size={14} /> {new Date().toLocaleTimeString()}</span>
+        </div>
       </div>
 
       {live.length > 0 && (
-        <div className="panel">
-          <h2>🔴 {t('dashboard.liveSos')}</h2>
-          {live.map((a) => (
-            <div key={a.id} className="msg err">New SOS from {a.user_name || 'unknown'} — {a.address_text || `${a.latitude}, ${a.longitude}`}</div>
-          ))}
+        <div className="panel alert-strip">
+          <div className="section-head">
+            <h2><span className="dot red pulse" /> {t('dashboard.liveSos')}<small>{live.length} new this session</small></h2>
+            <a className="btn small ghost" href="/sos">Open queue →</a>
+          </div>
+          <div className="alert-list">
+            {live.map((a) => (
+              <div key={a.id} className="alert-item">
+                <b>{a.user_name || 'Unknown'}</b>
+                <span>{a.address_text || `${a.latitude}, ${a.longitude}`}</span>
+                <span className={`badge ${badgeSos(a.status)}`}>{a.status}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       <div className="grid-2">
         <div className="panel">
-          <h2>🗺 {t('dashboard.liveMap')} <small style={{ color: 'var(--muted)', fontWeight: 400 }}>· {officerPts.length} officers live</small></h2>
+          <div className="section-head">
+            <h2>{t('dashboard.liveMap')}<small>{officerPts.length} officers live</small></h2>
+            <span className="pill"><span className="dot blue" /> OSM · Leaflet</span>
+          </div>
           {(points.length > 0 || officerPts.length > 0) ? (
             <LiveMap alerts={points} officers={officerPts} height={340} />
           ) : (
@@ -387,7 +514,7 @@ export function DispatcherDashboard() {
         </div>
 
         <div className="panel">
-          <h2>👮 {t('dashboard.officerTracker')}</h2>
+          <div className="section-head"><h2>{t('dashboard.officerTracker')}<small>{available.length} available</small></h2></div>
           <table>
             <thead><tr><th>Officer</th><th>Region</th><th>Status</th></tr></thead>
             <tbody>
@@ -406,7 +533,7 @@ export function DispatcherDashboard() {
 
       <div className="grid-2">
         <div className="panel">
-          <h2>🚨 {t('dashboard.dispatchPanel')}</h2>
+          <div className="section-head"><h2>{t('dashboard.dispatchPanel')}<small>{active.length} in progress</small></h2></div>
           <table>
             <thead><tr><th>Citizen</th><th>Location</th><th>Status</th><th>Dispatch to</th></tr></thead>
             <tbody>
@@ -436,7 +563,7 @@ export function DispatcherDashboard() {
         </div>
 
         <div className="panel">
-          <h2>📞 {t('dashboard.callbackQueue')}</h2>
+          <div className="section-head"><h2>{t('dashboard.callbackQueue')}<small>pending acknowledgement</small></h2></div>
           <table>
             <thead><tr><th>Citizen</th><th>Phone</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
@@ -487,24 +614,43 @@ export function PoliceDashboard() {
     setReports(d.items);
   };
 
+  const activeSosCount = sos.filter((s) => ['triggered', 'acknowledged', 'dispatched'].includes(s.status)).length;
+
   return (
     <div>
-      <div className="page-head">
+      <div className="page-head hero">
         <div>
           <h1>{t('dashboard.police')}</h1>
           <p>{t('dashboard.policeSub')}</p>
         </div>
+        <div className="hero-meta">
+          <span className="pill"><span className="dot blue" /> {mine.length} assigned</span>
+          <span className="pill"><span className={`dot ${activeSosCount ? 'red' : 'green'}`} /> {activeSosCount} active SOS</span>
+          <span className="pill"><Icon name="shield" size={14} /> {user?.region || 'on duty'}</span>
+        </div>
       </div>
 
-      <div className="cards">
-        <div className="card blue"><div className="num">{mine.length}</div><div className="lbl">{t('dashboard.assignedToYou')}</div></div>
-        <div className="card amber"><div className="num">{open.length}</div><div className="lbl">{t('dashboard.unassigned')}</div></div>
-        <div className="card red"><div className="num">{sos.filter((s) => ['triggered', 'acknowledged', 'dispatched'].includes(s.status)).length}</div><div className="lbl">{t('dashboard.activeSosRegion')}</div></div>
+      <div className="cards kpi-grid">
+        <div className="card kpi">
+          <div className="kpi-top"><span className="kpi-icon blue"><Icon name="reports" size={18} /></span><span className="kpi-label">{t('dashboard.assignedToYou')}</span></div>
+          <div className="kpi-value">{mine.length}</div>
+          <div className="kpi-meta">In your queue</div>
+        </div>
+        <div className="card kpi">
+          <div className="kpi-top"><span className="kpi-icon amber"><Icon name="audit" size={18} /></span><span className="kpi-label">{t('dashboard.unassigned')}</span></div>
+          <div className="kpi-value">{open.length}</div>
+          <div className="kpi-meta">Awaiting assignment</div>
+        </div>
+        <div className="card kpi">
+          <div className="kpi-top"><span className="kpi-icon red"><Icon name="sos" size={18} /></span><span className="kpi-label">{t('dashboard.activeSosRegion')}</span></div>
+          <div className="kpi-value">{activeSosCount}</div>
+          <div className="kpi-meta">Live emergencies</div>
+        </div>
       </div>
 
       <div className="grid-2">
         <div className="panel">
-          <h2>📋 {t('dashboard.assignedCases')}</h2>
+          <div className="section-head"><h2>{t('dashboard.assignedCases')}<small>{mine.length} cases</small></h2></div>
           <table>
             <thead><tr><th>{t('reports.reportTitle')}</th><th>{t('reports.severity')}</th><th>Status</th><th>Action</th></tr></thead>
             <tbody>
@@ -525,7 +671,7 @@ export function PoliceDashboard() {
         </div>
 
         <div className="panel">
-          <h2>⚑ {t('dashboard.unassignedQueue')}</h2>
+          <div className="section-head"><h2>{t('dashboard.unassignedQueue')}<small>take up next</small></h2></div>
           <table>
             <thead><tr><th>{t('reports.reportTitle')}</th><th>{t('reports.category')}</th><th>Priority</th></tr></thead>
             <tbody>
@@ -543,7 +689,10 @@ export function PoliceDashboard() {
       </div>
 
       <div className="panel">
-        <h2>📢 {t('dashboard.latestAnnouncements')}</h2>
+        <div className="section-head">
+          <h2>{t('dashboard.latestAnnouncements')}<small>regional briefings</small></h2>
+          <a className="btn small ghost" href="/announcements">All →</a>
+        </div>
         <table>
           <thead><tr><th>Date</th><th>{t('reports.reportTitle')}</th><th>{t('reports.category')}</th></tr></thead>
           <tbody>

@@ -29,8 +29,13 @@ export default function Sos() {
     });
     socket.on('sos:new', (a) => setRows((p) => [a.alert || a, ...p]));
     socket.on('dispatch:updated', ({ sosId }) => loadUnits(sosId));
+    socket.on('connect', () => {
+      // Join each active SOS room so dispatch:updated events (emitted to
+      // `sos:<id>`) are received instead of only to the staff broadcast.
+      rows.forEach((s) => socket.emit('join', `sos:${s.id}`));
+    });
     return () => socket.close();
-  }, []);
+  }, [rows]);
 
   useEffect(() => {
     rows.forEach((s) => loadUnits(s.id));

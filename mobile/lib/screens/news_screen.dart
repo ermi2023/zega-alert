@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import '../l10n/app_localizations.dart';
+import '../screens/announcement_detail_screen.dart';
 import '../services/api.dart';
 import '../widgets/auth_gate.dart';
 import 'missing_report_screen.dart';
@@ -19,6 +20,21 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
   List<dynamic> _missing = [];
   List<dynamic> _sightings = [];
   String? _loadError;
+  String? _legalCategory;
+  String? _legalLang;
+
+  Future<void> _loadLegal() async {
+    final params = <String>[];
+    if (_legalCategory != null && _legalCategory!.isNotEmpty) params.add('category=$_legalCategory');
+    if (_legalLang != null && _legalLang!.isNotEmpty) params.add('language=$_legalLang');
+    final path = params.isEmpty ? '/legal' : '/legal?${params.join('&')}';
+    try {
+      final data = await Api.get(path);
+      if (mounted) setState(() => _legal = data);
+    } catch (e) {
+      if (mounted) setState(() => _loadError = 'Failed to load: $e');
+    }
+  }
 
   @override
   void initState() {
@@ -75,14 +91,9 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                     await Api.recordShare('announcement', a['id'] as String?, platform: Api.platformFromRaw(r.raw));
                   },
                 ),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => AnnouncementDetailScreen(item: Map<String, dynamic>.from(a)))),
               )),
-              _list(_legal, (l) => ListTile(
-                title: Text(l['title']),
-                subtitle: Text('${l['category']} · ${l['language']}'),
-                trailing: (l['review_status'] == 'under_review')
-                    ? const Chip(label: Text('Under Review', style: TextStyle(fontSize: 11)))
-                    : null,
-              )),
+              _legalTab(),
               _missingTab(),
               _sightingsTab(),
             ],
@@ -153,6 +164,44 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
           );
         },
       ),
+    );
+  }
+
+  Widget _legalTab() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: _legalCategory,
+                  decoration: const InputDecoration(labelText: 'Category', border: OutlineInputBorder(), isDense: true),
+                  items: [null, 'rights', 'duties', 'penalties', 'procedures', 'other'].map((c) => DropdownMenuItem(value: c, child: Text(c ?? 'All'))).toList(),
+                  onChanged: (v) { setState(() => _legalCategory = v); _loadLegal(); },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: _legalLang,
+                  decoration: const InputDecoration(labelText: 'Language', border: OutlineInputBorder(), isDense: true),
+                  items: [null, 'en', 'am', 'om', 'ti'].map((l) => DropdownMenuItem(value: l, child: Text(l ?? 'All'))).toList(),
+                  onChanged: (v) { setState(() => _legalLang = v); _loadLegal(); },
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(child: _list(_legal, (l) => ListTile(
+          title: Text(l['title']),
+          subtitle: Text('${l['category']} · ${l['language']}'),
+          trailing: (l['review_status'] == 'under_review')
+              ? const Chip(label: Text('Under Review', style: TextStyle(fontSize: 11)))
+              : null,
+        ))),
+      ],
     );
   }
 

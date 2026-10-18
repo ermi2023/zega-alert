@@ -68,4 +68,11 @@ class SyncService {
       _flushing = false;
     }
   }
+
+  /// Background entry point used by WorkManager (no UI context available).
+  static Future<void> flushInBackground() async {
+    await DatabaseService.database; // ensure initialized
+    await Api.loadToken();
+    await flush();
+  }
 }

@@ -420,7 +420,7 @@ export function DispatcherDashboard() {
 
   const load = () => {
     api.get('/sos').then(setSos).catch(() => {});
-    api.get('/admin/users?role=police').then(setOfficers).catch(() => {});
+    api.get('/staff?role=police').then(setOfficers).catch(() => {});
     api.get('/position/officers').then((list) => {
       const m = {};
       list.forEach((p) => { m[p.userId] = p; });

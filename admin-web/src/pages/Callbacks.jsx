@@ -16,7 +16,7 @@ export default function Callbacks() {
 
   const load = () => {
     api.get('/callbacks/officer').then(setItems).catch((e) => setMsg({ type: 'err', text: e.message }));
-    api.get('/admin/users?role=citizen&limit=200')
+    api.get('/staff?role=citizen&limit=200')
       .then((rows) => setCitizens(rows))
       .catch(() => setCitizens([]));
   };

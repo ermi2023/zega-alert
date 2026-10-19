@@ -7,8 +7,16 @@ import { ok } from '../utils/response.js';
 export const listStaff = async (req, res) => {
   const { role, region, limit = 200 } = req.query;
   const params = [];
-  const where = [`role != 'citizen'`, 'is_active = true'];
-  if (role) { params.push(role); where.push(`role = $${params.length}`); }
+  const where = ['is_active = true'];
+  // Default listing is staff only; citizen roster is returned only when
+  // explicitly requested (callback request screen).
+  if (role) {
+    if (role !== 'citizen') where.push(`role != 'citizen'`);
+    params.push(role);
+    where.push(`role = $${params.length}`);
+  } else {
+    where.push(`role != 'citizen'`);
+  }
   if (region) { params.push(region); where.push(`region = $${params.length}`); }
   params.push(Math.min(parseInt(limit, 10) || 200, 500));
 

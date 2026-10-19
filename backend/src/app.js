@@ -28,6 +28,7 @@ import podRoutes from './routes/pod.routes.js';
 import shareRoutes from './routes/share.routes.js';
 import metaRoutes from './routes/meta.routes.js';
 import syncRoutes from './routes/sync.routes.js';
+import staffRoutes from './routes/staff.routes.js';
 
 const app = express();
 
@@ -81,6 +82,7 @@ app.use('/api/pod', podRoutes);
 app.use('/api/share', shareRoutes);
 app.use('/api/meta', metaRoutes);
 app.use('/api/sync', syncRoutes);
+app.use('/api/staff', staffRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

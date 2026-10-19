@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
@@ -13,6 +14,21 @@ const LANGUAGES = [
 export default function Layout({ children }) {
   const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
+    const mq = window.matchMedia('(min-width: 769px)');
+    const onResize = (e) => { if (e.matches) setMenuOpen(false); };
+    window.addEventListener('keydown', onKey);
+    mq.addEventListener('change', onResize);
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      mq.removeEventListener('change', onResize);
+      document.body.style.overflow = '';
+    };
+  }, [menuOpen]);
 
   const nav = [
     { to: '/', label: t('nav.dashboard'), icon: 'dashboard' },
@@ -48,17 +64,40 @@ export default function Layout({ children }) {
 
   return (
     <div className="layout">
-      <aside className="sidebar">
+      <header className="topbar">
+        <button
+          className="hamburger"
+          onClick={() => setMenuOpen(true)}
+          aria-label="Open menu"
+          aria-expanded={menuOpen}
+        >
+          <span /><span /><span />
+        </button>
+        <div className="topbar-brand">
+          <img className="brand-flag" src="/brand/ethiopia-flag.png" alt="Ethiopia" />
+          <strong>ZEGA-ALERT</strong>
+        </div>
+      </header>
+
+      {menuOpen && <div className="drawer-backdrop" onClick={() => setMenuOpen(false)} />}
+
+      <aside className={`sidebar${menuOpen ? ' open' : ''}`}>
         <div className="brand">
           <div className="brand-row">
             <img className="brand-flag" src="/brand/ethiopia-flag.png" alt="Ethiopia" />
             <strong>ZEGA-ALERT</strong>
+            <button className="drawer-close" onClick={() => setMenuOpen(false)} aria-label="Close menu">✕</button>
           </div>
           <span>{t(`roles.${user?.role}`) || user?.role}</span>
         </div>
         <nav>
           {visibleNav.map((n) => (
-            <NavLink key={n.to} to={n.to} className={({ isActive }) => (isActive ? 'active' : '')}>
+            <NavLink
+              key={n.to}
+              to={n.to}
+              className={({ isActive }) => (isActive ? 'active' : '')}
+              onClick={() => setMenuOpen(false)}
+            >
               <span className="icon"><Icon name={n.icon} /></span> {n.label}
             </NavLink>
           ))}

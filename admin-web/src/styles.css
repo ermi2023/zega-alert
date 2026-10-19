@@ -676,6 +676,75 @@ input:focus, select:focus, textarea:focus {
 .flag-strip span:nth-child(3) { background: var(--et-red); }
 
 /* ==========================================================================
+   Mobile top bar + ChatGPT-style hamburger drawer (desktop keeps sidebar)
+   ========================================================================== */
+.topbar {
+  display: none;
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: linear-gradient(180deg, #0d1526, #0a1120);
+  border-bottom: 1px solid var(--line);
+  box-shadow: var(--shadow-1);
+}
+.topbar-brand { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.topbar-brand strong {
+  font-size: 15px;
+  letter-spacing: 2px;
+  font-weight: 800;
+  white-space: nowrap;
+  background: linear-gradient(90deg, #4ade80, #22c55e);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.hamburger {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, .04);
+  cursor: pointer;
+  transition: background .18s, border-color .18s;
+}
+.hamburger span {
+  display: block;
+  width: 17px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--text);
+}
+.hamburger:hover { background: rgba(255, 255, 255, .1); border-color: var(--line-2); }
+.hamburger:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.drawer-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 7, 15, .6);
+  z-index: 95;
+}
+.drawer-close {
+  display: none;
+  margin-left: auto;
+  padding: 4px 9px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .18s, color .18s;
+}
+.drawer-close:hover { background: rgba(255, 255, 255, .08); color: var(--text); }
+
+/* ==========================================================================
    Responsive
    ========================================================================== */
 @media (max-width: 1024px) {
@@ -695,50 +764,38 @@ input:focus, select:focus, textarea:focus {
 }
 @media (max-width: 768px) {
   .layout { flex-direction: column; }
+  /* ---- hamburger drawer ---- */
+  .topbar { display: flex; }
+  .drawer-backdrop { display: block; }
+  .drawer-close { display: inline-flex; align-items: center; justify-content: center; }
   .sidebar {
-    width: 100%;
-    height: auto;
-    position: sticky;
+    position: fixed;
     top: 0;
-    z-index: 40;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    border-right: none;
-    border-bottom: 1px solid var(--line);
+    left: 0;
+    bottom: 0;
+    width: min(300px, 86vw);
+    height: 100vh;
+    height: 100dvh;
+    transform: translateX(-105%);
+    transition: transform .25s ease;
+    z-index: 100;
+    box-shadow: var(--shadow-3);
     background: linear-gradient(180deg, #0d1526, #0a1120);
-    box-shadow: var(--shadow-2);
   }
-  .brand { order: 1; padding: 12px 14px; border-bottom: none; min-width: 0; }
-  .brand span { display: none; }
+  .sidebar.open { transform: translateX(0); }
+  .brand { padding: 18px 16px; border-bottom: 1px solid var(--line); }
   .sidebar-foot {
-    order: 2;
-    margin-left: auto;
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
-    border-top: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 14px 16px;
     background: none;
-  }
-  .user-chip { display: none; }
-  .lang-select { width: auto; padding: 7px 9px; font-size: 12.5px; }
-  .sidebar-foot .btn.ghost { padding: 7px 11px; font-size: 12.5px; }
-  .sidebar nav {
-    order: 3;
-    flex-basis: 100%;
-    flex-direction: row;
-    overflow-x: auto;
-    padding: 6px 10px;
-    gap: 2px;
     border-top: 1px solid var(--line);
-    scrollbar-width: none;
-    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 48px), transparent 100%);
-    mask-image: linear-gradient(90deg, #000 calc(100% - 48px), transparent 100%);
   }
-  .sidebar nav::-webkit-scrollbar { display: none; }
-  .sidebar nav a { flex-direction: column; gap: 3px; padding: 7px 11px; font-size: 10.5px; white-space: nowrap; border-radius: 9px; }
-  .sidebar nav a::before { display: none; }
+  .user-chip { display: flex; }
+  .lang-select { width: 100%; padding: 9px 11px; font-size: 13px; }
+  .sidebar-foot .btn.ghost { padding: 9px 12px; font-size: 13px; }
+  .sidebar nav { padding: 12px 10px; }
   .main { padding: 16px; }
   .page-head h1 { font-size: 19px; }
   .cards { grid-template-columns: 1fr 1fr; }

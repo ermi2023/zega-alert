@@ -16,7 +16,8 @@
     "geofences": "Geofences",
     "users": "Users",
     "audit": "Audit Log",
-    "security": "Security"
+    "security": "Security",
+    "notifications": "Notifications"
   },
   "roles": {
     "system_admin": "System Admin",

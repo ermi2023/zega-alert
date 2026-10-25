@@ -15,6 +15,7 @@ import 'screens/news_screen.dart';
 import 'screens/communication_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/callbacks_screen.dart';
+import 'screens/notifications_screen.dart';
 import 'screens/video_call_screen.dart';
 import 'services/api.dart';
 import 'services/socket_service.dart';
@@ -24,6 +25,7 @@ import 'package:workmanager/workmanager.dart';
 import 'services/database_service.dart';
 import 'services/sync_service.dart';
 import 'widgets/auth_gate.dart';
+import 'widgets/sos_dialog.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -46,7 +48,7 @@ void main() async {
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
     } catch (_) {}
     try {
-      await Workmanager().initialize(callbackDispatcher, isInDebugMode: false);
+      await Workmanager().initialize(callbackDispatcher);
       await Workmanager().registerPeriodicTask(
         'zega-outbox-sync',
         'zega-outbox-sync',
@@ -291,6 +293,12 @@ class _MainShellState extends State<MainShell> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('ZEGA-ALERT', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+        actions: const [
+          _NotificationBell(),
+        ],
+      ),
       body: _tabs[_index],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
@@ -303,6 +311,52 @@ class _MainShellState extends State<MainShell> {
           NavigationDestination(icon: const Icon(Icons.settings), label: loc.settings),
         ],
       ),
+    );
+  }
+}
+
+class _NotificationBell extends StatefulWidget {
+  const _NotificationBell();
+
+  @override
+  State<_NotificationBell> createState() => _NotificationBellState();
+}
+
+class _NotificationBellState extends State<_NotificationBell> {
+  int _unread = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUnread();
+  }
+
+  Future<void> _fetchUnread() async {
+    if (!Api.isLoggedIn) return;
+    try {
+      final res = await Api.get('/notifications?limit=20');
+      if (!mounted) return;
+      final List list = res is List ? res : (res is Map && res['notifications'] is List ? res['notifications'] : []);
+      final unread = list.where((n) => n is Map && n['read_at'] == null).length;
+      setState(() => _unread = unread);
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: 'Notifications',
+      icon: Badge(
+        isLabelVisible: _unread > 0,
+        label: Text('$_unread'),
+        child: const Icon(Icons.notifications_outlined),
+      ),
+      onPressed: () async {
+        await Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+        );
+        _fetchUnread();
+      },
     );
   }
 }

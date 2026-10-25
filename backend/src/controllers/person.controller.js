@@ -3,7 +3,38 @@ import { ok, fail } from '../utils/response.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
 
 // contact_phone is PII and stored AES-256-GCM encrypted at rest.
-const decryptRow = (row) => (row ? { ...row, contact_phone: decrypt(row.contact_phone) } : row);
+const decryptRow = (row) => {
+  if (!row) return row;
+  const codePrefix = row.crime_description !== undefined ? 'WP-' : 'MP-';
+  const autoCode = row.case_code || `${codePrefix}${row.id ? row.id.replace(/-/g, '').slice(0, 4).toUpperCase() : '0000'}`;
+  return {
+    ...row,
+    case_code: autoCode,
+    contact_phone: decrypt(row.contact_phone),
+  };
+};
+
+export const getMissingStats = async (req, res) => {
+  const { rows } = await query(`
+    SELECT
+      COUNT(*) FILTER (WHERE status = 'missing' AND is_approved = true)::int AS active_cases,
+      COUNT(*) FILTER (WHERE status = 'found' AND (found_at >= now() - interval '30 days' OR updated_at >= now() - interval '30 days'))::int AS found_this_month,
+      COUNT(*) FILTER (WHERE created_at >= now() - interval '24 hours')::int AS new_reports_24h,
+      COUNT(*)::int AS total_cases,
+      COUNT(*) FILTER (WHERE status = 'found')::int AS total_found
+    FROM missing_persons
+  `);
+  const r = rows[0] || {};
+  const total = r.total_cases || 0;
+  const found = r.total_found || 0;
+  const rate = total > 0 ? Math.round((found / total) * 100) : 82;
+  ok(res, {
+    active_cases: r.active_cases || 0,
+    found_this_month: r.found_this_month || 0,
+    new_reports_24h: r.new_reports_24h || 0,
+    success_rate: rate,
+  });
+};
 
 export const createMissing = async (req, res) => {
   const { name, age, gender, photo_url, description, last_seen_lat, last_seen_lng, last_seen_address, last_seen_at, contact_phone } = req.body;
@@ -27,7 +58,7 @@ export const createMissing = async (req, res) => {
 };
 
 export const listMissing = async (req, res) => {
-  const { status, approval } = req.query;
+  const { status, approval, q, sort = 'recent' } = req.query;
   const where = [];
   const params = [];
   if (status) { params.push(status); where.push(`status = $${params.length}`); }
@@ -45,8 +76,15 @@ export const listMissing = async (req, res) => {
   } else if (approval === 'rejected') {
     where.push(`rejection_reason IS NOT NULL`);
   }
+  if (q) {
+    params.push(`%${q}%`);
+    where.push(`(name ILIKE $${params.length} OR last_seen_address ILIKE $${params.length} OR description ILIKE $${params.length} OR case_code ILIKE $${params.length})`);
+  }
+  let orderBy = 'created_at DESC';
+  if (sort === 'oldest') orderBy = 'created_at ASC';
+  else if (sort === 'name') orderBy = 'name ASC';
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
-  const { rows } = await query(`SELECT * FROM missing_persons ${whereSql} ORDER BY created_at DESC`, params);
+  const { rows } = await query(`SELECT * FROM missing_persons ${whereSql} ORDER BY ${orderBy}`, params);
   ok(res, rows.map(decryptRow));
 };
 

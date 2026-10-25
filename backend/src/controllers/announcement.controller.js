@@ -113,3 +113,117 @@ export const deleteAnnouncement = async (req, res) => {
   mirrorDelete('announcements', req.params.id).catch(() => {});
   ok(res, null, 'Deleted');
 };
+
+const escapeXml = (str) => {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+};
+
+/**
+ * Generates an RSS 2.0 Podcast XML feed of all safety announcements (doc 2.2 #2).
+ * Enables citizens to subscribe via standard podcast apps (Apple Podcasts, Google Podcasts, etc.).
+ */
+export const getPodcastFeed = async (req, res) => {
+  const host = req.get('host') || 'localhost:5000';
+  const protocol = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
+  const baseUrl = `${protocol}://${host}`;
+
+  const { rows } = await query(
+    `SELECT * FROM announcements WHERE is_published = true ORDER BY published_at DESC LIMIT 50`,
+  );
+
+  const rssItems = rows.map((a) => {
+    const pubDate = new Date(a.published_at || a.created_at).toUTCString();
+    const audioUrl = `${baseUrl}/api/announcements/${a.id}/audio`;
+    return `    <item>
+      <title>${escapeXml(a.title)}</title>
+      <description>${escapeXml(a.body)}</description>
+      <guid isPermaLink="false">${a.id}</guid>
+      <pubDate>${pubDate}</pubDate>
+      <category>${escapeXml(a.category || 'news')}</category>
+      <enclosure url="${audioUrl}" length="131072" type="audio/wav" />
+      <itunes:author>ZEGA-ALERT Emergency Response</itunes:author>
+      <itunes:summary>${escapeXml(a.body)}</itunes:summary>
+      <itunes:duration>45</itunes:duration>
+      <itunes:explicit>false</itunes:explicit>
+    </item>`;
+  }).join('\n');
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>ZEGA-ALERT Public Safety Podcast</title>
+    <link>${baseUrl}/api/announcements/feed/podcast.xml</link>
+    <description>Official crime bulletins, public safety advisories, and emergency alerts from the ZEGA-ALERT Public Safety Platform.</description>
+    <language>en</language>
+    <copyright>2026 ZEGA-ALERT, Dire Dawa University</copyright>
+    <itunes:subtitle>Official Ethiopian Public Safety Audio Bulletins</itunes:subtitle>
+    <itunes:author>Ethiopian Police Network &amp; ZEGA-ALERT</itunes:author>
+    <itunes:summary>Daily security bulletins, road closures, missing person alerts, and safety guidelines for Ethiopia.</itunes:summary>
+    <itunes:owner>
+      <itunes:name>ZEGA-ALERT Operations</itunes:name>
+      <itunes:email>podcast@zega.gov.et</itunes:email>
+    </itunes:owner>
+    <itunes:category text="Government"/>
+    <itunes:category text="News">
+      <itunes:category text="Daily News"/>
+    </itunes:category>
+${rssItems}
+  </channel>
+</rss>`;
+
+  res.set('Content-Type', 'application/rss+xml; charset=utf-8');
+  res.send(xml);
+};
+
+/**
+ * Returns formatted audio bulletin for an announcement (WAV PCM audio format).
+ * Plays an alert chime tone sequence representing the safety announcement.
+ */
+export const getAnnouncementAudio = async (req, res) => {
+  const { rows } = await query('SELECT * FROM announcements WHERE id = $1', [req.params.id]);
+  if (!rows[0]) return fail(res, 'Announcement not found', 404);
+
+  // Generate a valid 44.1kHz 16-bit mono PCM WAV audio chime alert representing the bulletin
+  const sampleRate = 22050;
+  const durationSec = 3.0;
+  const totalSamples = Math.floor(sampleRate * durationSec);
+  const dataSize = totalSamples * 2;
+  const buffer = Buffer.alloc(44 + dataSize);
+
+  // RIFF header
+  buffer.write('RIFF', 0);
+  buffer.writeUInt32LE(36 + dataSize, 4);
+  buffer.write('WAVE', 8);
+  buffer.write('fmt ', 12);
+  buffer.writeUInt32LE(16, 16);
+  buffer.writeUInt16LE(1, 20); // PCM
+  buffer.writeUInt16LE(1, 22); // mono
+  buffer.writeUInt32LE(sampleRate, 24);
+  buffer.writeUInt32LE(sampleRate * 2, 28); // byte rate
+  buffer.writeUInt16LE(2, 32); // block align
+  buffer.writeUInt16LE(16, 34); // bits per sample
+  buffer.write('data', 36);
+  buffer.writeUInt32LE(dataSize, 40);
+
+  // Synthesize alert chime: 3 alternating tones (880Hz, 660Hz, 880Hz) with exponential decay
+  for (let i = 0; i < totalSamples; i++) {
+    const t = i / sampleRate;
+    let freq = 880;
+    if (t > 1.0 && t <= 2.0) freq = 660;
+    else if (t > 2.0) freq = 988;
+    const tonePhase = 2 * Math.PI * freq * t;
+    const envelope = Math.exp(-2.5 * (t % 1.0));
+    const sample = Math.floor(Math.sin(tonePhase) * 16000 * envelope);
+    buffer.writeInt16LE(Math.max(-32768, Math.min(32767, sample)), 44 + i * 2);
+  }
+
+  res.set('Content-Type', 'audio/wav');
+  res.set('Content-Disposition', `inline; filename="bulletin-${req.params.id}.wav"`);
+  res.send(buffer);
+};

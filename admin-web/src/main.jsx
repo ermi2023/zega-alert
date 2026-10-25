@@ -20,6 +20,7 @@ import Feedback from './pages/Feedback';
 import Callbacks from './pages/Callbacks';
 import PeopleOfDetermination from './pages/PeopleOfDetermination';
 import SecurityPolicy from './pages/SecurityPolicy';
+import Notifications from './pages/Notifications';
 import './i18n';
 import './styles.css';
 
@@ -50,6 +51,7 @@ const App = () => (
             <Route path="/callbacks" element={<Protected><Callbacks /></Protected>} />
             <Route path="/pod" element={<Protected><PeopleOfDetermination /></Protected>} />
             <Route path="/security" element={<Protected><SecurityPolicy /></Protected>} />
+            <Route path="/notifications" element={<Protected><Notifications /></Protected>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </ErrorBoundary>

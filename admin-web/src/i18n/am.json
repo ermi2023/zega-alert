@@ -16,7 +16,8 @@
     "geofences": "ጂኦፌንሶች",
     "users": "ተጠቃሚዎች",
     "audit": "የትምህርት መዝገብ",
-    "security": "ደህንነት"
+    "security": "ደህንነት",
+    "notifications": "ማሳወቂያዎች"
   },
   "roles": {
     "system_admin": "System Admin",

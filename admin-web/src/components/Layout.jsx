@@ -45,13 +45,14 @@ export default function Layout({ children }) {
     { to: '/users', label: t('nav.users'), icon: 'users' },
     { to: '/audit', label: t('nav.audit'), icon: 'audit' },
     { to: '/security', label: t('nav.security'), icon: 'security' },
+    { to: '/notifications', label: t('nav.notifications'), icon: 'bell' },
   ];
 
   const ROLE_NAV = {
     system_admin: nav,
     regional_admin: nav.filter((n) => !['/users', '/audit'].includes(n.to)),
-    dispatcher: nav.filter((n) => ['/', '/sos', '/reports', '/persons', '/callbacks', '/pod', '/chat'].includes(n.to)),
-    police: nav.filter((n) => ['/', '/reports', '/persons', '/callbacks', '/pod', '/announcements', '/chat'].includes(n.to)),
+    dispatcher: nav.filter((n) => ['/', '/sos', '/reports', '/persons', '/callbacks', '/pod', '/chat', '/notifications'].includes(n.to)),
+    police: nav.filter((n) => ['/', '/reports', '/persons', '/callbacks', '/pod', '/announcements', '/chat', '/notifications'].includes(n.to)),
   };
 
   const visibleNav = ROLE_NAV[user?.role] || [];

@@ -16,7 +16,8 @@
     "geofences": "જિયોફેንስ",
     "users": "ተጠቃሚ",
     "audit": "የAudit ማሰሪያ",
-    "security": "ደህንነት"
+    "security": "ደህንነት",
+    "notifications": "ምልክታት"
   },
   "roles": {
     "system_admin": "ስይስትም አድמין",

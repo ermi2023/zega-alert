@@ -44,6 +44,28 @@ BEGIN
 END $$;
 
 -- ------------------------------------------------------------------
+-- ROLES (Figure 24 / Doc 4.8.1)
+-- ------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS roles (
+  id               SERIAL PRIMARY KEY,
+  role_name        VARCHAR(50) UNIQUE NOT NULL,
+  description      TEXT,
+  permission_level INT NOT NULL
+);
+
+INSERT INTO roles (id, role_name, description, permission_level)
+VALUES
+  (1, 'citizen', 'Citizen Public Access', 1),
+  (2, 'police', 'Regional Police Officer', 2),
+  (3, 'dispatcher', 'Emergency Dispatcher', 3),
+  (4, 'regional_admin', 'Regional Administrator', 4),
+  (5, 'system_admin', 'System Super Administrator', 5)
+ON CONFLICT (id) DO UPDATE SET
+  role_name = EXCLUDED.role_name,
+  description = EXCLUDED.description,
+  permission_level = EXCLUDED.permission_level;
+
+-- ------------------------------------------------------------------
 -- USERS (citizens + staff)
 -- ------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS users (
@@ -53,6 +75,7 @@ CREATE TABLE IF NOT EXISTS users (
   email              VARCHAR(150) UNIQUE,
   password_hash      TEXT,
   role               role_type NOT NULL DEFAULT 'citizen',
+  role_id            INTEGER REFERENCES roles(id) ON DELETE SET NULL,
   region             VARCHAR(100),
   sub_city           VARCHAR(100),
   woreda             VARCHAR(100),
@@ -126,6 +149,18 @@ CREATE TABLE IF NOT EXISTS status_history (
 CREATE INDEX IF NOT EXISTS idx_status_history_report ON status_history(report_id, created_at);
 
 -- ------------------------------------------------------------------
+-- MEDIA ATTACHMENTS (Figure 24 / Doc 4.8.1)
+-- ------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS media_attachments (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  report_id   UUID REFERENCES reports(id) ON DELETE CASCADE,
+  file_url    VARCHAR(500) NOT NULL,
+  file_type   VARCHAR(50) NOT NULL,
+  uploaded_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_media_attachments_report ON media_attachments(report_id);
+
+-- ------------------------------------------------------------------
 -- SOS ALERTS (emergency dispatch)
 -- ------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS sos_alerts (
@@ -154,6 +189,7 @@ CREATE INDEX IF NOT EXISTS idx_sos_created ON sos_alerts(created_at);
 -- ------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS missing_persons (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  case_code        VARCHAR(20),
   name             VARCHAR(150) NOT NULL,
   age              INTEGER,
   gender           VARCHAR(20),
@@ -181,6 +217,7 @@ CREATE INDEX IF NOT EXISTS idx_missing_approved ON missing_persons(is_approved);
 -- ------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS wanted_persons (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  case_code       VARCHAR(20),
   name            VARCHAR(150) NOT NULL,
   age             INTEGER,
   gender          VARCHAR(20),
@@ -472,6 +509,32 @@ CREATE TABLE IF NOT EXISTS callback_requests (
 );
 CREATE INDEX IF NOT EXISTS idx_callbacks_citizen ON callback_requests(citizen_id);
 CREATE INDEX IF NOT EXISTS idx_callbacks_officer ON callback_requests(officer_id);
+
+-- ------------------------------------------------------------------
+-- NOTIFICATIONS (Figure 24 / Doc 4.8.2)
+-- ------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS notifications (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id       UUID REFERENCES users(id) ON DELETE CASCADE,
+  title         VARCHAR(200) NOT NULL,
+  body          TEXT NOT NULL,
+  delivery_type VARCHAR(50) DEFAULT 'push',
+  is_read       BOOLEAN DEFAULT FALSE,
+  metadata      JSONB DEFAULT '{}'::jsonb,
+  created_at    TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read);
+CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at DESC);
+
+-- ------------------------------------------------------------------
+-- SYSTEM CONFIG (Figure 19 Class Diagram / Figure 24)
+-- ------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS system_config (
+  id            SERIAL PRIMARY KEY,
+  setting_name  VARCHAR(100) UNIQUE NOT NULL,
+  setting_value TEXT NOT NULL,
+  last_modified TIMESTAMPTZ DEFAULT now()
+);
 
 -- ------------------------------------------------------------------
 -- UPDATED_AT TRIGGERS

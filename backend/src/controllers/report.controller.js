@@ -29,6 +29,19 @@ export const createReport = async (req, res) => {
     `INSERT INTO audit_log (user_id, action, entity, entity_id, detail) VALUES ($1,'create_report','reports',$2,$3)`,
     [req.user.id, rows[0].id, JSON.stringify({ category, severity: severity || 'medium' })],
   );
+
+  // Sync to media_attachments table (Figure 24 / Doc 4.8.1)
+  if (Array.isArray(evidence) && evidence.length > 0) {
+    for (const item of evidence) {
+      if (item && (item.value || item.url)) {
+        await query(
+          `INSERT INTO media_attachments (report_id, file_url, file_type) VALUES ($1, $2, $3)`,
+          [rows[0].id, item.value || item.url, item.type || 'image'],
+        ).catch(() => {});
+      }
+    }
+  }
+
   ok(res, rows[0], 'Report submitted', 201);
 };
 
@@ -74,7 +87,7 @@ export const getReport = async (req, res) => {
 export const updateReportStatus = async (req, res) => {
   if (!isUuid(req.params.id)) return fail(res, 'Invalid report id', 400);
   const { status, assigned_to, response_notes, notes } = req.body;
-  const valid = ['pending', 'under_review', 'verified', 'rejected', 'resolved', 'closed'];
+  const valid = ['draft', 'submitted', 'pending', 'under_review', 'assigned', 'in_progress', 'verified', 'rejected', 'resolved', 'closed'];
   if (!valid.includes(status)) return fail(res, `status must be one of ${valid.join(', ')}`);
   const investigationNotes = response_notes ?? notes ?? null;
   const { rows } = await query(

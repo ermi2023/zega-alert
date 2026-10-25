@@ -158,7 +158,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
             child: ListTile(
               leading: CircleAvatar(child: Text((m['name'] as String).substring(0, 1))),
               title: Text(m['name']),
-              subtitle: Text(m['status'] == 'missing' ? '${loc.missing} · ${m['last_seen_address'] ?? loc.unknownLocation}' : 'FOUND'),
+              subtitle: Text(m['status'] == 'missing' ? '${m['case_code'] != null ? '[${m['case_code']}] ' : ''}${loc.missing} · ${m['last_seen_address'] ?? loc.unknownLocation}' : '${m['case_code'] != null ? '[${m['case_code']}] ' : ''}FOUND'),
               trailing: found ? null : IconButton(icon: const Icon(Icons.visibility), tooltip: loc.reportSighting, onPressed: () => _openSighting(m)),
             ),
           );

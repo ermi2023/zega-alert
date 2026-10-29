@@ -136,9 +136,14 @@ class ZegaAlertAppState extends State<ZegaAlertApp> {
             seedColor: const Color(0xFF1E40AF),
             brightness: Brightness.light,
             primary: const Color(0xFF1E40AF),
-            secondary: const Color(0xFF0F172A),
+            onPrimary: const Color(0xFFFFFFFF),
+            secondary: const Color(0xFF3B82F6),
+            onSecondary: const Color(0xFFFFFFFF),
             tertiary: const Color(0xFFD97706),
             error: const Color(0xFFDC2626),
+            surface: const Color(0xFFF8FAFC),
+            onSurface: const Color(0xFF1E293B),
+            surfaceContainerHighest: const Color(0xFFE2E8F0),
           );
 
     final darkScheme = _accessibility
@@ -174,6 +179,27 @@ class ZegaAlertAppState extends State<ZegaAlertApp> {
       theme: ThemeData(
         colorScheme: lightScheme,
         useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFFF8FAFC),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF1E40AF),
+          foregroundColor: Colors.white,
+          elevation: 2,
+        ),
+        cardTheme: const CardThemeData(
+          color: Color(0xFFFFFFFF),
+          elevation: 1,
+          surfaceTintColor: Colors.transparent,
+        ),
+        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+          backgroundColor: Colors.white,
+          selectedItemColor: Color(0xFF1E40AF),
+          unselectedItemColor: Color(0xFF64748B),
+        ),
+        navigationBarTheme: NavigationBarThemeData(
+          backgroundColor: Colors.white,
+          indicatorColor: const Color(0xFF1E40AF).withValues(alpha: 0.12),
+          surfaceTintColor: Colors.transparent,
+        ),
       ),
       darkTheme: ThemeData(
         colorScheme: darkScheme,

@@ -8,8 +8,8 @@ import '../main.dart';
 const Color _etGreen = Color(0xFF078930);
 const Color _etYellow = Color(0xFFFCDD09);
 const Color _etRed = Color(0xFFDA121A);
-const Color _deepGreen = Color(0xFF04140E);
-const Color _ink = Color(0xFF070B14);
+const Color _deepGreen = Color(0xFF0C2D48);
+const Color _ink = Color(0xFF0A1929);
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});

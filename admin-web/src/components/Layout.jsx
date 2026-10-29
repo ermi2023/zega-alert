@@ -65,6 +65,7 @@ export default function Layout({ children }) {
 
   return (
     <div className="layout">
+      <div style={{ height: 3, width: '100%', background: 'linear-gradient(90deg, #078930 33.3%, #fcdd09 33.3% 66.6%, #da121a 66.6%)', position: 'fixed', top: 0, left: 0, zIndex: 1000 }} />
       <header className="topbar">
         <button
           className="hamburger"
@@ -76,7 +77,14 @@ export default function Layout({ children }) {
         </button>
         <div className="topbar-brand">
           <img className="brand-flag" src="/brand/ethiopia-flag.png" alt="Ethiopia" />
+          <span style={{ color: '#f59e0b', display: 'flex', alignItems: 'center' }} title="Official Police CAD">
+            <Icon name="shield" />
+          </span>
           <strong>ZEGA-ALERT</strong>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#93c5fd', background: 'rgba(37, 99, 235, 0.12)', padding: '4px 12px', borderRadius: 20, border: '1px solid rgba(37, 99, 235, 0.3)' }}>
+          <span className="dot blue pulse" />
+          <span style={{ fontWeight: 600, letterSpacing: '0.5px' }}>POLICE CAD · DISPATCH ACTIVE</span>
         </div>
       </header>
 
@@ -86,6 +94,9 @@ export default function Layout({ children }) {
         <div className="brand">
           <div className="brand-row">
             <img className="brand-flag" src="/brand/ethiopia-flag.png" alt="Ethiopia" />
+            <span style={{ color: '#f59e0b', display: 'flex', alignItems: 'center' }} title="Official Police CAD">
+              <Icon name="shield" />
+            </span>
             <strong>ZEGA-ALERT</strong>
             <button className="drawer-close" onClick={() => setMenuOpen(false)} aria-label="Close menu">✕</button>
           </div>

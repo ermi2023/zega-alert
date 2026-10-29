@@ -1,22 +1,31 @@
 /* ==========================================================================
-   ZEGA-ALERT · design system
+   ZEGA-ALERT · Law Enforcement & Public Safety Design System
+   Police Command Palette: Tactical Midnight Navy, Police Royal Blue & Badge Gold
    Fonts: Inter (Latin) + Noto Sans Ethiopic (አማርኛ / ትግርኛ)
    ========================================================================== */
 
 :root {
-  --bg: #070b14;
-  --bg-soft: #0b1120;
-  --panel: #0f1728;
-  --panel2: #141e33;
+  --bg: #070c18;
+  --bg-soft: #0b1326;
+  --panel: #0f1932;
+  --panel2: #142244;
   --line: rgba(255, 255, 255, .08);
   --line-2: rgba(255, 255, 255, .14);
   --text: #e8edf7;
   --muted: #8f9bb3;
-  --brand: #22c55e;
-  --brand-2: #16a34a;
+  --brand: #2563eb;
+  --brand-2: #1d4ed8;
+  --brand-navy: #0f172a;
+  --brand-light: #60a5fa;
+  --police-blue: #2563eb;
+  --police-blue-light: #93c5fd;
+  --police-gold: #f59e0b;
+  --police-gold-light: #fbbf24;
+  --police-gold-dark: #b45309;
   --accent: #38bdf8;
   --danger: #f43f5e;
   --warn: #fbbf24;
+  --success: #22c55e;
   /* Ethiopian flag palette */
   --et-green: #078930;
   --et-yellow: #fcdd09;
@@ -28,7 +37,9 @@
   --shadow-1: 0 2px 6px rgba(0, 0, 0, .3);
   --shadow-2: 0 10px 30px rgba(0, 0, 0, .35);
   --shadow-3: 0 24px 60px rgba(0, 0, 0, .45);
-  --grad-brand: linear-gradient(135deg, #22c55e, #16a34a 60%, #059669);
+  --grad-brand: linear-gradient(135deg, #2563eb, #1d4ed8 60%, #1e3a8a);
+  --grad-police: linear-gradient(135deg, #1e40af, #1e3a8a 60%, #0f172a);
+  --grad-gold: linear-gradient(135deg, #fbbf24, #f59e0b 60%, #d97706);
 }
 
 * { box-sizing: border-box; }
@@ -37,12 +48,13 @@ body {
   margin: 0;
   font-family: 'Inter', 'Noto Sans Ethiopic', 'Segoe UI', system-ui, sans-serif;
   background:
-    radial-gradient(1200px 700px at 85% -10%, rgba(34, 197, 94, .07), transparent 60%),
+    radial-gradient(1200px 700px at 85% -10%, rgba(37, 99, 235, .12), transparent 60%),
+    radial-gradient(800px 600px at 10% 90%, rgba(30, 58, 138, .08), transparent 60%),
     var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
 }
-::selection { background: rgba(34, 197, 94, .3); }
+::selection { background: rgba(37, 99, 235, .35); }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: #334155; }
@@ -78,7 +90,7 @@ body {
   font-size: 17px;
   letter-spacing: 2.5px;
   font-weight: 800;
-  background: linear-gradient(90deg, #4ade80, #22c55e);
+  background: linear-gradient(90deg, #93c5fd, #3b82f6 70%, #f59e0b);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -87,7 +99,10 @@ body {
   font-size: 11.5px;
   text-transform: uppercase;
   letter-spacing: 1.4px;
-  color: var(--muted);
+  color: #93c5fd;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .sidebar nav { flex: 1; padding: 14px 12px; display: flex; flex-direction: column; gap: 3px; overflow-y: auto; }
@@ -113,15 +128,15 @@ body {
   width: 4px;
   height: 60%;
   border-radius: 0 4px 4px 0;
-  background: linear-gradient(180deg, var(--et-yellow), var(--et-red));
+  background: linear-gradient(180deg, var(--police-gold), var(--et-red));
   transition: transform .18s;
 }
-.sidebar nav a:hover { background: rgba(255, 255, 255, .05); color: var(--text); }
+.sidebar nav a:hover { background: rgba(37, 99, 235, .08); color: var(--text); }
 .sidebar nav a.active {
-  background: linear-gradient(90deg, rgba(34, 197, 94, .18), rgba(34, 197, 94, .04));
-  color: #4ade80;
+  background: linear-gradient(90deg, rgba(37, 99, 235, .25), rgba(37, 99, 235, .06));
+  color: #93c5fd;
   font-weight: 600;
-  box-shadow: inset 0 0 0 1px rgba(34, 197, 94, .25);
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, .35);
 }
 .sidebar nav a.active::before { transform: translateY(-50%) scaleY(1); }
 .icon { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
@@ -138,10 +153,10 @@ body {
 .user-chip { display: flex; align-items: center; gap: 11px; }
 .avatar {
   width: 38px; height: 38px; border-radius: 50%;
-  background: var(--grad-brand); color: #04130a;
+  background: var(--grad-brand); color: #ffffff;
   display: grid; place-items: center;
   font-weight: 800; font-size: 15px;
-  box-shadow: 0 4px 14px rgba(34, 197, 94, .35);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, .4);
 }
 .user-chip div { display: flex; flex-direction: column; min-width: 0; }
 .user-chip b { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -191,7 +206,7 @@ body {
 /* ---------------------------------------------------------- dashboard hero */
 .page-head.hero {
   background:
-    linear-gradient(135deg, rgba(34, 197, 94, .10), rgba(14, 165, 233, .06) 55%, transparent),
+    linear-gradient(135deg, rgba(37, 99, 235, .16), rgba(14, 165, 233, .08) 55%, transparent),
     var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
@@ -342,21 +357,22 @@ tbody tr:last-child td { border-bottom: none; }
 /* --------------------------------------------------------------- buttons */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  background: var(--grad-brand); color: #04130a;
+  background: var(--grad-brand); color: #ffffff;
   border: none; padding: 10px 18px;
   border-radius: 10px;
   font-weight: 700; font-size: 13.5px;
   cursor: pointer;
   letter-spacing: .2px;
   transition: transform .15s, box-shadow .15s, filter .15s;
-  box-shadow: 0 6px 18px rgba(34, 197, 94, .22);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, .28);
 }
-.btn:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(34, 197, 94, .3); filter: brightness(1.04); }
+.btn:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(37, 99, 235, .38); filter: brightness(1.08); }
 .btn:active { transform: translateY(0); }
 .btn.ghost { background: transparent; border: 1px solid var(--line-2); color: var(--muted); box-shadow: none; }
 .btn.ghost:hover { background: rgba(255, 255, 255, .05); color: var(--text); box-shadow: none; }
 .btn.small { padding: 6px 12px; font-size: 12.5px; border-radius: 8px; }
-.btn.primary { background: var(--grad-brand); color: #04130a; }
+.btn.primary { background: var(--grad-brand); color: #ffffff; }
+.btn.gold { background: var(--grad-gold); color: #000; box-shadow: 0 6px 18px rgba(245, 158, 11, .3); }
 .btn.danger { background: linear-gradient(135deg, #f43f5e, #e11d48); color: #fff; box-shadow: 0 6px 18px rgba(244, 63, 94, .25); }
 .btn-gradient { width: 100%; padding: 13px; font-size: 15px; }
 .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
@@ -375,8 +391,8 @@ input, select, textarea {
 }
 input::placeholder, textarea::placeholder { color: #64748b; }
 input:focus, select:focus, textarea:focus {
-  border-color: rgba(34, 197, 94, .65);
-  box-shadow: 0 0 0 4px rgba(34, 197, 94, .14);
+  border-color: rgba(37, 99, 235, .7);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, .18);
   background: var(--panel2);
 }
 .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 14px; }
@@ -400,7 +416,7 @@ input:focus, select:focus, textarea:focus {
   transition: background .18s, color .18s;
 }
 .tab:hover { color: var(--text); }
-.tab.active { background: var(--grad-brand); color: #04130a; box-shadow: 0 4px 14px rgba(34, 197, 94, .3); }
+.tab.active { background: var(--grad-brand); color: #ffffff; box-shadow: 0 4px 14px rgba(37, 99, 235, .35); }
 
 /* ------------------------------------------------------------------- msg */
 .msg {
@@ -419,9 +435,9 @@ input:focus, select:focus, textarea:focus {
 .chat-msg { max-width: 72%; padding: 11px 14px; border-radius: 16px; font-size: 14px; line-height: 1.5; }
 .chat-msg.mine {
   align-self: flex-end;
-  background: var(--grad-brand); color: #04130a;
+  background: var(--grad-brand); color: #ffffff;
   border-bottom-right-radius: 5px;
-  box-shadow: 0 6px 18px rgba(34, 197, 94, .22);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, .28);
 }
 .chat-msg.other {
   align-self: flex-start;
@@ -936,7 +952,7 @@ input:focus, select:focus, textarea:focus {
 }
 .segmented-control button.active {
   background: var(--brand);
-  color: #000;
+  color: #fff;
 }
 
 .activity-feed {

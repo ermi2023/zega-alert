@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -37,6 +37,21 @@ function ResizeFix() {
   return null;
 }
 
+// Recenter when the set of tracked entities changes (not on every GPS tick),
+// so a newly arrived SOS is visible without fighting the operator's panning.
+function FitBounds({ points, signature }) {
+  const map = useMap();
+  const pointsRef = useRef(points);
+  useEffect(() => { pointsRef.current = points; }, [points]);
+  useEffect(() => {
+    const pts = pointsRef.current;
+    if (!pts.length) return;
+    if (pts.length === 1) map.setView(pts[0], 14);
+    else map.fitBounds(pts, { padding: [40, 40], maxZoom: 15 });
+  }, [map, signature]);
+  return null;
+}
+
 export default function LiveMap({
   alerts = [],
   officers = [],
@@ -52,6 +67,12 @@ export default function LiveMap({
     (geofences[0] && [Number(geofences[0].center_lat), Number(geofences[0].center_lng)]) ||
     defaultCenter;
 
+  const fitPoints = [
+    ...alerts.filter((s) => s.latitude && s.longitude).map((s) => [Number(s.latitude), Number(s.longitude)]),
+    ...officers.filter((p) => p.latitude && p.longitude).map((p) => [Number(p.latitude), Number(p.longitude)]),
+  ];
+  const signature = `${alerts.map((a) => a.id).join(',')}|${officers.map((o) => o.userId).join(',')}`;
+
   return (
     <div style={{ width: '100%', height: cssHeight(height), borderRadius: 10, overflow: 'hidden' }}>
       <MapContainer center={resolvedCenter} zoom={12} style={{ width: '100%', height: '100%' }} scrollWheelZoom>
@@ -60,6 +81,7 @@ export default function LiveMap({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <ResizeFix />
+        <FitBounds points={fitPoints} signature={signature} />
 
         {geofences.filter((g) => g.center_lat && g.center_lng).map((g) => (
           <Circle

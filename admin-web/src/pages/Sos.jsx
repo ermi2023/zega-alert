@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
 import { io } from 'socket.io-client';
+import LiveMap from '../components/LiveMap';
 
 const badge = (v) => ({ triggered: 'red', acknowledged: 'amber', dispatched: 'blue', resolved: 'green', cancelled: 'gray', pending: 'amber', under_review: 'blue', verified: 'green', rejected: 'red', closed: 'gray' }[v] || 'gray');
 
@@ -19,27 +20,13 @@ export default function Sos() {
   const [units, setUnits] = useState({});
   const [assignDialog, setAssignDialog] = useState(null);
   const [availableOfficers, setAvailableOfficers] = useState([]);
+  const [officers, setOfficers] = useState({});
+  const rowsRef = useRef([]);
 
   const load = () => api.get(`/sos${filter ? `?status=${filter}` : ''}`).then(setRows);
   useEffect(() => { load(); }, [filter]);
 
-  useEffect(() => {
-    const socket = io(import.meta.env.VITE_API_URL || undefined, {
-      auth: { token: localStorage.getItem('zega_admin_token') },
-    });
-    socket.on('sos:new', (a) => setRows((p) => [a.alert || a, ...p]));
-    socket.on('dispatch:updated', ({ sosId }) => loadUnits(sosId));
-    socket.on('connect', () => {
-      // Join each active SOS room so dispatch:updated events (emitted to
-      // `sos:<id>`) are received instead of only to the staff broadcast.
-      rows.forEach((s) => socket.emit('join', `sos:${s.id}`));
-    });
-    return () => socket.close();
-  }, [rows]);
-
-  useEffect(() => {
-    rows.forEach((s) => loadUnits(s.id));
-  }, [rows]);
+  useEffect(() => { rowsRef.current = rows; }, [rows]);
 
   const loadUnits = async (sosId) => {
     try {
@@ -47,6 +34,47 @@ export default function Sos() {
       setUnits((prev) => ({ ...prev, [sosId]: data }));
     } catch { /* ignore */ }
   };
+
+  useEffect(() => {
+    const socket = io(import.meta.env.VITE_API_URL || undefined, {
+      auth: { token: localStorage.getItem('zega_admin_token') },
+    });
+    socket.on('sos:new', (a) => {
+      const alert = a.alert || a;
+      setRows((p) => (p.some((x) => x.id === alert.id) ? p : [alert, ...p]));
+      socket.emit('join', `sos:${alert.id}`);
+    });
+    // Citizens stream their GPS every 12s while an SOS is active, so the pin moves.
+    socket.on('sos:location', ({ sosId, latitude, longitude }) => {
+      setRows((p) => p.map((s) => (s.id === sosId ? { ...s, latitude, longitude } : s)));
+    });
+    // Patrol units report their position continuously.
+    socket.on('officer:position', (p) => {
+      setOfficers((prev) => ({ ...prev, [p.userId]: p }));
+    });
+    socket.on('dispatch:updated', ({ sosId }) => loadUnits(sosId));
+    socket.on('connect', () => {
+      // Join each active SOS room so dispatch:updated events (emitted to
+      // `sos:<id>`) are received instead of only to the staff broadcast.
+      rowsRef.current
+        .filter((s) => ['triggered', 'acknowledged', 'dispatched'].includes(s.status))
+        .forEach((s) => socket.emit('join', `sos:${s.id}`));
+    });
+    return () => socket.close();
+  }, []);
+
+  const rowIds = rows.map((s) => s.id).join(',');
+  useEffect(() => {
+    rowIds.split(',').filter(Boolean).forEach((id) => loadUnits(id));
+  }, [rowIds]);
+
+  useEffect(() => {
+    api.get('/position/officers').then((list) => {
+      const map = {};
+      list.forEach((p) => { map[p.userId] = p; });
+      setOfficers(map);
+    }).catch(() => {});
+  }, []);
 
   const openAssign = async (sosId) => {
     try {
@@ -77,6 +105,9 @@ export default function Sos() {
     load();
   };
 
+  const activeRows = rows.filter((s) => s.latitude && s.longitude && ['triggered', 'acknowledged', 'dispatched'].includes(s.status));
+  const officerPts = Object.values(officers).filter((p) => p.latitude && p.longitude);
+
   return (
     <div>
       <div className="page-head">
@@ -88,6 +119,14 @@ export default function Sos() {
           </select>
           <button className="btn ghost" onClick={load}>{t('sos.refresh')}</button>
         </div>
+      </div>
+
+      <div className="panel" style={{ marginBottom: 16, padding: 12 }}>
+        <div className="section-head" style={{ marginBottom: 10 }}>
+          <h2>Live SOS Tracking<small>Citizens &amp; responding units</small></h2>
+          <span className="pill"><span className="dot red pulse" /> {activeRows.length} Active</span>
+        </div>
+        <LiveMap alerts={activeRows} officers={officerPts} height={360} />
       </div>
 
       <div className="panel">

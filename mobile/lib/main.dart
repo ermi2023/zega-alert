@@ -132,11 +132,25 @@ class ZegaAlertAppState extends State<ZegaAlertApp> {
             primary: const Color(0xFF000000),
             onPrimary: const Color(0xFFFFFFFF),
           )
-        : ColorScheme.fromSeed(seedColor: const Color(0xFF16a34a), brightness: Brightness.light);
+        : ColorScheme.fromSeed(
+            seedColor: const Color(0xFF1E40AF),
+            brightness: Brightness.light,
+            primary: const Color(0xFF1E40AF),
+            secondary: const Color(0xFF0F172A),
+            tertiary: const Color(0xFFD97706),
+            error: const Color(0xFFDC2626),
+          );
 
     final darkScheme = _accessibility
         ? ColorScheme.fromSeed(seedColor: const Color(0xFF90EE90), brightness: Brightness.dark, surface: const Color(0xFF1A1A1A))
-        : ColorScheme.fromSeed(seedColor: const Color(0xFF16a34a), brightness: Brightness.dark);
+        : ColorScheme.fromSeed(
+            seedColor: const Color(0xFF1E40AF),
+            brightness: Brightness.dark,
+            primary: const Color(0xFF3B82F6),
+            surface: const Color(0xFF0A192F),
+            tertiary: const Color(0xFFF59E0B),
+            error: const Color(0xFFEF4444),
+          );
 
     return MaterialApp(
       title: 'ZEGA-ALERT',
@@ -294,7 +308,21 @@ class _MainShellState extends State<MainShell> {
     final loc = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ZEGA-ALERT', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E40AF).withOpacity(0.12),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.5)),
+              ),
+              child: const Icon(Icons.shield, color: Color(0xFFF59E0B), size: 19),
+            ),
+            const SizedBox(width: 8),
+            const Text('ZEGA-ALERT', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+          ],
+        ),
         actions: const [
           _NotificationBell(),
         ],

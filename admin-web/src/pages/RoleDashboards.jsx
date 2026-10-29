@@ -745,6 +745,10 @@ export function DispatcherDashboard() {
     socket.on('officer:position', (p) => {
       setOfficerPositions((prev) => ({ ...prev, [p.userId]: p }));
     });
+    // Keep the citizen's SOS pin moving as the phone streams its GPS.
+    socket.on('sos:location', ({ sosId, latitude, longitude }) => {
+      setSos((prev) => prev.map((s) => (s.id === sosId ? { ...s, latitude, longitude } : s)));
+    });
     return () => socket.close();
   }, []);
 
@@ -797,7 +801,7 @@ export function DispatcherDashboard() {
             {onDuty ? '● ON-DUTY' : 'OFF-DUTY'}
           </button>
           <span className="badge red" style={{ fontSize: 13, padding: '6px 12px', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <span className="dot red pulse" /> {Math.max(active.length, 3)} Active Alerts
+            <span className="dot red pulse" /> {active.length} Active Alerts
           </span>
         </div>
       </div>
@@ -811,7 +815,7 @@ export function DispatcherDashboard() {
             <span className="pill"><span className="dot green" /> {officerPts.length || available.length} Units Active</span>
           </div>
           <div style={{ position: 'relative', borderRadius: 'var(--r-md)', overflow: 'hidden', height: 480 }}>
-            <LiveMap alerts={points.length ? points : [{ id: 'demo1', latitude: 9.02, longitude: 38.74, user_name: 'Citizen (Bole)', status: 'triggered' }]} officers={officerPts.length ? officerPts : [{ id: 'off1', latitude: 9.03, longitude: 38.75, full_name: 'Patrol #4' }]} height={480} />
+            <LiveMap alerts={points} officers={officerPts} height={480} />
             
             {/* Figure 31 Unit Legend */}
             <div style={{ position: 'absolute', bottom: 16, left: 16, background: 'rgba(15, 23, 42, 0.88)', backdropFilter: 'blur(6px)', padding: '10px 14px', borderRadius: 8, border: '1px solid var(--line)', zIndex: 1000, fontSize: 12 }}>

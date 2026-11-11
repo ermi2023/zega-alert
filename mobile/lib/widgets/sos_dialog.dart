@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -79,6 +80,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog> with SingleTickerProvide
   }
 
   Future<void> _sendSos() async {
+    if (_aborted) return;
     setState(() {
       _sending = true;
       _secondsRemaining = 0;
@@ -337,6 +339,10 @@ class _SosFlowDialogState extends State<_SosFlowDialog> with SingleTickerProvide
                         final u = _units[i];
                         final etaSec = u['eta_seconds'] as int?;
                         final distM = u['distance_m'] as num?;
+                        final etaMin = etaSec != null ? math.max(1, (etaSec / 60).round()) : null;
+                        final distKm = distM != null ? (distM / 1000).toStringAsFixed(1) : null;
+                        final etaLabel = etaMin != null ? '$etaMin min' : 'calculating...';
+                        final distLabel = distKm != null ? ' · $distKm km away' : '';
                         return Card(
                           color: const Color(0xFF1E293B),
                           child: ListTile(
@@ -344,7 +350,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog> with SingleTickerProvide
                             leading: const Icon(Icons.local_police, color: Colors.blueAccent),
                             title: Text(u['staff_name'] ?? u['officer_name'] ?? 'Officer On Duty', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                             subtitle: Text(
-                              'ETA: ${etaSec != null ? '${math.max(1, (etaSec / 60).round())} min' : 'calculating...'}${distM != null ? ' · ${(distM / 1000).toStringAsFixed(1)} km away' : ''}',
+                              'ETA: $etaLabel$distLabel',
                               style: const TextStyle(color: Colors.amberAccent, fontSize: 12),
                             ),
                             trailing: Container(

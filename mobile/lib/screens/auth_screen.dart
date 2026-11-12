@@ -451,6 +451,8 @@ class _AuthScreenState extends State<AuthScreen> {
                 children: [
                   Checkbox(
                     value: _acceptedTerms,
+                    activeColor: const Color(0xFF1E40AF), // Police Blue when checked
+                    checkColor: Colors.white,
                     onChanged: (bool? value) {
                       setState(() {
                         _acceptedTerms = value ?? false;

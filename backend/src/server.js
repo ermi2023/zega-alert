@@ -13,7 +13,10 @@ process.on('unhandledRejection', (err) => {
   console.error('[FATAL] unhandled rejection (server kept alive):', err);
 });
 process.on('uncaughtException', (err) => {
-  console.error('[FATAL] uncaught exception (server kept alive):', err);
+  // An uncaught exception means the process state is unreliable — log and
+  // exit so the process manager (pm2/railway/docker) can restart cleanly.
+  console.error('[FATAL] uncaught exception:', err);
+  process.exit(1);
 });
 
 const start = async () => {

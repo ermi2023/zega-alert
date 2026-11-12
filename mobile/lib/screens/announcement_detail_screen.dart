@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../services/api.dart';
 
 class AnnouncementDetailScreen extends StatelessWidget {
   const AnnouncementDetailScreen({super.key, required this.item});

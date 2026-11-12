@@ -22,10 +22,8 @@ import 'services/socket_service.dart';
 import 'services/notification_service.dart';
 import 'services/officer_position_service.dart';
 import 'package:workmanager/workmanager.dart';
-import 'services/database_service.dart';
 import 'services/sync_service.dart';
 import 'widgets/auth_gate.dart';
-import 'widgets/sos_dialog.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 

@@ -13,8 +13,23 @@ export const notFound = (req, res) =>
   fail(res, `Route not found: ${req.method} ${req.originalUrl}`, 404);
 
 export const errorHandler = (err, req, res, next) => {
-  console.error(err);
-  const status = err.status || 500;
-  const message = status >= 500 ? 'Internal server error' : err.message;
-  res.status(status).json({ success: false, message, errors: err.errors });
+  let status = err.status || err.statusCode || 500;
+  let message = err.message;
+
+  // Body-parser throws a SyntaxError for invalid JSON — return a clean 400.
+  if (err.type === 'entity.parse.failed' || (err instanceof SyntaxError && status === 400)) {
+    status = 400;
+    message = 'Malformed JSON body. Ensure the request body is valid JSON.';
+  }
+
+  if (status >= 500) {
+    console.error('[ERROR]', err);
+    message = 'Internal server error';
+  }
+
+  res.status(status).json({
+    success: false,
+    message,
+    ...(err.errors ? { errors: err.errors } : {}),
+  });
 };

@@ -447,8 +447,29 @@ class _AuthScreenState extends State<AuthScreen> {
               const SizedBox(height: 12),
             ],
             if (_register) ...[
-              // Consent is enforced server-side (accepted_terms required).
-              // UI checkbox can be re-added once layout budget allows.
+              Row(
+                children: [
+                  Checkbox(
+                    value: _acceptedTerms,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        _acceptedTerms = value ?? false;
+                      });
+                    },
+                  ),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() => _acceptedTerms = !_acceptedTerms);
+                      },
+                      child: const Text(
+                        'I accept the Terms of Service and Privacy Policy',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ],
             const SizedBox(height: 12),
             TextFormField(

@@ -12,7 +12,7 @@ export default function Users() {
   const [form, setForm] = useState({ full_name: '', phone: '', password: '', role: 'police', region: '' });
   const [msg, setMsg] = useState({ type: '', text: '' });
   const [editing, setEditing] = useState(null);
-  const [editForm, setEditForm] = useState({ full_name: '', role: 'citizen', region: '', sub_city: '' });
+  const [editForm, setEditForm] = useState({ full_name: '', phone: '', role: 'citizen', region: '', sub_city: '' });
 
   const load = () => api.get(`/admin/users?role=${role}&q=${q}`).then(setRows);
   useEffect(() => { load(); }, [role, q]);
@@ -41,7 +41,7 @@ export default function Users() {
 
   const startEdit = (u) => {
     setEditing(u);
-    setEditForm({ full_name: u.full_name, role: u.role, region: u.region || '', sub_city: u.sub_city || '' });
+    setEditForm({ full_name: u.full_name, phone: u.phone || '', role: u.role, region: u.region || '', sub_city: u.sub_city || '' });
   };
 
   const saveEdit = async (e) => {
@@ -134,6 +134,7 @@ export default function Users() {
             <form onSubmit={saveEdit}>
               <div className="form-row">
                 <label>{t('users.fullName')}<input value={editForm.full_name} onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })} required /></label>
+                <label>Phone<input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} required /></label>
                 <label>{t('users.role')}
                   <select value={editForm.role} onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}>
                     {ROLES.map((r) => <option key={r}>{r}</option>)}

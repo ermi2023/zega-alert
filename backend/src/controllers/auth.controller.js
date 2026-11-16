@@ -243,7 +243,23 @@ export const updateMe = async (req, res) => {
   }
 };
 
-export const changePassword = async (req, res) => {
+export const resetPassword = async (req, res) => {
+  try {
+    const { phone, code, new_password } = req.body;
+    if (!phone || !code || !new_password) return fail(res, 'phone, code and new_password are required');
+    if (String(new_password).length < 6) return fail(res, 'Password must be at least 6 characters');
+    const result = await verifyOtp({ contact: phone, code, purpose: 'reset_password' });
+    if (!result.ok) return fail(res, `OTP invalid/expired (${result.reason})`, 400);
+    const { rows } = await query('SELECT id FROM users WHERE phone = $1', [phone]);
+    if (!rows[0]) return fail(res, 'No account found for this phone.', 404);
+    const hash = await hashPassword(new_password);
+    await query('UPDATE users SET password_hash = $1, updated_at = now() WHERE phone = $2', [hash, phone]);
+    ok(res, null, 'Password reset successful. You can now sign in.');
+  } catch (e) {
+    console.error('[RESET_PASSWORD]', e);
+    if (!res.headersSent) return fail(res, 'Could not reset password. Please try again.', 500);
+  }
+};
   const { currentPassword, newPassword } = req.body;
   if (!currentPassword || !newPassword) return fail(res, 'currentPassword and newPassword required');
   const { rows } = await query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);

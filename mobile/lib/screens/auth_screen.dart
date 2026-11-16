@@ -285,6 +285,68 @@ class _AuthScreenState extends State<AuthScreen> {
     await _goHome();
   }
 
+  Future<void> _forgotPassword() async {
+    final phoneCtrl = TextEditingController(text: _phone.text);
+    final codeCtrl = TextEditingController();
+    final newPassCtrl = TextEditingController();
+    final ok1 = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reset password'),
+        content: TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'Phone number'), keyboardType: TextInputType.phone),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Send OTP')),
+        ],
+      ),
+    );
+    if (ok1 != true) return;
+    final phone = phoneCtrl.text.trim();
+    if (phone.isEmpty) return;
+    setState(() => _busy = true);
+    try {
+      await Api.post('/auth/request-otp', body: {'contact': phone, 'purpose': 'reset_password'});
+      final code = await _askOtpText(codeCtrl);
+      if (code == null || code.isEmpty) return;
+      final np = newPassCtrl.text;
+      // ask new password
+      final passOk = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('New password'),
+          content: TextField(controller: newPassCtrl, obscureText: true, decoration: const InputDecoration(labelText: 'New password (min 6)')),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Reset')),
+          ],
+        ),
+      );
+      if (passOk != true) return;
+      await Api.post('/auth/reset-password', body: {'phone': phone, 'code': code, 'new_password': newPassCtrl.text});
+      if (mounted) setState(() => _error = '');
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password reset. Please sign in.')));
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<String?> _askOtpText(TextEditingController c) async {
+    final res = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Enter OTP'),
+        content: TextField(controller: c, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: '6-digit code')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, c.text.trim()), child: const Text('Verify')),
+        ],
+      ),
+    );
+    return res;
+  }
+
   Widget _hero() {
     return SizedBox(
       height: 336,
@@ -530,7 +592,14 @@ class _AuthScreenState extends State<AuthScreen> {
                   ? (v) => (v == null || v.length < 6) ? 'Use at least 6 characters or a 6-digit PIN' : null
                   : null,
             ),
-            if (_error.isNotEmpty)
+            if (!_register)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: _busy ? null : _forgotPassword,
+                  child: const Text('Forgot password?'),
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.only(top: 12),
                 child: Row(children: [const Icon(Icons.error_outline, color: Colors.red, size: 18), const SizedBox(width: 6), Expanded(child: Text(_error, style: const TextStyle(color: Colors.red, fontSize: 13)))]),

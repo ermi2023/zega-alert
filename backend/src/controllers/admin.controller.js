@@ -80,13 +80,26 @@ export const createUser = async (req, res) => {
 };
 
 export const updateUser = async (req, res) => {
-  const { full_name, role, region, sub_city, woreda, is_active } = req.body;
+  const { full_name, phone, role, region, sub_city, woreda, is_active } = req.body;
   const validRoles = ['citizen', 'police', 'dispatcher', 'regional_admin', 'system_admin'];
   if (role && !validRoles.includes(role)) return fail(res, `role must be one of ${validRoles.join(', ')}`);
 
-  const target = await query('SELECT id, role, is_active FROM users WHERE id = $1', [req.params.id]);
+  const target = await query('SELECT id, role, is_active, phone FROM users WHERE id = $1', [req.params.id]);
   if (!target.rows[0]) return fail(res, 'User not found', 404);
   const current = target.rows[0];
+
+  let normalizedPhone = current.phone;
+  if (phone !== undefined) {
+    const np = String(phone).replace(/[\s\-()]/g, '');
+    let p = np;
+    if (p.startsWith('+251')) p = p.slice(4);
+    else if (p.startsWith('251') && p.length > 9) p = p.slice(3);
+    if (p && !p.startsWith('0')) p = p.length === 9 ? `0${p}` : p;
+    if (p.length < 9) return fail(res, 'Enter a valid phone number, e.g. 0911234567');
+    const dup = await query('SELECT id FROM users WHERE phone = $1 AND id <> $2', [p, req.params.id]);
+    if (dup.rows.length) return fail(res, 'That phone number is already in use', 409);
+    normalizedPhone = p;
+  }
 
   // Prevent demoting or disabling the last active System Admin (doc 4.3.6).
   const losingAdmin = current.role === 'system_admin' &&
@@ -118,11 +131,11 @@ export const updateUser = async (req, res) => {
   }
 
   const { rows } = await query(
-    `UPDATE users SET full_name = COALESCE($1, full_name), role = COALESCE($2, role),
-       region = COALESCE($3, region), sub_city = COALESCE($4, sub_city), woreda = COALESCE($5, woreda),
-       is_active = COALESCE($6, is_active), updated_at = now()
-     WHERE id = $7 RETURNING id, full_name, phone, role, region, is_active, updated_at`,
-    [full_name || null, role || null, region || null, sub_city || null, woreda || null,
+    `UPDATE users SET full_name = COALESCE($1, full_name), phone = COALESCE($2, phone), role = COALESCE($3, role),
+       region = COALESCE($4, region), sub_city = COALESCE($5, sub_city), woreda = COALESCE($6, woreda),
+       is_active = COALESCE($7, is_active), updated_at = now()
+      WHERE id = $8 RETURNING id, full_name, phone, role, region, is_active, updated_at`,
+    [full_name || null, phone !== undefined ? normalizedPhone : null, role || null, region || null, sub_city || null, woreda || null,
       is_active ?? null, req.params.id],
   );
   if (!rows[0]) return fail(res, 'User not found', 404);

@@ -132,12 +132,14 @@ class Api {
     }
   }
 
+  static const String _defaultCloudBase = 'https://zega-alert-api.onrender.com';
+
   static String get baseUrl {
     if (_overrideBase != null && _overrideBase!.isNotEmpty) return _overrideBase!;
     if (_envBase.isNotEmpty) return _envBase;
     if (kIsWeb) return 'http://localhost:$port';
-    if (defaultTargetPlatform == TargetPlatform.windows) return 'http://localhost:$port';
-    return 'http://$_lanHost:$port';
+    // When running on device/emulator without explicit override, default to production Render cloud API
+    return _defaultCloudBase;
   }
 
   static String get socketUrl => baseUrl;

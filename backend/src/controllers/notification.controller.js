@@ -60,3 +60,11 @@ export const sendNotification = async (req, res) => {
 
   ok(res, { count: created.length }, 'Notifications dispatched', 201);
 };
+
+export const getUnreadCount = async (req, res) => {
+  const { rows } = await query(
+    `SELECT COUNT(*)::int AS count FROM notifications WHERE user_id = $1 AND is_read = false`,
+    [req.user.id],
+  );
+  ok(res, { count: rows[0]?.count || 0 });
+};

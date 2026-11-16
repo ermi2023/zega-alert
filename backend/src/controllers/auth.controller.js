@@ -89,6 +89,15 @@ export const login = async (req, res) => {
     return fail(res, 'Invalid credentials', 401);
   }
   if (!user.is_active) return fail(res, 'Account disabled', 403);
+
+  // 2FA OTP gate for admin roles
+  if (user.role === 'system_admin' || user.role === 'regional_admin') {
+    const { code } = await createOtp({ contact: user.phone, purpose: 'admin_2fa' });
+    if (env.nodeEnv !== 'production') console.log(`[DEV 2FA OTP] ${code} -> ${user.phone}`);
+    const masked = user.phone.replace(/^(.{3})(.*)(.{2})$/, (_, a, b, c) => a + '*'.repeat(b.length) + c);
+    return ok(res, { requires_otp: true, phone: masked }, 'OTP sent for 2FA verification');
+  }
+
   await query('UPDATE users SET last_login_at = now() WHERE id = $1', [user.id]);
   await query(
     `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'login','users',$1)`,
@@ -194,6 +203,24 @@ export const changePassword = async (req, res) => {
   const password_hash = await hashPassword(newPassword);
   await query('UPDATE users SET password_hash = $1 WHERE id = $2', [password_hash, req.user.id]);
   ok(res, null, 'Password changed');
+};
+
+export const verifyAdminOtp = async (req, res) => {
+  const { phone, otp } = req.body;
+  if (!phone || !otp) return fail(res, 'phone and otp are required');
+  const result = await verifyOtp({ contact: phone, code: otp, purpose: 'admin_2fa' });
+  if (!result.ok) return fail(res, `OTP invalid/expired (${result.reason})`, 400);
+  const { rows } = await query('SELECT * FROM users WHERE phone = $1', [phone]);
+  const user = rows[0];
+  if (!user) return fail(res, 'User not found', 404);
+  if (!user.is_active) return fail(res, 'Account disabled', 403);
+  await query('UPDATE users SET last_login_at = now() WHERE id = $1', [user.id]);
+  await query(
+    `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'login','users',$1)`,
+    [user.id],
+  );
+  const tokens = signTokens(user);
+  ok(res, { user: publicUser(user), ...tokens }, 'Login successful');
 };
 
 const publicUser = (u) => {

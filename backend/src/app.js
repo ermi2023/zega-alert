@@ -31,6 +31,7 @@ import syncRoutes from './routes/sync.routes.js';
 import staffRoutes from './routes/staff.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import configRoutes from './routes/config.routes.js';
+import analyticsRoutes from './routes/analytics.routes.js';
 
 const app = express();
 
@@ -71,6 +72,7 @@ app.use('/api/legal', legalRoutes);
 app.use('/api/geofences', geofenceRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin', analyticsRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/callbacks', callbackRoutes);

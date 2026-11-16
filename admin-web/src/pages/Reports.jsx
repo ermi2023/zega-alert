@@ -3,6 +3,19 @@ import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
+function timeAgo(dateStr) {
+  if (!dateStr) return '—';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d ago`;
+  return new Date(dateStr).toLocaleDateString();
+}
+
 const badge = (v) => ({ draft: 'gray', pending: 'amber', submitted: 'amber', under_review: 'blue', assigned: 'blue', in_progress: 'amber', verified: 'green', resolved: 'green', rejected: 'red', closed: 'gray' }[v] || 'gray');
 const sev = (v) => ({ low: 'gray', medium: 'blue', high: 'amber', critical: 'red' }[v] || 'gray');
 const STATUSES = ['draft', 'pending', 'submitted', 'under_review', 'assigned', 'in_progress', 'verified', 'rejected', 'resolved', 'closed'];
@@ -52,6 +65,11 @@ export default function Reports() {
     <div>
       <div className="page-head">
         <div><h1>{t('reports.title')}</h1><p>{t('reports.subtitle')}</p></div>
+        <button className="btn ghost" onClick={() => {
+          const headers = ['Date','Title','Category','Severity','Region','Status','Reporter'];
+          const csv = [headers, ...rows.map(r => [r.reported_at, r.title, r.category, r.severity, r.region, r.status, r.reporter_name||'anonymous'])].map(r => r.map(c => `"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+          const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv'})); a.download = 'reports.csv'; a.click();
+        }}>Export CSV</button>
       </div>
       <div className="filters">
         <select value={status} onChange={(e) => setStatus(e.target.value)}>
@@ -67,7 +85,7 @@ export default function Reports() {
           <tbody>
             {rows.map((r) => (
               <tr key={r.id} style={{ cursor: 'pointer' }} onClick={() => showDetail(r)}>
-                <td>{new Date(r.reported_at).toLocaleDateString()}</td>
+                <td title={new Date(r.reported_at).toLocaleString()}>{timeAgo(r.reported_at)}</td>
                 <td>
                   <b>{r.title}</b>
                   <div style={{ color: 'var(--muted)', fontSize: 12 }}>{r.is_anonymous ? t('reports.anonymous') : (r.reporter_name || '—')}</div>
@@ -146,11 +164,30 @@ export default function Reports() {
             {detail.evidence && detail.evidence.length > 0 && (
               <div style={{ marginBottom: 12 }}>
                 <strong>{t('reports.evidence')}</strong>
-                {detail.evidence.map((e, i) => (
-                  <div key={i} style={{ padding: '4px 0', color: 'var(--muted)', fontSize: 13 }}>
-                    {e.type}: {e.value}
-                  </div>
-                ))}
+                {detail.evidence.map((e, i) => {
+                    const isImg = (e.type && e.type.startsWith('image')) || /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(e.value || '');
+                    const isVideo = e.type && e.type.startsWith('video');
+                    const isAudio = e.type && e.type.startsWith('audio');
+                    return (
+                      <div key={i} style={{ padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+                        <span style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1 }}>{e.type}</span>
+                        {isImg ? (
+                          <div style={{ marginTop: 6 }}>
+                            <img src={e.value} alt="Evidence" style={{ maxWidth: 300, maxHeight: 260, borderRadius: 8, border: '1px solid var(--line)', objectFit: 'contain', background: '#000' }} onError={el => { el.target.style.display='none'; el.target.nextSibling.style.display='block'; }} />
+                            <a href={e.value} target="_blank" rel="noopener noreferrer" style={{ display: 'none', color: 'var(--brand-light)', fontSize: 12 }}>View image ↗</a>
+                          </div>
+                        ) : isVideo ? (
+                          <div style={{ marginTop: 6 }}><video src={e.value} controls style={{ maxWidth: 300, borderRadius: 8 }} /></div>
+                        ) : isAudio ? (
+                          <div style={{ marginTop: 6 }}><audio src={e.value} controls /></div>
+                        ) : (e.value && /^https?:\/\//.test(e.value)) ? (
+                          <div style={{ marginTop: 4 }}><a href={e.value} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--brand-light)', fontSize: 13, wordBreak: 'break-all' }}>📎 {e.type} attachment ↗</a></div>
+                        ) : (
+                          <div style={{ marginTop: 4, color: 'var(--muted)', fontSize: 13 }}>{e.value}</div>
+                        )}
+                      </div>
+                    );
+                  })}
               </div>
             )}
             {['pending', 'under_review', 'verified'].includes(detail.status) && (
@@ -168,7 +205,7 @@ export default function Reports() {
                   {history.map((h) => (
                     <div key={h.id} style={{ padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,.06)', fontSize: 13 }}>
                       <span className={`badge ${badge(h.status)}`}>{h.status}</span>
-                      <span style={{ color: 'var(--muted)', marginLeft: 8 }}>{new Date(h.created_at).toLocaleString()} · {h.changed_by_name || 'system'}</span>
+                      <span style={{ color: 'var(--muted)', marginLeft: 8 }}>{timeAgo(h.created_at)} · {h.changed_by_name || 'system'}</span>
                       {h.notes && <div style={{ color: 'var(--muted)', marginTop: 2 }}>{h.notes}</div>}
                     </div>
                   ))}

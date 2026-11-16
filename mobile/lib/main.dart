@@ -17,6 +17,7 @@ import 'screens/settings_screen.dart';
 import 'screens/callbacks_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/video_call_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'services/api.dart';
 import 'services/socket_service.dart';
 import 'services/notification_service.dart';
@@ -79,13 +80,15 @@ void main() async {
 
   final prefs = await SharedPreferences.getInstance();
   final savedLanguage = prefs.getString('languageCode') ?? 'en';
-  runApp(ZegaAlertApp(initialLanguage: savedLanguage));
+  final onboardingDone = prefs.getBool('onboarding_done') ?? false;
+  runApp(ZegaAlertApp(initialLanguage: savedLanguage, onboardingDone: onboardingDone));
 }
 
 class ZegaAlertApp extends StatefulWidget {
-  const ZegaAlertApp({super.key, this.initialLanguage = 'en'});
+  const ZegaAlertApp({super.key, this.initialLanguage = 'en', this.onboardingDone = false});
 
   final String initialLanguage;
+  final bool onboardingDone;
 
   static ZegaAlertAppState? of(BuildContext context) =>
       context.findAncestorStateOfType<ZegaAlertAppState>();
@@ -98,6 +101,7 @@ class ZegaAlertAppState extends State<ZegaAlertApp> {
   bool _darkMode = false;
   bool _accessibility = false;
   String _languageCode = 'en';
+  late bool _onboardingDone;
 
   String get languageCode => _languageCode;
 
@@ -105,6 +109,7 @@ class ZegaAlertAppState extends State<ZegaAlertApp> {
   void initState() {
     super.initState();
     _languageCode = widget.initialLanguage;
+    _onboardingDone = widget.onboardingDone;
   }
 
   void toggleDarkMode(bool value) => setState(() => _darkMode = value);
@@ -204,7 +209,9 @@ class ZegaAlertAppState extends State<ZegaAlertApp> {
         useMaterial3: true,
       ),
       themeMode: _darkMode ? ThemeMode.dark : ThemeMode.light,
-      home: Api.token == null ? const AuthScreen() : const MainShell(),
+      home: !_onboardingDone
+          ? OnboardingScreen(onDone: () => setState(() => _onboardingDone = true))
+          : (Api.token == null ? const AuthScreen() : const MainShell()),
     );
   }
 }

@@ -4,6 +4,15 @@ import { api } from '../api/client';
 import { io } from 'socket.io-client';
 import LiveMap from '../components/LiveMap';
 
+const timeAgo = (d) => {
+  if (!d) return '—';
+  const s = Math.floor((Date.now() - new Date(d)) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.floor(s/60) + 'm ago';
+  if (s < 86400) return Math.floor(s/3600) + 'h ago';
+  return Math.floor(s/86400) + 'd ago';
+};
+
 const badge = (v) => ({ triggered: 'red', acknowledged: 'amber', dispatched: 'blue', resolved: 'green', cancelled: 'gray', pending: 'amber', under_review: 'blue', verified: 'green', rejected: 'red', closed: 'gray' }[v] || 'gray');
 
 const unitStatusStyle = (status) => ({
@@ -13,6 +22,56 @@ const unitStatusStyle = (status) => ({
   assigned: { background: '#f8f9fa', color: '#495057' },
 }[status] || { background: '#f8f9fa', color: '#495057' });
 
+function useSosAlarm() {
+  const permissionRef = useRef('default');
+
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then((p) => { permissionRef.current = p; });
+    } else if ('Notification' in window) {
+      permissionRef.current = Notification.permission;
+    }
+  }, []);
+
+  const playAlarm = (muted) => {
+    if (muted) return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const gainNode = ctx.createGain();
+      gainNode.gain.setValueAtTime(0.4, ctx.currentTime);
+      gainNode.connect(ctx.destination);
+
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(800, ctx.currentTime);
+      // Sweep 800Hz ↔ 1200Hz repeatedly over 3 seconds
+      for (let i = 0; i < 6; i++) {
+        osc.frequency.linearRampToValueAtTime(1200, ctx.currentTime + i * 0.5 + 0.25);
+        osc.frequency.linearRampToValueAtTime(800, ctx.currentTime + i * 0.5 + 0.5);
+      }
+      osc.connect(gainNode);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 3);
+
+      // Flash the body red
+      document.body.classList.add('sos-flash');
+      setTimeout(() => document.body.classList.remove('sos-flash'), 2000);
+
+      setTimeout(() => ctx.close(), 3200);
+    } catch (e) {
+      /* AudioContext not available */
+    }
+  };
+
+  const showDesktopNotification = (title, body) => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, { body });
+    }
+  };
+
+  return { playAlarm, showDesktopNotification };
+}
+
 export default function Sos() {
   const { t } = useTranslation();
   const [rows, setRows] = useState([]);
@@ -21,7 +80,18 @@ export default function Sos() {
   const [assignDialog, setAssignDialog] = useState(null);
   const [availableOfficers, setAvailableOfficers] = useState([]);
   const [officers, setOfficers] = useState({});
+  const [muted, setMuted] = useState(false);
+  const [regionFilter, setRegionFilter] = useState('');
+  const [subCityFilter, setSubCityFilter] = useState('');
+  const [connected, setConnected] = useState(true);
+  const [page, setPage] = useState(1);
+  const PER_PAGE = 20;
   const rowsRef = useRef([]);
+  const mutedRef = useRef(muted);
+
+  const { playAlarm, showDesktopNotification } = useSosAlarm();
+
+  useEffect(() => { mutedRef.current = muted; }, [muted]);
 
   const load = () => api.get(`/sos${filter ? `?status=${filter}` : ''}`).then(setRows);
   useEffect(() => { load(); }, [filter]);
@@ -43,6 +113,11 @@ export default function Sos() {
       const alert = a.alert || a;
       setRows((p) => (p.some((x) => x.id === alert.id) ? p : [alert, ...p]));
       socket.emit('join', `sos:${alert.id}`);
+      playAlarm(mutedRef.current);
+      showDesktopNotification(
+        '🚨 NEW SOS ALERT',
+        'Citizen needs help — ' + (alert.address_text || alert.region || 'location pending')
+      );
     });
     // Citizens stream their GPS every 12s while an SOS is active, so the pin moves.
     socket.on('sos:location', ({ sosId, latitude, longitude }) => {
@@ -54,12 +129,14 @@ export default function Sos() {
     });
     socket.on('dispatch:updated', ({ sosId }) => loadUnits(sosId));
     socket.on('connect', () => {
+      setConnected(true);
       // Join each active SOS room so dispatch:updated events (emitted to
       // `sos:<id>`) are received instead of only to the staff broadcast.
       rowsRef.current
         .filter((s) => ['triggered', 'acknowledged', 'dispatched'].includes(s.status))
         .forEach((s) => socket.emit('join', `sos:${s.id}`));
     });
+    socket.on('disconnect', () => setConnected(false));
     return () => socket.close();
   }, []);
 
@@ -108,16 +185,35 @@ export default function Sos() {
   const activeRows = rows.filter((s) => s.latitude && s.longitude && ['triggered', 'acknowledged', 'dispatched'].includes(s.status));
   const officerPts = Object.values(officers).filter((p) => p.latitude && p.longitude);
 
+  const filteredRows = rows.filter(s =>
+    (!regionFilter || (s.region || '').toLowerCase().includes(regionFilter.toLowerCase())) &&
+    (!subCityFilter || (s.sub_city || '').toLowerCase().includes(subCityFilter.toLowerCase()))
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / PER_PAGE));
+  const safePage = Math.min(page, totalPages);
+  const paged = filteredRows.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
+
+  const exportCsv = () => {
+    const headers = ['Time','User','Phone','Location','Region','Status'];
+    const csv = [headers, ...filteredRows.map(s => [s.created_at, s.user_name||'', s.user_phone||'', s.address_text||'', s.region||'', s.status])].map(r => r.map(c => `"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv'})); a.download = 'sos-alerts.csv'; a.click();
+  };
+
   return (
     <div>
       <div className="page-head">
-        <div><h1>{t('sos.title')}</h1><p>{t('sos.subtitle')}</p></div>
+        <div><h1>{t('sos.title')}{!connected && <span style={{background:'#dc2626',color:'#fff',padding:'4px 12px',borderRadius:8,fontSize:12,fontWeight:700,marginLeft:12}}>⚠ DISCONNECTED — Reconnecting...</span>}</h1><p>{t('sos.subtitle')}</p></div>
         <div className="filters">
           <select value={filter} onChange={(e) => setFilter(e.target.value)}>
             <option value="">{t('sos.allStatuses')}</option>
             {['triggered', 'acknowledged', 'dispatched', 'resolved', 'cancelled'].map((s) => <option key={s}>{s}</option>)}
           </select>
+          <input placeholder="Region..." value={regionFilter} onChange={e => setRegionFilter(e.target.value)} style={{ marginLeft: 8, padding: '6px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--panel)', color: 'var(--text)', fontSize: 13 }} />
+          <input placeholder="Sub-city..." value={subCityFilter} onChange={e => setSubCityFilter(e.target.value)} style={{ marginLeft: 8, padding: '6px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--panel)', color: 'var(--text)', fontSize: 13 }} />
           <button className="btn ghost" onClick={load}>{t('sos.refresh')}</button>
+          <button className="btn ghost" onClick={() => setMuted(m => !m)}>{muted ? '🔇 Muted' : '🔊 Alarm On'}</button>
+          <button className="btn ghost" onClick={exportCsv}>Export CSV</button>
         </div>
       </div>
 
@@ -133,9 +229,9 @@ export default function Sos() {
         <table>
           <thead><tr><th>{t('sos.time')}</th><th>{t('sos.user')}</th><th>{t('reports.location')}</th><th>{t('sos.region')}</th><th>{t('sos.status')}</th><th>{t('sos.actions')}</th></tr></thead>
           <tbody>
-            {rows.map((s) => (
+            {paged.map((s) => (
               <tr key={s.id}>
-                <td>{new Date(s.created_at).toLocaleString()}</td>
+                <td title={new Date(s.created_at).toLocaleString()}>{timeAgo(s.created_at)}</td>
                 <td>{s.user_name || '—'}<br /><small>{s.user_phone}</small></td>
                 <td>{s.address_text || `${s.latitude?.toFixed(4)}, ${s.longitude?.toFixed(4)}`}</td>
                 <td>{s.region || '—'}</td>
@@ -159,7 +255,7 @@ export default function Sos() {
                 </td>
               </tr>
             ))}
-            {rows.map((s) => (
+            {paged.map((s) => (
               <tr key={`${s.id}-units`}>
                 <td colSpan={6} style={{ padding: 0 }}>
                   <div style={{ padding: '8px 16px', background: '#f8f9fa', borderTop: '1px solid #eee' }}>
@@ -206,9 +302,17 @@ export default function Sos() {
                 </td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={6} style={{ color: 'var(--muted)' }}>{t('sos.noAlerts')}</td></tr>}
+            {filteredRows.length === 0 && <tr><td colSpan={6} style={{ color: 'var(--muted)' }}>{t('sos.noAlerts')}</td></tr>}
           </tbody>
         </table>
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 14 }}>
+            <button className="btn small ghost" disabled={safePage <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>← Previous</button>
+            <span style={{ fontSize: 13, color: 'var(--muted)' }}>Page {safePage} of {totalPages} ({filteredRows.length} total)</span>
+            <button className="btn small ghost" disabled={safePage >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>Next →</button>
+          </div>
+        )}
       </div>
 
       {assignDialog && (

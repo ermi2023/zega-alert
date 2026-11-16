@@ -3,6 +3,8 @@ import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import Icon from './Icon';
+import { api } from '../api/client';
+import { io } from 'socket.io-client';
 
 const LANGUAGES = [
   { code: 'en', label: 'English' },
@@ -15,6 +17,14 @@ export default function Layout({ children }) {
   const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [chatUnread, setChatUnread] = useState(0);
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('zega_theme') !== 'light');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+    localStorage.setItem('zega_theme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
@@ -29,6 +39,26 @@ export default function Layout({ children }) {
       document.body.style.overflow = '';
     };
   }, [menuOpen]);
+
+  useEffect(() => {
+    api.get('/notifications?limit=50').then((data) => {
+      const list = Array.isArray(data) ? data : (data?.notifications || []);
+      setUnreadCount(list.filter((n) => n.is_read === false).length);
+    }).catch(() => {});
+
+    const socket = io(import.meta.env.VITE_API_URL || undefined, {
+      auth: { token: localStorage.getItem('zega_admin_token') },
+    });
+    socket.on('sos:new', () => setUnreadCount((c) => c + 1));
+    socket.on('notification:new', () => setUnreadCount((c) => c + 1));
+    return () => socket.close();
+  }, []);
+
+  useEffect(() => {
+    api.get('/chat/unread-count').then((data) => {
+      setChatUnread(typeof data?.count === 'number' ? data.count : 0);
+    }).catch(() => {});
+  }, []);
 
   const nav = [
     { to: '/', label: t('nav.dashboard'), icon: 'dashboard' },
@@ -86,6 +116,10 @@ export default function Layout({ children }) {
           <span className="dot blue pulse" />
           <span style={{ fontWeight: 600, letterSpacing: '0.5px' }}>POLICE CAD · DISPATCH ACTIVE</span>
         </div>
+        <NavLink to="/notifications" style={{ position: 'relative', display: 'flex', alignItems: 'center', marginLeft: 8 }}>
+          <span style={{ fontSize: 20 }}>🔔</span>
+          {unreadCount > 0 && <span style={{ position: 'absolute', top: -6, right: -6, background: '#ef4444', color: '#fff', borderRadius: 99, fontSize: 10, fontWeight: 700, padding: '1px 5px', minWidth: 16, textAlign: 'center' }}>{unreadCount > 99 ? '99+' : unreadCount}</span>}
+        </NavLink>
       </header>
 
       {menuOpen && <div className="drawer-backdrop" onClick={() => setMenuOpen(false)} />}
@@ -111,6 +145,7 @@ export default function Layout({ children }) {
               onClick={() => setMenuOpen(false)}
             >
               <span className="icon"><Icon name={n.icon} /></span> {n.label}
+              {n.to === '/chat' && chatUnread > 0 && <span style={{marginLeft:'auto',background:'#ef4444',color:'#fff',borderRadius:'50%',width:18,height:18,fontSize:10,fontWeight:800,display:'inline-flex',alignItems:'center',justifyContent:'center'}}>{chatUnread > 99 ? '99+' : chatUnread}</span>}
             </NavLink>
           ))}
         </nav>
@@ -122,6 +157,14 @@ export default function Layout({ children }) {
               <small>{user?.phone}</small>
             </div>
           </div>
+          <button
+            className="btn ghost"
+            onClick={() => setDarkMode(d => !d)}
+            style={{ width: '100%', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}
+            aria-label="Toggle theme"
+          >
+            {darkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
+          </button>
           <select value={i18n.language} onChange={changeLang} className="lang-select">
             {LANGUAGES.map((l) => (
               <option key={l.code} value={l.code}>{l.label}</option>

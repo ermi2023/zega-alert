@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../middleware/auth.js';
 import {
   register, requestOtp, verifyOtpEndpoint, login, loginWithOtp,
-  refresh, logout, me, updateMe, changePassword, searchStaff,
+  refresh, logout, me, updateMe, changePassword, searchStaff, verifyAdminOtp,
 } from '../controllers/auth.controller.js';
 
 const router = Router();
@@ -11,6 +11,7 @@ router.post('/register', register);
 router.post('/request-otp', requestOtp);
 router.post('/verify-otp', verifyOtpEndpoint);
 router.post('/login', login);
+router.post('/verify-admin-otp', verifyAdminOtp);
 router.post('/login-otp', loginWithOtp);
 router.post('/refresh', refresh);
 router.post('/logout', logout);

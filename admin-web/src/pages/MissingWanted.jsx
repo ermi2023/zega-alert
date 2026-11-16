@@ -21,6 +21,7 @@ export default function MissingWanted() {
   const [form, setForm] = useState(() => emptyForm('missing'));
   const [showForm, setShowForm] = useState(false);
   const [msg, setMsg] = useState({ type: '', text: '' });
+  const [uploading, setUploading] = useState(false);
   const [viewMode, setViewMode] = useState('cards'); // 'cards' (Figure 30) or 'table'
   const [search, setSearch] = useState('');
   const [selectedCase, setSelectedCase] = useState(null);
@@ -182,7 +183,35 @@ export default function MissingWanted() {
               <label>{t('persons.contactPhone')}<input value={form.contact_phone} onChange={(e) => setForm({ ...form, contact_phone: e.target.value })} /></label>
             </div>
             <div className="form-row">
-              <label>{t('persons.photoUrl')}<input value={form.photo_url} onChange={(e) => setForm({ ...form, photo_url: e.target.value })} placeholder="https://..." /></label>
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, marginBottom: 4, fontSize: 13 }}>Photo</label>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ fontSize: 12, flex: 1 }}
+                    disabled={uploading}
+                    onChange={async (e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      setUploading(true);
+                      try {
+                        const fd = new FormData();
+                        fd.append('file', file);
+                        const token = localStorage.getItem('zega_admin_token');
+                        const baseUrl = import.meta.env.VITE_API_URL || '';
+                        const res = await fetch(`${baseUrl}/api/upload/single`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
+                        const data = await res.json();
+                        if (data.url) setForm(f => ({ ...f, photo_url: (import.meta.env.VITE_API_URL || '') + data.url }));
+                      } catch (err) { setMsg({ type: 'err', text: 'Upload failed: ' + err.message }); }
+                      finally { setUploading(false); }
+                    }}
+                  />
+                  {uploading && <span style={{ fontSize: 12, color: 'var(--muted)' }}>Uploading...</span>}
+                  {form.photo_url && <img src={form.photo_url} alt="Preview" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--line)' }} />}
+                </div>
+                {form.photo_url && <input type="text" value={form.photo_url} onChange={e => setForm(f => ({ ...f, photo_url: e.target.value }))} placeholder="Or paste photo URL" style={{ marginTop: 6, width: '100%', fontSize: 12 }} />}
+              </div>
               {form.kind === 'missing'
                 ? <label>{t('persons.lastSeen')}<input value={form.last_seen_address} onChange={(e) => setForm({ ...form, last_seen_address: e.target.value })} /></label>
                 : <label>{t('persons.dangerLevel')}

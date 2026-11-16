@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../config/constants.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api.dart';
@@ -38,6 +38,28 @@ class _AuthScreenState extends State<AuthScreen> {
   void initState() {
     super.initState();
     _initBiometrics();
+    _checkUpdate();
+  }
+
+  Future<void> _checkUpdate() async {
+    try {
+      final r = await Api.get('/app/version');
+      final latest = r['version']?.toString() ?? '';
+      const url = r['url']?.toString();
+      if (latest != '1.0.0' && url != null && mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Update available'),
+            content: Text('Version $latest is available. Update now?'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Later')),
+              FilledButton(onPressed: () { Navigator.pop(ctx); launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication); }, child: const Text('Download')),
+            ],
+          ),
+        );
+      }
+    } catch (_) {}
   }
 
   @override

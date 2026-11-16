@@ -60,6 +60,9 @@ build/
 # --- Postman (local env may hold real tokens) ---
 postman/*.local.json
 
+# --- Local release bundles ---
+releases/
+
 # --- IDE / OS ---
 .idea/
 .vscode/

@@ -30,7 +30,6 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _busy = false;
   bool _canBioLogin = false;
   bool _acceptedTerms = false;
-  bool _acceptedPrivacy = false;
   String _error = '';
   String? _region;
   String? _subCity;
@@ -85,6 +84,7 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Future<void> _submit() async {
+    if (!(_form.currentState?.validate() ?? false)) return;
     setState(() { _error = ''; _busy = true; });
     try {
       if (_register) {
@@ -92,7 +92,11 @@ class _AuthScreenState extends State<AuthScreen> {
           setState(() { _error = 'Please select your region.'; _busy = false; });
           return;
         }
-        final phone = _phone.text.trim();
+        final phone = _normalizePhone(_phone.text.trim());
+        if (phone.length < 9) {
+          setState(() { _error = 'Enter a valid phone number, e.g. 0911234567.'; _busy = false; });
+          return;
+        }
         if (!_acceptedTerms) {
           setState(() { _error = 'You must accept the Terms of Service to register.'; _busy = false; });
           return;
@@ -105,7 +109,7 @@ class _AuthScreenState extends State<AuthScreen> {
           'region': _region,
           'sub_city': _subCity,
           'accepted_terms': true,
-          'accepted_privacy': _acceptedPrivacy,
+          'accepted_privacy': true,
         }) as Map<String, dynamic>?;
 
         // Phone verification is best-effort: when the SMS gateway delivers an
@@ -132,7 +136,7 @@ class _AuthScreenState extends State<AuthScreen> {
       final id = _id.text.trim();
       final body = id.contains('@')
           ? {'email': id, 'password': _password.text}
-          : {'phone': id, 'password': _password.text};
+          : {'phone': _normalizePhone(id), 'password': _password.text};
       final data = await Api.post('/auth/login', body);
       await _persistSession(data);
       await _goHome();
@@ -149,8 +153,20 @@ class _AuthScreenState extends State<AuthScreen> {
     await Api.setProfile(data['user'] as Map<String, dynamic>?);
   }
 
-  String _friendlyError(Object e) {
-    final s = e.toString();
+  /// Accepts local (09xxxxxxxx / 9xxxxxxxx) and international (+251...) forms
+  /// and stores the local format the backend uses.
+  String _normalizePhone(String raw) {
+    var p = raw.replaceAll(RegExp(r'[\s\-()]'), '');
+    if (p.startsWith('+251')) {
+      p = p.substring(4);
+    } else if (p.startsWith('251') && p.length > 9) {
+      p = p.substring(3);
+    }
+    if (p.isEmpty || p.startsWith('0')) return p;
+    return p.length == 9 ? '0$p' : p;
+  }
+
+  String _friendlyError(Object e) {    final s = e.toString();
     if (s.contains('SocketException') || s.contains('ClientException') || s.contains('timed out') || s.contains('errno = 110')) {
       return 'Cannot reach the server at ${Api.baseUrl}.\n'
           'Check your internet connection, or tap "Server" below to set a different backend URL.';
@@ -230,13 +246,12 @@ class _AuthScreenState extends State<AuthScreen> {
                     child: _card(scheme, loc),
                   ),
                   const SizedBox(height: 14),
-                  if (!_register)
-                    TextButton.icon(
-                      onPressed: _busy ? null : _enterAsGuest,
-                      style: TextButton.styleFrom(foregroundColor: Colors.white),
-                      icon: const Icon(Icons.explore_outlined),
-                      label: const Text('Browse as guest — no account needed'),
-                    ),
+                  TextButton.icon(
+                    onPressed: _busy ? null : _enterAsGuest,
+                    style: TextButton.styleFrom(foregroundColor: Colors.white),
+                    icon: const Icon(Icons.explore_outlined),
+                    label: const Text('Continue as guest — browse without an account'),
+                  ),
                   TextButton.icon(
                     onPressed: _busy ? null : _editServerUrl,
                     style: TextButton.styleFrom(foregroundColor: Colors.white70),
@@ -400,13 +415,22 @@ class _AuthScreenState extends State<AuthScreen> {
                 controller: _name,
                 textInputAction: TextInputAction.next,
                 decoration: InputDecoration(labelText: loc.fullName, prefixIcon: const Icon(Icons.person_outline), border: const OutlineInputBorder()),
+                validator: (v) => (v == null || v.trim().isEmpty) ? loc.required : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _phone,
                 keyboardType: TextInputType.phone,
                 textInputAction: TextInputAction.next,
-                decoration: InputDecoration(labelText: loc.phone, prefixIcon: const Icon(Icons.phone_outlined), border: const OutlineInputBorder()),
+                decoration: InputDecoration(
+                  labelText: loc.phone,
+                  hintText: '911 234 567',
+                  prefixText: '+251 ',
+                  prefixIcon: const Icon(Icons.phone_outlined),
+                  helperText: 'Ethiopian mobile number',
+                  border: const OutlineInputBorder(),
+                ),
+                validator: (v) => (v == null || v.trim().isEmpty) ? loc.required : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -481,6 +505,7 @@ class _AuthScreenState extends State<AuthScreen> {
               onFieldSubmitted: (_) => _busy ? null : _submit(),
               decoration: InputDecoration(
                 labelText: loc.password,
+                helperText: _register ? 'At least 6 characters. A 6-digit PIN is fine.' : null,
                 prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
                   icon: Icon(_showPassword ? Icons.visibility_off : Icons.visibility),
@@ -488,6 +513,9 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
                 border: const OutlineInputBorder(),
               ),
+              validator: _register
+                  ? (v) => (v == null || v.length < 6) ? 'Use at least 6 characters or a 6-digit PIN' : null
+                  : null,
             ),
             if (_error.isNotEmpty)
               Padding(
@@ -501,7 +529,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 onPressed: _busy ? null : _submit,
                 child: _busy
                     ? const SizedBox(height: 22, width: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : Text(_register ? loc.register : loc.signingIn, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                    : Text(_register ? 'Sign Up' : loc.signingIn, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
               ),
             ),
             if (_canBioLogin && !_register) ...[

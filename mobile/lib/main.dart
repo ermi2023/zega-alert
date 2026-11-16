@@ -229,15 +229,15 @@ class _MainShellState extends State<MainShell> {
   static const _tabs = [
     HomeScreen(),
     AuthGate(
-      child: ReportScreen(),
       title: 'Sign in to file a report',
       message: 'You can browse announcements, missing & wanted persons as a guest. Sign in to submit crime reports.',
+      child: ReportScreen(),
     ),
     NewsScreen(),
     AuthGate(
-      child: CommunicationScreen(),
       title: 'Sign in to send messages',
       message: 'Messaging and callbacks are available once you create a free account or sign in.',
+      child: CommunicationScreen(),
     ),
     SettingsScreen(),
   ];
@@ -344,9 +344,9 @@ class _MainShellState extends State<MainShell> {
             Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E40AF).withOpacity(0.12),
+                color: const Color(0xFF1E40AF).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.5)),
+                border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.5)),
               ),
               child: const Icon(Icons.shield, color: Color(0xFFF59E0B), size: 19),
             ),
@@ -396,7 +396,7 @@ class _NotificationBellState extends State<_NotificationBell> {
       final res = await Api.get('/notifications?limit=20');
       if (!mounted) return;
       final List list = res is List ? res : (res is Map && res['notifications'] is List ? res['notifications'] : []);
-      final unread = list.where((n) => n is Map && n['read_at'] == null).length;
+      final unread = list.where((n) => n is Map && n['is_read'] == false).length;
       setState(() => _unread = unread);
     } catch (_) {}
   }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { api } from '../api/client';
+import { api, API_BASE } from '../api/client';
 import { io } from 'socket.io-client';
 import LiveMap from '../components/LiveMap';
 
@@ -106,7 +106,7 @@ export default function Sos() {
   };
 
   useEffect(() => {
-    const socket = io(import.meta.env.VITE_API_URL || undefined, {
+    const socket = io(API_BASE || undefined, {
       auth: { token: localStorage.getItem('zega_admin_token') },
     });
     socket.on('sos:new', (a) => {

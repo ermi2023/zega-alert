@@ -55,12 +55,12 @@ class _PhotoUploadFieldState extends State<PhotoUploadField> {
       final res = await Api.upload('/upload/single', [
         MapEntry('file', file.path),
       ]);
-      final url = res['url'] as String;
+      final url = Api.assetUrl(res['url'] as String?)!;
       setState(() {
-        _url = '${Api.baseUrl}$url';
+        _url = url;
         _busy = false;
       });
-      widget.onUploaded?.call('${Api.baseUrl}$url');
+      widget.onUploaded?.call(url);
     } catch (e) {
       setState(() { _busy = false; _error = 'Upload failed: $e'; });
     }

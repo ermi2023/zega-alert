@@ -11,6 +11,14 @@ export const API_BASE = (
   (import.meta.env.PROD ? PROD_API_BASE : '')
 ).replace(/\/$/, '');
 
+// Resolve a stored upload path into an absolute URL. Backends may return either
+// relative paths (`/uploads/...`) or absolute Firebase URLs.
+export const assetUrl = (url) => {
+  if (!url) return url;
+  if (/^(https?:|data:|blob:)/.test(url)) return url;
+  return `${API_BASE}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
 const request = async (path, options = {}) => {
   const token = localStorage.getItem(TOKEN_KEY);
   const res = await fetch(`${API_BASE}/api${path}`, {
@@ -24,7 +32,9 @@ const request = async (path, options = {}) => {
   let data;
   try { data = await res.json(); } catch { data = {}; }
   if (!res.ok) {
-    if (res.status === 401) {
+    if (res.status === 401 && token) {
+      // Only treat it as an expired session when a token was actually sent;
+      // a failed login attempt should surface the error, not reload the page.
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(REFRESH_KEY);
       localStorage.removeItem(USER_KEY);

@@ -7,9 +7,13 @@ import '../services/api.dart';
 import '../services/database_service.dart';
 import '../services/socket_service.dart';
 import '../widgets/auth_gate.dart';
+import '../widgets/pod_actions.dart';
 import '../widgets/sos_dialog.dart';
 
+import 'announcement_detail_screen.dart';
 import 'missing_report_screen.dart';
+import 'person_detail_screen.dart';
+import 'report_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -138,6 +142,30 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: PodActions(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+                child: Icon(Icons.edit_note, color: Theme.of(context).colorScheme.primary),
+              ),
+              title: const Text('Report a crime', style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: const Text('Attach photos, video, audio, a web link or a file'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () async {
+                if (!await ensureAuthed(context, reason: 'Sign in to file a crime report.')) return;
+                if (!context.mounted) return;
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CrimeReportScreen()));
+              },
+            ),
+          ),
           if (_loadError != null) Card(color: Colors.red.shade50, child: Padding(padding: const EdgeInsets.all(12), child: Row(children: [const Icon(Icons.error_outline, color: Colors.red), const SizedBox(width: 8), Expanded(child: Text(_loadError!, style: const TextStyle(color: Colors.red)))]))),
           if (_loading) const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
           const SizedBox(height: 20),
@@ -148,7 +176,10 @@ class _HomeScreenState extends State<HomeScreen> {
               child: ListTile(
                 leading: Icon(a['category'] == 'warning' ? Icons.warning_amber : Icons.campaign, color: a['category'] == 'warning' ? Colors.amber : Colors.green),
                 title: Text(a['title']),
-                subtitle: Text(a['body']),
+                subtitle: Text(a['body'], maxLines: 2, overflow: TextOverflow.ellipsis),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => AnnouncementDetailScreen(item: Map<String, dynamic>.from(a)),
+                )),
                 trailing: Semantics(
                   button: true,
                   label: loc.shareAnnouncement(a['title']),
@@ -184,93 +215,89 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          ..._missing.where((m) => m['status'] == 'missing').take(3).map((m) => Semantics(
-            label: 'Missing person: ${m['name']}. Last seen: ${m['last_seen_address'] ?? "unknown"}.',
-            child: Card(
-              child: ListTile(
-                leading: CircleAvatar(child: Text((m['name'] as String).substring(0, 1))),
-                title: Text(m['name']),
-                subtitle: Text(loc.lastSeen(m['last_seen_address'] ?? 'unknown')),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(loc.missing, style: const TextStyle(color: Colors.orange, fontSize: 12)),
-                    const SizedBox(width: 4),
-                    Semantics(
-                      button: true,
-                      label: loc.shareMissingPerson(m['name']),
-                      child: IconButton(
-                        icon: const Icon(Icons.share, size: 18),
-                        tooltip: loc.share,
-                        onPressed: () async {
-                          final r = await Share.share('MISSING PERSON: ${m['name']}\nLast seen: ${m['last_seen_address'] ?? "unknown"}\n${m['description'] ?? ""}\n\nShared via ZEGA-ALERT');
-                          await Api.recordShare('missing_person', m['id'] as String?, platform: Api.platformFromRaw(r.raw));
-                        },
-                      ),
-                    ),
-                    Semantics(
-                      button: true,
-                      label: 'Report a sighting for ${m['name']}',
-                      child: IconButton(
-                        icon: const Icon(Icons.visibility, size: 18),
-                        tooltip: loc.reportSighting,
-                        onPressed: () async {
-                          if (!await ensureAuthed(context, reason: 'Sign in to report a sighting.')) return;
-                          if (!context.mounted) return;
-                          Navigator.of(context).push(MaterialPageRoute(builder: (_) => SightingReportScreen(missingPersonId: m['id'] as String, onDone: _load)));
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          )),
+          if (_missing.where((m) => m['status'] == 'missing').isEmpty)
+            Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Text(loc.nothingHereYet, style: const TextStyle(color: Colors.grey))),
+          ..._missing.where((m) => m['status'] == 'missing').take(5).map((m) => _personCard(m, 'missing', loc)),
           const SizedBox(height: 12),
           Text(loc.wantedPersons, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          ..._wanted.where((w) => w['status'] == 'wanted').take(3).map((w) => Semantics(
-            label: 'Wanted person: ${w['name']}. Crime: ${w['crime_description'] ?? "unknown"}. Danger level: ${w["danger_level"] ?? "unknown"}.',
-            child: Card(
-              child: ListTile(
-                leading: CircleAvatar(child: Text((w['name'] as String).substring(0, 1))),
-                title: Text(w['name']),
-                subtitle: Text(w['crime_description'] ?? ''),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(loc.wanted, style: const TextStyle(color: Colors.red, fontSize: 12)),
-                    const SizedBox(width: 4),
-                    Semantics(
-                      button: true,
-                      label: loc.shareWantedPerson(w['name']),
-                      child: IconButton(
-                        icon: const Icon(Icons.share, size: 18),
-                        tooltip: loc.share,
-                        onPressed: () async {
-                          final r = await Share.share('WANTED PERSON: ${w['name']}\nCrime: ${w['crime_description'] ?? "unknown"}\nDanger level: ${w["danger_level"] ?? "unknown"}\n\nShared via ZEGA-ALERT');
-                          await Api.recordShare('wanted_person', w['id'] as String?, platform: Api.platformFromRaw(r.raw));
-                        },
-                      ),
-                    ),
-                    Semantics(
-                      button: true,
-                      label: 'Report a sighting for ${w['name']}',
-                      child: IconButton(
-                        icon: const Icon(Icons.visibility, size: 18),
-                        tooltip: loc.reportSighting,
-                        onPressed: () async {
-                          if (!await ensureAuthed(context, reason: 'Sign in to report a sighting.')) return;
-                          if (!context.mounted) return;
-                          Navigator.of(context).push(MaterialPageRoute(builder: (_) => SightingReportScreen(wantedPersonId: w['id'] as String, onDone: _load)));
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+          if (_wanted.where((w) => w['status'] == 'wanted').isEmpty)
+            Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Text(loc.nothingHereYet, style: const TextStyle(color: Colors.grey))),
+          ..._wanted.where((w) => w['status'] == 'wanted').take(5).map((w) => _personCard(w, 'wanted', loc)),
+        ],
+      ),
+    );
+  }
+
+  Widget _personCard(dynamic person, String kind, AppLocalizations loc) {
+    final wanted = kind == 'wanted';
+    final name = (person['name'] ?? 'Unknown').toString();
+    final photo = Api.assetUrl(person['photo_url']?.toString());
+    final subtitle = wanted
+        ? (person['crime_description'] ?? '').toString()
+        : loc.lastSeen((person['last_seen_address'] ?? loc.unknownLocation).toString());
+    return Semantics(
+      label: wanted
+          ? 'Wanted person: $name. Crime: ${person['crime_description'] ?? "unknown"}. Danger level: ${person["danger_level"] ?? "unknown"}.'
+          : 'Missing person: $name. Last seen: ${person['last_seen_address'] ?? "unknown"}.',
+      child: Card(
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundColor: wanted ? Colors.red.shade50 : Colors.orange.shade50,
+            foregroundImage: (photo != null && photo.isNotEmpty) ? NetworkImage(photo) : null,
+            child: Text(name.isNotEmpty ? name.substring(0, 1).toUpperCase() : '?',
+                style: TextStyle(color: wanted ? Colors.red.shade700 : Colors.orange.shade800, fontWeight: FontWeight.bold)),
+          ),
+          title: Text(name),
+          subtitle: Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => PersonDetailScreen(
+              person: Map<String, dynamic>.from(person),
+              kind: kind,
+              onChanged: _load,
             ),
           )),
-        ],
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(wanted ? loc.wanted : loc.missing,
+                  style: TextStyle(color: wanted ? Colors.red : Colors.orange, fontSize: 12)),
+              Semantics(
+                button: true,
+                label: wanted ? loc.shareWantedPerson(name) : loc.shareMissingPerson(name),
+                child: IconButton(
+                  icon: const Icon(Icons.share, size: 18),
+                  tooltip: loc.share,
+                  onPressed: () async {
+                    final r = await Share.share(wanted
+                        ? 'WANTED PERSON: $name\nCrime: ${person['crime_description'] ?? "unknown"}\nDanger level: ${person["danger_level"] ?? "unknown"}\n\nShared via ZEGA-ALERT'
+                        : 'MISSING PERSON: $name\nLast seen: ${person['last_seen_address'] ?? "unknown"}\n${person['description'] ?? ""}\n\nShared via ZEGA-ALERT');
+                    await Api.recordShare(wanted ? 'wanted_person' : 'missing_person',
+                        person['id'] as String?, platform: Api.platformFromRaw(r.raw));
+                  },
+                ),
+              ),
+              Semantics(
+                button: true,
+                label: 'Report a sighting for $name',
+                child: IconButton(
+                  icon: const Icon(Icons.visibility, size: 18),
+                  tooltip: loc.reportSighting,
+                  onPressed: () async {
+                    if (!await ensureAuthed(context, reason: 'Sign in to report a sighting.')) return;
+                    if (!context.mounted) return;
+                    Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => SightingReportScreen(
+                        missingPersonId: wanted ? null : person['id'] as String?,
+                        wantedPersonId: wanted ? person['id'] as String? : null,
+                        onDone: _load,
+                      ),
+                    ));
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

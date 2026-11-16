@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb, TargetPlatform, defaultTargetPlatform;
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode, TargetPlatform, defaultTargetPlatform;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'database_service.dart';
@@ -28,7 +28,8 @@ class Api {
     '192.168.56.1',  // VirtualBox host-only network
   ];
 
-  static String _lanHost = _candidateHosts.first;
+  /// Last discovered LAN backend host (null until a probe/scan succeeds).
+  static String? _lanHost;
 
   /// Point the app at an explicit backend URL (no trailing slash). Pass null or
   /// an empty string to clear it and fall back to LAN auto-detection.
@@ -50,6 +51,7 @@ class Api {
   /// web and desktop.
   static Future<void> resolveHost() async {
     _overrideBase = null;
+    _lanHost = null;
     try {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString('apiBaseUrl');
@@ -58,6 +60,9 @@ class Api {
 
     if (_overrideBase != null || _envBase.isNotEmpty) return; // explicit URL wins
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
+    // Auto-discovery only matters during development; release builds go straight
+    // to the cloud API (avoiding a slow subnet scan at launch).
+    if (!kDebugMode) return;
 
     String? cached;
     try {
@@ -138,11 +143,23 @@ class Api {
     if (_overrideBase != null && _overrideBase!.isNotEmpty) return _overrideBase!;
     if (_envBase.isNotEmpty) return _envBase;
     if (kIsWeb) return 'http://localhost:$port';
-    // When running on device/emulator without explicit override, default to production Render cloud API
+    // Prefer a backend discovered on the local network, otherwise fall back to
+    // the production Render cloud API.
+    if (_lanHost != null && _lanHost!.isNotEmpty) return 'http://$_lanHost:$port';
     return _defaultCloudBase;
   }
 
   static String get socketUrl => baseUrl;
+
+  /// Turn a stored asset path into an absolute URL. Uploads are usually stored
+  /// as relative paths (`/uploads/...`), while Firebase-backed uploads are
+  /// already absolute — this handles both without double-prefixing.
+  static String? assetUrl(String? url) {
+    if (url == null || url.trim().isEmpty) return null;
+    final u = url.trim();
+    if (u.startsWith('http://') || u.startsWith('https://') || u.startsWith('data:')) return u;
+    return '$baseUrl${u.startsWith('/') ? '' : '/'}$u';
+  }
 
   static String? _token;
   static String? _userId;
@@ -236,11 +253,17 @@ class Api {
     if (body != null) req.body = jsonEncode(body);
     final streamed = await req.send();
     final res = await http.Response.fromStream(streamed);
-    final data = jsonDecode(res.body);
-    if (res.statusCode >= 400) {
-      throw ApiException(data['message'] ?? 'Request failed');
+    dynamic data;
+    try {
+      data = res.body.isEmpty ? null : jsonDecode(res.body);
+    } on FormatException {
+      data = null;
     }
-    return data['data'];
+    if (res.statusCode >= 400) {
+      final message = data is Map ? data['message'] : null;
+      throw ApiException(message?.toString() ?? 'Request failed (${res.statusCode})');
+    }
+    return data is Map ? data['data'] : null;
   }
 
   static Future<dynamic> get(String path) => _send('GET', path);
@@ -307,11 +330,17 @@ class Api {
     }
     final streamed = await req.send();
     final res = await http.Response.fromStream(streamed);
-    final data = jsonDecode(res.body);
-    if (res.statusCode >= 400) {
-      throw ApiException(data['message'] ?? 'Upload failed');
+    dynamic data;
+    try {
+      data = res.body.isEmpty ? null : jsonDecode(res.body);
+    } on FormatException {
+      data = null;
     }
-    return data['data'];
+    if (res.statusCode >= 400) {
+      final message = data is Map ? data['message'] : null;
+      throw ApiException(message?.toString() ?? 'Upload failed (${res.statusCode})');
+    }
+    return data is Map ? data['data'] : null;
   }
 }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import '../l10n/app_localizations.dart';
@@ -224,6 +225,22 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
   final _manualLat = TextEditingController();
   final _manualLng = TextEditingController();
 
+  static const _categories = <({String value, String label})>[
+    (value: 'theft', label: 'Theft'),
+    (value: 'robbery', label: 'Robbery'),
+    (value: 'assault', label: 'Assault'),
+    (value: 'burglary', label: 'Burglary / break-in'),
+    (value: 'vandalism', label: 'Vandalism'),
+    (value: 'fraud', label: 'Fraud / scam'),
+    (value: 'harassment', label: 'Harassment'),
+    (value: 'drug', label: 'Drug offence'),
+    (value: 'traffic', label: 'Traffic incident'),
+    (value: 'domestic', label: 'Domestic violence'),
+    (value: 'kidnapping', label: 'Kidnapping'),
+    (value: 'murder', label: 'Murder / homicide'),
+    (value: 'other', label: 'Other'),
+  ];
+
   String _fmtDt(DateTime d) {
     final l = d.toLocal();
     return '${l.year}-${l.month.toString().padLeft(2, '0')}-${l.day.toString().padLeft(2, '0')} ${l.hour.toString().padLeft(2, '0')}:${l.minute.toString().padLeft(2, '0')}';
@@ -280,6 +297,14 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
   _manualLng.clear();
   _evidence.clear();
       widget.onDone?.call();
+      if (!mounted) return;
+      final queued = result['queued'] == true;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(queued
+            ? 'Saved offline. Your report will be submitted automatically when you are back online.'
+            : 'Report submitted successfully. Thank you for helping keep your community safe.'),
+      ));
+      Navigator.of(context).pop();
     } catch (e) {
       setState(() => _status = 'Failed: $e');
     } finally {
@@ -289,52 +314,102 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
 
   Future<void> _addEvidence(String type) async {
     final loc = AppLocalizations.of(context);
-    if (type == 'Photo') {
-      setState(() => _busy = true);
-      try {
-        final file = await ImagePicker().pickImage(source: ImageSource.camera, maxWidth: 1600, imageQuality: 80);
-        if (file != null) {
-          final res = await Api.upload('/upload/single', [MapEntry('file', file.path)]);
-          setState(() => _evidence.add({'type': 'image', 'value': '${Api.baseUrl}${res['url']}'}));
-        }
-      } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(loc.uploadFailed(e))));
-      } finally {
-        if (mounted) setState(() => _busy = false);
+    if (type == 'Link') {
+      final value = TextEditingController();
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(loc.addType(type)),
+          content: TextField(
+            controller: value,
+            keyboardType: TextInputType.url,
+            decoration: InputDecoration(labelText: loc.url, hintText: 'https://', border: const OutlineInputBorder()),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(loc.cancel)),
+            FilledButton(onPressed: () => Navigator.pop(ctx, value.text.trim().isNotEmpty), child: Text(loc.add)),
+          ],
+        ),
+      );
+      if (ok == true) {
+        setState(() => _evidence.add({'type': 'link', 'value': value.text.trim()}));
       }
       return;
     }
-    // People of Determination: record a sign-language video instead of a text description (doc 4.3.2).
-    if (type == 'Sign language') {
-      setState(() => _busy = true);
+
+    if (type == 'Audio' || type == 'File') {
       try {
-        final file = await ImagePicker().pickVideo(source: ImageSource.camera, maxDuration: const Duration(seconds: 90));
-        if (file != null) {
-          final res = await Api.upload('/upload/single', [MapEntry('file', file.path)]);
-          setState(() => _evidence.add({'type': 'sign_language_video', 'value': '${Api.baseUrl}${res['url']}'}));
-        }
+        final picked = await FilePicker.platform.pickFiles(
+          type: type == 'Audio' ? FileType.audio : FileType.any,
+        );
+        final path = picked?.files.single.path;
+        if (path != null) await _uploadEvidence(path, type.toLowerCase());
       } catch (e) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(loc.uploadFailed(e))));
-      } finally {
-        if (mounted) setState(() => _busy = false);
       }
       return;
     }
-    final value = TextEditingController();
-    final ok = await showDialog<bool>(
+
+    // Photo, Video and People of Determination sign-language video.
+    final isVideo = type == 'Video' || type == 'Sign language';
+    final source = type == 'Sign language' ? ImageSource.camera : await _pickSource();
+    if (source == null) return;
+    setState(() => _busy = true);
+    try {
+      final file = isVideo
+          ? await ImagePicker().pickVideo(
+              source: source,
+              maxDuration: Duration(seconds: type == 'Sign language' ? 90 : 120),
+            )
+          : await ImagePicker().pickImage(
+              source: source,
+              maxWidth: 1600,
+              imageQuality: 80,
+            );
+      if (file != null) {
+        await _uploadEvidence(file.path, type == 'Sign language' ? 'sign_language_video' : type.toLowerCase());
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(loc.uploadFailed(e))));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _uploadEvidence(String path, String type) async {
+    final res = await Api.upload('/upload/single', [MapEntry('file', path)]);
+    final url = Api.assetUrl(res['url']?.toString());
+    if (url == null || url.isEmpty) {
+      throw Exception('Upload did not return a file URL');
+    }
+    if (mounted) setState(() => _evidence.add({'type': type, 'value': url}));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${type.replaceAll('_', ' ')} attached.')));
+    }
+  }
+
+  Future<ImageSource?> _pickSource() async {
+    return showModalBottomSheet<ImageSource>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(loc.addType(type)),
-        content: TextField(controller: value, decoration: InputDecoration(labelText: type == 'Link' ? loc.url : loc.filePathNote, border: const OutlineInputBorder())),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(loc.cancel)),
-          FilledButton(onPressed: () => Navigator.pop(ctx, value.text.trim().isNotEmpty), child: Text(loc.add)),
-        ],
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Take a photo / record'),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from gallery'),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+          ],
+        ),
       ),
     );
-    if (ok == true) {
-      setState(() => _evidence.add({'type': type.toLowerCase(), 'value': value.text.trim()}));
-    }
   }
 
   @override
@@ -360,6 +435,18 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
                 Semantics(
                   label: 'Description input. Required.',
                   child: TextFormField(controller: _desc, maxLines: 4, decoration: InputDecoration(labelText: loc.description, border: const OutlineInputBorder()), validator: (v) => v == null || v.isEmpty ? loc.required : null),
+                ),
+                const SizedBox(height: 12),
+                Semantics(
+                  label: 'Crime category dropdown. Currently set to $_category.',
+                  child: DropdownButtonFormField<String>(
+                    value: _category,
+                    decoration: InputDecoration(labelText: 'Crime category', border: const OutlineInputBorder()),
+                    items: _categories
+                        .map((c) => DropdownMenuItem(value: c.value, child: Text(c.label)))
+                        .toList(),
+                    onChanged: (v) => setState(() => _category = v ?? 'other'),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Semantics(

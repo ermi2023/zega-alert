@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { api, API_BASE, TOKEN_KEY } from '../api/client';
+import { api, API_BASE, TOKEN_KEY, assetUrl } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { io } from 'socket.io-client';
 
@@ -32,7 +32,7 @@ export default function Chat() {
   }, [active]);
 
   useEffect(() => {
-    const socket = io(import.meta.env.VITE_API_URL || undefined, {
+    const socket = io(API_BASE || undefined, {
       auth: { token: localStorage.getItem('zega_admin_token') },
     });
     socket.on('chat:message', (m) => {
@@ -122,9 +122,9 @@ export default function Chat() {
                 {messages.map((m) => (
                   <div key={m.id} className={`chat-msg ${m.sender_id === user.id ? 'mine' : 'other'}`}>
                     {m.message_type === 'image' && m.attachment_url
-                      ? <a href={m.attachment_url} target="_blank" rel="noreferrer"><img src={m.attachment_url} alt="attachment" style={{ maxWidth: 180, borderRadius: 8, display: 'block' }} /></a>
+                      ? <a href={assetUrl(m.attachment_url)} target="_blank" rel="noreferrer"><img src={assetUrl(m.attachment_url)} alt="attachment" style={{ maxWidth: 180, borderRadius: 8, display: 'block' }} /></a>
                       : (m.attachment_url
-                        ? <a href={m.attachment_url} target="_blank" rel="noreferrer">{m.body || 'attachment'}</a>
+                        ? <a href={assetUrl(m.attachment_url)} target="_blank" rel="noreferrer">{m.body || 'attachment'}</a>
                         : m.body)}
                     <small>{m.sender_name} · {new Date(m.created_at).toLocaleTimeString()}</small>
                   </div>

@@ -46,7 +46,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         _notifications = _notifications.map((n) {
           if (n is Map && n['id']?.toString() == id) {
             final m = Map<String, dynamic>.from(n);
-            m['read_at'] = DateTime.now().toIso8601String();
+            m['is_read'] = true;
             return m;
           }
           return n;
@@ -62,7 +62,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         _notifications = _notifications.map((n) {
           if (n is Map) {
             final m = Map<String, dynamic>.from(n);
-            m['read_at'] ??= DateTime.now().toIso8601String();
+            m['is_read'] = true;
             return m;
           }
           return n;
@@ -83,7 +83,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final unread = _notifications.where((n) => n is Map && n['read_at'] == null).length;
+    final unread = _notifications.where((n) => n is Map && n['is_read'] != true).length;
     return Scaffold(
       appBar: AppBar(
         title: Text(unread > 0 ? 'Notifications ($unread)' : 'Notifications'),
@@ -118,7 +118,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         itemBuilder: (context, i) {
                           final n = _notifications[i];
                           if (n is! Map) return const SizedBox.shrink();
-                          final isRead = n['read_at'] != null;
+                          final isRead = n['is_read'] == true;
                           final id = n['id']?.toString();
                           return ListTile(
                             leading: CircleAvatar(

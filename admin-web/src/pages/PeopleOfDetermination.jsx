@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { api } from '../api/client';
+import { api, API_BASE } from '../api/client';
 import { useToast } from '../components/Toast';
 import { io } from 'socket.io-client';
 
@@ -19,7 +19,7 @@ export default function PeopleOfDetermination() {
 
   useEffect(() => {
     load();
-    const socket = io(import.meta.env.VITE_API_URL || undefined, {
+    const socket = io(API_BASE || undefined, {
       auth: { token: localStorage.getItem('zega_admin_token') },
     });
     socket.on('pod:direct_call', load);

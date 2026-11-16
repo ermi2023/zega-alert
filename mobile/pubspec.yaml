@@ -14,7 +14,7 @@ dependencies:
   http: ^1.2.0
   socket_io_client: ^2.0.3
   shared_preferences: ^2.2.2
-  intl: ^0.20.3
+  intl: ^0.20.2
   geolocator: ^11.0.0
   workmanager: ^0.10.10
   flutter_map: ^7.0.2

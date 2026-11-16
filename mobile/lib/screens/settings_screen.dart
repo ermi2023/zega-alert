@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
 import '../main.dart';
 import 'auth_screen.dart';
 import 'id_verification_screen.dart';
 import '../services/api.dart';
-import '../services/location_service.dart';
 import '../widgets/auth_gate.dart';
+import '../widgets/pod_actions.dart';
 import 'callbacks_screen.dart';
 import '../config/constants.dart';
 
@@ -352,6 +351,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         const SizedBox(height: 8),
 
+        _section('About & support', Icons.info_outline),
+        Card(
+          child: Column(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.info_outline),
+                title: const Text('About ZEGA-ALERT'),
+                subtitle: const Text('Version 1.0.0'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: _about,
+              ),
+              ListTile(
+                leading: const Icon(Icons.support_agent),
+                title: const Text('Contact us'),
+                subtitle: const Text('Hotlines 991 and 907'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: _contact,
+              ),
+              ListTile(
+                leading: const Icon(Icons.description_outlined),
+                title: const Text('Terms & Conditions'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: _terms,
+              ),
+              ListTile(
+                leading: const Icon(Icons.privacy_tip_outlined),
+                title: const Text('Privacy Policy'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: _privacy,
+              ),
+              ListTile(
+                leading: const Icon(Icons.star_outline),
+                title: const Text('Rate ZEGA-ALERT'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: _rateApp,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
         _section('Backend server', Icons.dns_outlined),
         Semantics(
           label: 'Backend server. Currently ${Api.baseUrl}. Double tap to change.',
@@ -383,23 +423,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 16),
           Semantics(
-            button: true,
-            label: 'Request direct call. Double tap to call the emergency hotline.',
-            child: FilledButton.tonalIcon(
-              onPressed: _requestCall,
-              icon: const Icon(Icons.phone_in_talk_outlined),
-              label: Text(loc.requestDirectCall),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Semantics(
-            button: true,
-            label: 'Record sign language video. Double tap to open camera for sign language recording.',
-            child: FilledButton.tonalIcon(
-              onPressed: _recordSignLanguage,
-              icon: const Icon(Icons.videocam_outlined),
-              label: Text(loc.recordSignLanguage),
-            ),
+            label: 'People of Determination actions. Request a direct call or record a sign language video.',
+            child: PodActions(showHeading: false),
           ),
           const SizedBox(height: 20),
 
@@ -484,64 +509,130 @@ class _SettingsScreenState extends State<SettingsScreen> {
         : 'Backend server saved: ${Api.baseUrl}');
   }
 
-  Future<void> _requestCall() async {
-    final loc = AppLocalizations.of(context);
-    setState(() => _status = null);
-    double? lat;
-    double? lng;
+  Future<void> _dial(String number) async {
+    final uri = Uri(scheme: 'tel', path: number);
     try {
-      final pos = await LocationService.best();
-      if (pos != null) {
-        lat = pos.latitude;
-        lng = pos.longitude;
-      }
-    } catch (_) {}
-    try {
-      final data = await Api.post('/pod/direct-call', {'latitude': lat, 'longitude': lng});
-      final station = data?['station'];
-      final stationName = station?['name'] ?? 'nearest station';
-      final stationPhone = station?['phone'];
-      setState(() => _status = 'Direct call request sent to $stationName.');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.callingNumber((stationPhone ?? '0911').toString()))),
-      );
-      final uri = Uri(scheme: 'tel', path: (stationPhone ?? '0911').toString());
       if (await canLaunchUrl(uri)) await launchUrl(uri);
-    } catch (e) {
-      setState(() => _status = loc.couldNotStartCall(e));
-    }
+    } catch (_) {}
   }
 
-  Future<void> _recordSignLanguage() async {
-    final loc = AppLocalizations.of(context);
+  void _about() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('ZEGA-ALERT'),
+        content: const SingleChildScrollView(
+          child: Text(
+            'ZEGA-ALERT is the Ethiopian Federal Police citizen safety app. '
+            'It connects you to emergency dispatch, crime reporting, missing and '
+            'wanted persons, official announcements and two-way communication '
+            'with officers — in English, Amharic, Oromifa and Tigrigna.\n\n'
+            'Version 1.0.0',
+            style: TextStyle(height: 1.4),
+          ),
+        ),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+      ),
+    );
+  }
+
+  void _contact() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Contact us'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.local_police),
+              title: const Text('Police emergency'),
+              subtitle: const Text('991'),
+              onTap: () => _dial('991'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.emergency),
+              title: const Text('Ambulance / rescue'),
+              subtitle: const Text('907'),
+              onTap: () => _dial('907'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.email_outlined),
+              title: const Text('Email support'),
+              subtitle: const Text('support@zega-alert.et'),
+              onTap: () async {
+                await launchUrl(Uri(scheme: 'mailto', path: 'support@zega-alert.et'));
+              },
+            ),
+          ],
+        ),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+      ),
+    );
+  }
+
+  void _terms() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Terms & Conditions'),
+        content: const SingleChildScrollView(
+          child: Text(
+            '1. Use ZEGA-ALERT only for genuine emergencies, crime reports and '
+            'public-safety information.\n\n'
+            '2. Knowingly sending false reports is an offence and may lead to '
+            'account suspension and legal action.\n\n'
+            '3. Emergency features depend on network coverage and location '
+            'services. Always call 991 if the app cannot connect.\n\n'
+            '4. Reports you submit are shared with the responsible police '
+            'station and regional administrators for investigation.\n\n'
+            '5. Keep your account credentials private. You are responsible for '
+            'activity on your account.',
+            style: TextStyle(height: 1.4),
+          ),
+        ),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+      ),
+    );
+  }
+
+  void _privacy() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Privacy Policy'),
+        content: const SingleChildScrollView(
+          child: Text(
+            'ZEGA-ALERT collects only the information needed to keep you safe: '
+            'your name, phone number, region and the content of reports you '
+            'choose to submit.\n\n'
+            'Location is used for SOS alerts, nearest-station lookup, safety '
+            'zones and incident mapping. It is transmitted only while you use '
+            'these features.\n\n'
+            'Contact details on missing-person notices are encrypted at rest. '
+            'Sensitive information is visible only to authorised police staff.\n\n'
+            'You can browse news, wanted and missing persons as a guest. You '
+            'can delete your account by contacting support.',
+            style: TextStyle(height: 1.4),
+          ),
+        ),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+      ),
+    );
+  }
+
+  Future<void> _rateApp() async {
+    final uri = Uri.parse('https://play.google.com/store/search?q=ZEGA-ALERT&c=apps');
     try {
-      final file = await ImagePicker().pickVideo(source: ImageSource.camera, maxDuration: const Duration(seconds: 60));
-      if (file == null) {
-        setState(() => _status = loc.recordingCancelled);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
         return;
       }
-      final up = await Api.upload('/upload/single', [MapEntry('file', file.path)]);
-      final url = up?['url'] as String?;
-      final absUrl = (url != null && url.startsWith('/')) ? '${Api.baseUrl}$url' : url;
-      double? lat;
-      double? lng;
-      try {
-        final pos = await LocationService.best();
-        if (pos != null) {
-          lat = pos.latitude;
-          lng = pos.longitude;
-        }
-      } catch (_) {}
-      await Api.post('/pod/sign-language', {
-        'video_url': absUrl,
-        'note': 'Sign language video message',
-        'latitude': lat,
-        'longitude': lng,
-      });
-      setState(() => _status = loc.signLanguageUploaded(file.name));
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(loc.signLanguageRecorded)));
-    } catch (e) {
-      setState(() => _status = loc.couldNotRecordVideo(e));
+    } catch (_) {}
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Search for ZEGA-ALERT in your app store to rate us.')),
+      );
     }
   }
 

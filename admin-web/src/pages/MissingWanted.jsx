@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { api } from '../api/client';
+import { api, API_BASE, assetUrl } from '../api/client';
 import Icon from '../components/Icon';
 
 const personBadge = (v) => ({ missing: 'amber', found: 'green', wanted: 'red', captured: 'green' }[v] || 'gray');
@@ -199,16 +199,17 @@ export default function MissingWanted() {
                         const fd = new FormData();
                         fd.append('file', file);
                         const token = localStorage.getItem('zega_admin_token');
-                        const baseUrl = import.meta.env.VITE_API_URL || '';
+                        const baseUrl = API_BASE;
                         const res = await fetch(`${baseUrl}/api/upload/single`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
                         const data = await res.json();
-                        if (data.url) setForm(f => ({ ...f, photo_url: (import.meta.env.VITE_API_URL || '') + data.url }));
+                        const url = data?.data?.url;
+                        if (url) setForm(f => ({ ...f, photo_url: assetUrl(url) }));
                       } catch (err) { setMsg({ type: 'err', text: 'Upload failed: ' + err.message }); }
                       finally { setUploading(false); }
                     }}
                   />
                   {uploading && <span style={{ fontSize: 12, color: 'var(--muted)' }}>Uploading...</span>}
-                  {form.photo_url && <img src={form.photo_url} alt="Preview" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--line)' }} />}
+                  {form.photo_url && <img src={assetUrl(form.photo_url)} alt="Preview" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--line)' }} />}
                 </div>
                 {form.photo_url && <input type="text" value={form.photo_url} onChange={e => setForm(f => ({ ...f, photo_url: e.target.value }))} placeholder="Or paste photo URL" style={{ marginTop: 6, width: '100%', fontSize: 12 }} />}
               </div>
@@ -314,7 +315,7 @@ export default function MissingWanted() {
                 <div key={m.id} className="person-card">
                   <div className="person-card-header">
                     {m.photo_url ? (
-                      <img src={m.photo_url} alt={m.name} className="person-card-img" />
+                      <img src={assetUrl(m.photo_url)} alt={m.name} className="person-card-img" />
                     ) : (
                       <div className="person-card-placeholder">{m.name.slice(0, 1)}</div>
                     )}
@@ -387,7 +388,7 @@ export default function MissingWanted() {
                 <div key={w.id} className="person-card" style={{ borderColor: 'rgba(239, 68, 68, 0.3)' }}>
                   <div className="person-card-header">
                     {w.photo_url ? (
-                      <img src={w.photo_url} alt={w.name} className="person-card-img" />
+                      <img src={assetUrl(w.photo_url)} alt={w.name} className="person-card-img" />
                     ) : (
                       <div className="person-card-placeholder" style={{ color: '#ef4444' }}>{w.name.slice(0, 1)}</div>
                     )}
@@ -468,7 +469,7 @@ export default function MissingWanted() {
             </div>
             <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
               {selectedCase.photo_url ? (
-                <img src={selectedCase.photo_url} alt="" style={{ width: 120, height: 120, borderRadius: 8, objectFit: 'cover' }} />
+                <img src={assetUrl(selectedCase.photo_url)} alt="" style={{ width: 120, height: 120, borderRadius: 8, objectFit: 'cover' }} />
               ) : (
                 <div style={{ width: 120, height: 120, borderRadius: 8, background: 'var(--panel2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36 }}>?</div>
               )}

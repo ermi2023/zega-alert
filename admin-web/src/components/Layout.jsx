@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import Icon from './Icon';
-import { api } from '../api/client';
+import { api, API_BASE } from '../api/client';
 import { io } from 'socket.io-client';
 
 const LANGUAGES = [
@@ -46,7 +46,7 @@ export default function Layout({ children }) {
       setUnreadCount(list.filter((n) => n.is_read === false).length);
     }).catch(() => {});
 
-    const socket = io(import.meta.env.VITE_API_URL || undefined, {
+    const socket = io(API_BASE || undefined, {
       auth: { token: localStorage.getItem('zega_admin_token') },
     });
     socket.on('sos:new', () => setUnreadCount((c) => c + 1));

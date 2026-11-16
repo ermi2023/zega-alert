@@ -76,7 +76,7 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
       final url = res['url'] as String?;
       if (url != null) {
         setState(() {
-          _pendingAttachment = '${Api.baseUrl}$url';
+          _pendingAttachment = Api.assetUrl(url);
           _pendingType = type;
         });
       }
@@ -294,7 +294,7 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
                                       Padding(
                                         padding: const EdgeInsets.only(bottom: 6),
                                         child: attType == 'image'
-                                            ? ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(att, width: 200, fit: BoxFit.cover))
+                                            ? ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(Api.assetUrl(att)!, width: 200, fit: BoxFit.cover))
                                             : Row(children: [const Icon(Icons.attach_file, size: 18), const SizedBox(width: 6), Expanded(child: Text(att.split('/').last, overflow: TextOverflow.ellipsis))]),
                                       ),
                                     if ((m['body'] ?? '').toString().isNotEmpty) Text(m['body'] ?? ''),

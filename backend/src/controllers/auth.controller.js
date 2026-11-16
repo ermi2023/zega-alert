@@ -229,13 +229,13 @@ const publicUser = (u) => {
 };
 
 export const searchStaff = async (req, res) => {
-  const { q } = req.query;
-  if (!q) return fail(res, 'q is required');
+  const q = (req.query.q || '').trim();
+  const limit = q ? 10 : 100;
   const { rows } = await query(
     `SELECT id, full_name, phone, role, region, sub_city FROM users
      WHERE role != 'citizen' AND (phone ILIKE $1 OR full_name ILIKE $1) AND is_active = true
-     ORDER BY full_name LIMIT 10`,
-    [`%${q}%`],
+     ORDER BY full_name LIMIT $2`,
+    [`%${q}%`, limit],
   );
   ok(res, rows);
 };

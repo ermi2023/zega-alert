@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import '../services/api.dart';
 import '../l10n/app_localizations.dart';
 
 class GeofenceMapScreen extends StatelessWidget {
@@ -17,17 +16,29 @@ class GeofenceMapScreen extends StatelessWidget {
     final double radius = (geofence['radius_m'] as num?)?.toDouble() ?? 200.0;
 
     return Scaffold(
-      appBar: AppBar(title: Text(geofence['name'] ?? loc.geofence)),
+      appBar: AppBar(title: Text(geofence['name'] ?? loc.safetyZones)),
       body: FlutterMap(
         options: MapOptions(
-          center: LatLng(lat, lng),
-          zoom: 15,
+          initialCenter: LatLng(lat, lng),
+          initialZoom: 15,
         ),
         children: [
           TileLayer(
             urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
             subdomains: const ['a', 'b', 'c'],
             userAgentPackageName: 'com.zega.alert',
+          ),
+          // visual geofence circle
+          CircleLayer(
+            circles: [
+              CircleMarker(
+                point: LatLng(lat, lng),
+                radius: radius, // meters – flutter_map scales automatically
+                color: Colors.blue.withValues(alpha: 0.2),
+                borderStrokeWidth: 2,
+                borderColor: Colors.blue,
+              ),
+            ],
           ),
           // marker for centre
           MarkerLayer(
@@ -36,19 +47,7 @@ class GeofenceMapScreen extends StatelessWidget {
                 point: LatLng(lat, lng),
                 width: 40,
                 height: 40,
-                builder: (_) => const Icon(Icons.location_on, color: Colors.red, size: 40),
-              ),
-            ],
-          ),
-          // visual geofence circle
-          CircleLayer(
-            circles: [
-              CircleMarker(
-                point: LatLng(lat, lng),
-                radius: radius, // meters – flutter_map scales automatically
-                color: Colors.blue.withOpacity(0.2),
-                borderStrokeWidth: 2,
-                borderColor: Colors.blue,
+                child: const Icon(Icons.location_on, color: Colors.red, size: 40),
               ),
             ],
           ),

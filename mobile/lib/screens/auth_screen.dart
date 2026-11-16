@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../config/constants.dart';
 import '../l10n/app_localizations.dart';
@@ -45,7 +46,7 @@ class _AuthScreenState extends State<AuthScreen> {
     try {
       final r = await Api.get('/app/version');
       final latest = r['version']?.toString() ?? '';
-      const url = r['url']?.toString();
+      final url = r['url']?.toString();
       if (latest != '1.0.0' && url != null && mounted) {
         showDialog(
           context: context,
@@ -327,7 +328,7 @@ class _AuthScreenState extends State<AuthScreen> {
     if (phone.isEmpty) return;
     setState(() => _busy = true);
     try {
-      await Api.post('/auth/request-otp', body: {'contact': phone, 'purpose': 'reset_password'});
+      await Api.post('/auth/request-otp', {'contact': phone, 'purpose': 'reset_password'});
       final code = await _askOtpText(codeCtrl);
       if (code == null || code.isEmpty) return;
       final np = newPassCtrl.text;
@@ -344,7 +345,7 @@ class _AuthScreenState extends State<AuthScreen> {
         ),
       );
       if (passOk != true) return;
-      await Api.post('/auth/reset-password', body: {'phone': phone, 'code': code, 'new_password': newPassCtrl.text});
+      await Api.post('/auth/reset-password', {'phone': phone, 'code': code, 'new_password': newPassCtrl.text});
       if (mounted) setState(() => _error = '');
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password reset. Please sign in.')));
     } catch (e) {

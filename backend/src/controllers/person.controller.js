@@ -39,22 +39,22 @@ export const getMissingStats = async (req, res) => {
 export const createMissing = async (req, res) => {
   const { name, age, gender, photo_url, description, last_seen_lat, last_seen_lng, last_seen_address, last_seen_at, contact_phone } = req.body;
   if (!name) return fail(res, 'name is required');
-  // Citizen submissions are queued for Regional Admin authorization; staff entries are auto-approved.
-  const autoApprove = req.user.role !== 'citizen';
+  // Every new case starts as a draft. Staff must explicitly publish it before
+  // it is shown to the public in the mobile app; citizen submissions also wait
+  // for official approval.
   const { rows } = await query(
     `INSERT INTO missing_persons (name, age, gender, photo_url, description, last_seen_lat, last_seen_lng,
        last_seen_address, last_seen_at, reporter_id, contact_phone, is_approved, approved_by, approved_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,false,NULL,NULL) RETURNING *`,
     [name, age || null, gender || null, photo_url || null, description || null,
       last_seen_lat || null, last_seen_lng || null, last_seen_address || null,
-      last_seen_at || null, req.user.id, encrypt(contact_phone || req.user.phone),
-      autoApprove, autoApprove ? req.user.id : null, autoApprove ? new Date() : null],
+      last_seen_at || null, req.user.id, encrypt(contact_phone || req.user.phone)],
   );
   await query(
     `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'create_missing_person','missing_persons',$2)`,
     [req.user.id, rows[0].id],
   );
-  ok(res, decryptRow(rows[0]), autoApprove ? 'Missing person registered' : 'Missing person submitted for approval', 201);
+  ok(res, decryptRow(rows[0]), 'Missing person saved as a draft. Publish it to make it visible in the mobile app.', 201);
 };
 
 export const listMissing = async (req, res) => {
@@ -126,6 +126,34 @@ export const rejectMissing = async (req, res) => {
     [req.user.id, rows[0].id],
   );
   ok(res, decryptRow(rows[0]), 'Missing person rejected');
+};
+
+export const publishMissing = async (req, res) => {
+  const { rows } = await query(
+    `UPDATE missing_persons SET is_approved = true, approved_by = $1, approved_at = now(), rejection_reason = NULL
+     WHERE id = $2 RETURNING *`,
+    [req.user.id, req.params.id],
+  );
+  if (!rows[0]) return fail(res, 'Not found', 404);
+  await query(
+    `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'publish_missing_person','missing_persons',$2)`,
+    [req.user.id, rows[0].id],
+  );
+  ok(res, decryptRow(rows[0]), 'Published. This case is now visible to the public in the mobile app.');
+};
+
+export const unpublishMissing = async (req, res) => {
+  const { rows } = await query(
+    `UPDATE missing_persons SET is_approved = false, approved_by = NULL, approved_at = NULL
+     WHERE id = $1 RETURNING *`,
+    [req.params.id],
+  );
+  if (!rows[0]) return fail(res, 'Not found', 404);
+  await query(
+    `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'unpublish_missing_person','missing_persons',$2)`,
+    [req.user.id, rows[0].id],
+  );
+  ok(res, decryptRow(rows[0]), 'Unpublished. This case is hidden from the mobile app.');
 };
 
 export const updateMissing = async (req, res) => {

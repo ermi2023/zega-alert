@@ -3,6 +3,7 @@ import { authenticate, requireRole } from '../middleware/auth.js';
 import {
   createMissing, listMissing, getMissing, updateMissing, createSighting, listSightings,
   createWanted, listWanted, updateWanted, approveMissing, rejectMissing, getMissingStats,
+  publishMissing, unpublishMissing,
 } from '../controllers/person.controller.js';
 
 const router = Router();
@@ -19,6 +20,8 @@ router.post('/missing', authenticate, createMissing);
 router.patch('/missing/:id', authenticate, requireRole('police', 'dispatcher', 'regional_admin', 'system_admin'), updateMissing);
 router.patch('/missing/:id/approve', authenticate, requireRole('regional_admin', 'system_admin'), approveMissing);
 router.patch('/missing/:id/reject', authenticate, requireRole('regional_admin', 'system_admin'), rejectMissing);
+router.patch('/missing/:id/publish', authenticate, requireRole('regional_admin', 'system_admin'), publishMissing);
+router.patch('/missing/:id/unpublish', authenticate, requireRole('regional_admin', 'system_admin'), unpublishMissing);
 
 router.post('/wanted', authenticate, requireRole('police', 'regional_admin', 'system_admin'), createWanted);
 router.patch('/wanted/:id', authenticate, requireRole('police', 'regional_admin', 'system_admin'), updateWanted);

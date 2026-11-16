@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api, API_BASE, assetUrl } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import Icon from '../components/Icon';
 
 const personBadge = (v) => ({ missing: 'amber', found: 'green', wanted: 'red', captured: 'green' }[v] || 'gray');
@@ -13,6 +14,8 @@ const emptyForm = (kind) => ({
 
 export default function MissingWanted() {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const canPublish = ['regional_admin', 'system_admin'].includes(user?.role);
   const [missing, setMissing] = useState([]);
   const [missingStats, setMissingStats] = useState(null);
   const [pending, setPending] = useState([]);
@@ -44,10 +47,20 @@ export default function MissingWanted() {
     await api.patch(`/persons/wanted/${id}`, { status });
     load();
   };
-  const approveCase = async (id) => {
-    await api.patch(`/persons/missing/${id}/approve`);
-    setMsg({ type: 'ok', text: 'Case approved and published.' });
-    load();
+  const publishCase = async (id) => {
+    try {
+      await api.patch(`/persons/missing/${id}/publish`);
+      setMsg({ type: 'ok', text: 'Published. Mobile app users can now view this case.' });
+      load();
+    } catch (ex) { setMsg({ type: 'err', text: ex.message }); }
+  };
+  const unpublishCase = async (id) => {
+    if (!window.confirm('Unpublish this case? It will be hidden from the mobile app until you publish it again.')) return;
+    try {
+      await api.patch(`/persons/missing/${id}/unpublish`);
+      setMsg({ type: 'ok', text: 'Unpublished. This case is now hidden from the mobile app.' });
+      load();
+    } catch (ex) { setMsg({ type: 'err', text: ex.message }); }
   };
   const rejectCase = async (id) => {
     const reason = window.prompt('Reason for rejection:', 'Insufficient information');
@@ -74,7 +87,12 @@ export default function MissingWanted() {
     if (kind === 'wanted') { payload.crime_description = form.crime_description.trim() || null; payload.danger_level = form.danger_level; }
     try {
       await api.post(kind === 'missing' ? '/persons/missing' : '/persons/wanted', payload);
-      setMsg({ type: 'ok', text: `${kind === 'missing' ? t('persons.missingRegistered') : t('persons.wantedRegistered')}` });
+      setMsg({
+        type: 'ok',
+        text: kind === 'missing'
+          ? 'Missing person saved as a draft. Click "Publish to app" to make it visible to people using the mobile app.'
+          : t('persons.wantedRegistered'),
+      });
       setForm(emptyForm(kind));
       setShowForm(false);
       load();
@@ -234,14 +252,14 @@ export default function MissingWanted() {
         </div>
       )}
 
-      {/* Pending Citizens Submissions for Regional Admin Approval (SD-7 / Doc 4.3.2) */}
+      {/* Drafts & citizen submissions waiting to be published */}
       {pending.length > 0 && (
         <div className="panel" style={{ borderColor: 'var(--amber, #f59e0b)', marginBottom: 16 }}>
           <div className="section-head">
-            <h2>Pending Regional Admin Authorization ({pending.length})</h2>
-            <span className="badge amber">Review Required</span>
+            <h2>Unpublished Cases ({pending.length})</h2>
+            <span className="badge amber">Not visible in the app</span>
           </div>
-          <p style={{ color: 'var(--muted)', fontSize: 13, margin: '0 0 12px' }}>Citizen submissions queued for official verification before public display across Ethiopia.</p>
+          <p style={{ color: 'var(--muted)', fontSize: 13, margin: '0 0 12px' }}>These cases are saved as drafts. Click Publish to make them visible to people using the mobile app. Citizen submissions also need official approval.</p>
           <table>
             <thead><tr><th>{t('persons.name')}</th><th>{t('persons.age')}</th><th>{t('persons.lastSeen')}</th><th>{t('persons.contact')}</th><th>{t('persons.action')}</th></tr></thead>
             <tbody>
@@ -252,7 +270,9 @@ export default function MissingWanted() {
                   <td>{m.last_seen_address || '—'}<br /><small>{m.last_seen_at ? new Date(m.last_seen_at).toLocaleString() : '—'}</small></td>
                   <td>{m.contact_phone}</td>
                   <td>
-                    <button className="btn small" onClick={() => approveCase(m.id)}>Approve</button>
+                    {canPublish
+                      ? <button className="btn small" onClick={() => publishCase(m.id)}>Publish to app</button>
+                      : <span className="badge amber">draft</span>}
                     <button className="btn small danger" style={{ marginLeft: 6 }} onClick={() => rejectCase(m.id)}>Reject</button>
                   </td>
                 </tr>
@@ -306,13 +326,8 @@ export default function MissingWanted() {
         {activeTab === 'missing' && (
           viewMode === 'cards' ? (
             <div className="person-card-grid">
-              {(filteredMissing.length > 0 ? filteredMissing : [
-                { id: '1', case_code: 'MP-9921', name: 'Abel Tesfaye', age: 24, last_seen_address: 'Piazza, Central District', created_at: new Date(Date.now() - 48 * 3600 * 1000).toISOString(), status: 'missing', photo_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300' },
-                { id: '2', case_code: 'MP-8942', name: 'Selamawit Kebede', age: 19, last_seen_address: 'Kebele 04 Clinic', created_at: new Date(Date.now() - 120 * 3600 * 1000).toISOString(), status: 'found', photo_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300' },
-                { id: '3', case_code: 'MP-9945', name: 'Elias Gebre', age: 42, last_seen_address: 'Industrial Zone North', created_at: new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString(), status: 'missing', photo_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300' },
-                { id: '4', case_code: 'MP-9958', name: 'Lina Solomon', age: 16, last_seen_address: 'Dire-Dawa Secondary School', created_at: new Date(Date.now() - 12 * 3600 * 1000).toISOString(), status: 'missing', photo_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300' },
-              ]).map((m) => (
-                <div key={m.id} className="person-card">
+              {filteredMissing.map((m) => (
+                <div key={m.id} className="person-card" style={m.is_approved ? undefined : { borderColor: 'rgba(245, 158, 11, 0.45)' }}>
                   <div className="person-card-header">
                     {m.photo_url ? (
                       <img src={assetUrl(m.photo_url)} alt={m.name} className="person-card-img" />
@@ -338,8 +353,25 @@ export default function MissingWanted() {
                       <Icon name="clock" size={13} />
                       <span>Missing since: {m.created_at ? new Date(m.created_at).toLocaleDateString() : 'Recently'}</span>
                     </div>
+                    <div className="person-card-detail">
+                      <Icon name={m.is_approved ? 'check' : 'clock'} size={13} />
+                      <span>
+                        {m.is_approved
+                          ? <span className="badge green">Published to app</span>
+                          : <span className="badge amber">Draft — hidden from app</span>}
+                      </span>
+                    </div>
                   </div>
                   <div className="person-card-actions">
+                    {canPublish && (m.is_approved ? (
+                      <button className="btn small ghost" onClick={() => unpublishCase(m.id)}>
+                        Unpublish
+                      </button>
+                    ) : (
+                      <button className="btn small" onClick={() => publishCase(m.id)}>
+                        Publish to app
+                      </button>
+                    ))}
                     {m.status === 'missing' && (
                       <button className="btn small" style={{ background: '#ea580c', borderColor: '#ea580c' }} onClick={() => markMissing(m.id, 'found')}>
                         ✓ Mark as Found
@@ -351,6 +383,9 @@ export default function MissingWanted() {
                   </div>
                 </div>
               ))}
+              {filteredMissing.length === 0 && (
+                <p style={{ color: 'var(--muted)', padding: 12 }}>{t('persons.none')}</p>
+              )}
             </div>
           ) : (
             <table>
@@ -365,11 +400,14 @@ export default function MissingWanted() {
                     <td><span className={`badge ${personBadge(m.status)}`}>{m.status}</span></td>
                     <td>
                       {m.is_approved
-                        ? <span className="badge green">approved</span>
-                        : (m.rejection_reason ? <span className="badge red">rejected</span> : <span className="badge amber">pending</span>)}
+                        ? <span className="badge green">published</span>
+                        : (m.rejection_reason ? <span className="badge red">rejected</span> : <span className="badge amber">draft</span>)}
                     </td>
                     <td>
-                      {m.status === 'missing' && <button className="btn small" onClick={() => markMissing(m.id, 'found')}>{t('persons.markFound')}</button>}
+                      {canPublish && (m.is_approved
+                        ? <button className="btn small ghost" onClick={() => unpublishCase(m.id)}>Unpublish</button>
+                        : <button className="btn small" onClick={() => publishCase(m.id)}>Publish</button>)}
+                      {m.status === 'missing' && <button className="btn small" style={{ marginLeft: 6 }} onClick={() => markMissing(m.id, 'found')}>{t('persons.markFound')}</button>}
                       <button className="btn small ghost" style={{ marginLeft: 6 }} onClick={() => setSelectedCase(m)}>Case</button>
                     </td>
                   </tr>
@@ -478,6 +516,12 @@ export default function MissingWanted() {
                 <div><b>Age:</b> {selectedCase.age || '—'} years</div>
                 <div><b>Gender:</b> {selectedCase.gender || '—'}</div>
                 <div><b>Status:</b> <span className={`badge ${selectedCase.status === 'found' || selectedCase.status === 'captured' ? 'green' : 'red'}`}>{selectedCase.status}</span></div>
+                <div>
+                  <b>Mobile app:</b>{' '}
+                  {selectedCase.is_approved
+                    ? <span className="badge green">published — visible to the public</span>
+                    : <span className="badge amber">draft — hidden from the public</span>}
+                </div>
                 <div><b>Registered:</b> {new Date(selectedCase.created_at || Date.now()).toLocaleDateString()}</div>
               </div>
             </div>
@@ -486,6 +530,11 @@ export default function MissingWanted() {
             {selectedCase.description && <p style={{ fontSize: 13 }}><b>Physical Description:</b> {selectedCase.description}</p>}
             <p style={{ fontSize: 13 }}><b>Contact for Sightings/Tips:</b> {selectedCase.contact_phone || '991 / Federal Police Hotline'}</p>
             <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              {!['wanted', 'captured'].includes(selectedCase.status) && canPublish && (
+                selectedCase.is_approved
+                  ? <button className="btn ghost" onClick={() => { unpublishCase(selectedCase.id); setSelectedCase(null); }}>Unpublish from app</button>
+                  : <button className="btn" onClick={() => { publishCase(selectedCase.id); setSelectedCase(null); }}>Publish to app</button>
+              )}
               {selectedCase.status === 'missing' && (
                 <button className="btn" onClick={() => { markMissing(selectedCase.id, 'found'); setSelectedCase(null); }}>Mark as Found</button>
               )}

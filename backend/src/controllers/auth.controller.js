@@ -25,6 +25,16 @@ const revokeJti = (jti) => {
 const PUBLIC_USER = `id, full_name, phone, email, role, region, sub_city, woreda, photo_url,
   preferred_language, accessibility_mode, is_verified, is_active, last_login_at, created_at`;
 
+// Accept local (09xxxxxxxx / 9xxxxxxxx) and international (+251...) forms and
+// store the local format used across the platform.
+const normalizePhone = (raw) => {
+  let p = String(raw || '').replace(/[\s\-()]/g, '');
+  if (p.startsWith('+251')) p = p.slice(4);
+  else if (p.startsWith('251') && p.length > 9) p = p.slice(3);
+  if (!p || p.startsWith('0')) return p;
+  return p.length === 9 ? `0${p}` : p;
+};
+
 export const register = async (req, res) => {
   try {
     const { full_name, phone, email, password, region, sub_city, woreda, preferred_language, accessibility_mode, accepted_terms, accepted_privacy } = req.body;
@@ -192,18 +202,45 @@ export const me = async (req, res) => {
 };
 
 export const updateMe = async (req, res) => {
-  const allowed = ['full_name', 'region', 'sub_city', 'woreda', 'photo_url', 'device_token',
-    'preferred_language', 'accessibility_mode'];
-  const fields = allowed.filter((f) => req.body[f] !== undefined);
-  if (!fields.length) return fail(res, 'No fields to update');
-  const setSql = fields.map((f, i) => `${f} = $${i + 1}`).join(', ');
-  const values = fields.map((f) => req.body[f]);
-  values.push(req.user.id);
-  const { rows } = await query(
-    `UPDATE users SET ${setSql}, updated_at = now() WHERE id = $${values.length} RETURNING ${PUBLIC_USER}`,
-    values,
-  );
-  ok(res, rows[0], 'Profile updated');
+  try {
+    const allowed = ['full_name', 'phone', 'email', 'region', 'sub_city', 'woreda', 'photo_url', 'device_token',
+      'preferred_language', 'accessibility_mode'];
+    const fields = allowed.filter((f) => req.body[f] !== undefined);
+    if (!fields.length) return fail(res, 'No fields to update');
+    if (fields.includes('full_name') && !String(req.body.full_name || '').trim()) {
+      return fail(res, 'Full name cannot be empty');
+    }
+    if (fields.includes('phone')) {
+      const phone = normalizePhone(req.body.phone);
+      if (phone.length < 9) return fail(res, 'Enter a valid phone number, e.g. 0911234567');
+      const dup = await query('SELECT id FROM users WHERE phone = $1 AND id <> $2', [phone, req.user.id]);
+      if (dup.rows.length) return fail(res, 'That phone number is already in use', 409);
+      req.body.phone = phone;
+    }
+    if (fields.includes('email')) {
+      const email = String(req.body.email || '').trim();
+      if (email) {
+        const dup = await query('SELECT id FROM users WHERE email = $1 AND id <> $2', [email, req.user.id]);
+        if (dup.rows.length) return fail(res, 'That email is already in use', 409);
+      }
+      req.body.email = email || null;
+    }
+    const setSql = fields.map((f, i) => `${f} = $${i + 1}`).join(', ');
+    const values = fields.map((f) => req.body[f]);
+    values.push(req.user.id);
+    const { rows } = await query(
+      `UPDATE users SET ${setSql}, updated_at = now() WHERE id = $${values.length} RETURNING ${PUBLIC_USER}`,
+      values,
+    );
+    await query(
+      `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'update_profile','users',$1)`,
+      [req.user.id],
+    );
+    ok(res, rows[0], 'Profile updated');
+  } catch (e) {
+    console.error('[UPDATE_ME]', e);
+    if (!res.headersSent) return fail(res, 'Could not update profile. Please try again.', 500);
+  }
 };
 
 export const changePassword = async (req, res) => {

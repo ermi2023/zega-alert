@@ -161,11 +161,30 @@ body {
 .user-chip div { display: flex; flex-direction: column; min-width: 0; }
 .user-chip b { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .user-chip small { color: var(--muted); font-size: 11px; }
+.user-chip-btn {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.user-chip-btn:hover b { color: var(--brand-light); }
 .lang-select {
   padding: 8px 10px; border-radius: var(--r-sm);
   border: 1px solid var(--line-2);
   background: var(--panel2); color: var(--text);
   font-size: 13px; width: 100%;
+}
+.topbar-lang {
+  width: auto;
+  max-width: 132px;
+  padding: 6px 8px;
+  font-size: 12px;
+  margin-left: auto;
+  background: var(--panel2);
 }
 
 /* ------------------------------------------------------------------ main */
@@ -830,6 +849,8 @@ input:focus, select:focus, textarea:focus {
 }
 @media (max-width: 480px) {
   .cards { grid-template-columns: 1fr; }
+  .topbar-cad { display: none !important; }
+  .topbar-lang { max-width: 112px; }
 }
 
 /* ------------------------------------------------ Figure 29 & 30 styles */

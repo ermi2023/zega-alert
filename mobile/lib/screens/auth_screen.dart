@@ -101,26 +101,35 @@ class _AuthScreenState extends State<AuthScreen> {
           setState(() { _error = 'You must accept the Terms of Service to register.'; _busy = false; });
           return;
         }
-        final registered = await Api.post('/auth/register', {
-          'full_name': _name.text.trim(),
-          'phone': phone,
-          'email': _email.text.trim(),
-          'password': _password.text,
-          'region': _region,
-          'sub_city': _subCity,
-          'accepted_terms': true,
-          'accepted_privacy': true,
-        }) as Map<String, dynamic>?;
+        Map<String, dynamic>? registered;
+        try {
+          registered = await Api.post('/auth/register', {
+            'full_name': _name.text.trim(),
+            'phone': phone,
+            'email': _email.text.trim(),
+            'password': _password.text,
+            'region': _region,
+            'sub_city': _subCity,
+            'accepted_terms': true,
+            'accepted_privacy': true,
+          }) as Map<String, dynamic>?;
+        } on ApiException catch (e) {
+          // A previous attempt may have created the account even if this
+          // device never received the response. Fall through to sign-in.
+          if (!e.message.toLowerCase().contains('already exists')) rethrow;
+        }
 
         // Phone verification is best-effort: when the SMS gateway delivers an
         // OTP we prompt for it, otherwise the server returns the code (or has
         // already trusted the signup). Either way we must never block sign-in.
         final devOtp = registered?['devOtp']?.toString();
         if (devOtp == null || devOtp.isEmpty) {
-          try {
-            final otp = await _askOtp();
-            await Api.post('/auth/verify-otp', {'contact': phone, 'code': otp, 'purpose': 'verify_phone'});
-          } catch (_) {/* verification is optional; continue to sign-in */}
+          final otp = await _askOtp();
+          if (otp != null && otp.isNotEmpty) {
+            try {
+              await Api.post('/auth/verify-otp', {'contact': phone, 'code': otp, 'purpose': 'verify_phone'});
+            } catch (_) {/* verification is optional; continue to sign-in */}
+          }
         } else {
           try {
             await Api.post('/auth/verify-otp', {'contact': phone, 'code': devOtp, 'purpose': 'verify_phone'});
@@ -166,8 +175,9 @@ class _AuthScreenState extends State<AuthScreen> {
     return p.length == 9 ? '0$p' : p;
   }
 
-  String _friendlyError(Object e) {    final s = e.toString();
-    if (s.contains('SocketException') || s.contains('ClientException') || s.contains('timed out') || s.contains('errno = 110')) {
+  String _friendlyError(Object e) {
+    final s = e.toString();
+    if (s.contains('SocketException') || s.contains('ClientException') || s.toLowerCase().contains('timeout') || s.contains('errno = 110')) {
       return 'Cannot reach the server at ${Api.baseUrl}.\n'
           'Check your internet connection, or tap "Server" below to set a different backend URL.';
     }
@@ -210,7 +220,7 @@ class _AuthScreenState extends State<AuthScreen> {
     if (mounted) setState(() {});
   }
 
-  Future<String> _askOtp() async {
+  Future<String?> _askOtp() async {
     final loc = AppLocalizations.of(context);
     final controller = TextEditingController();
     final code = await showDialog<String>(
@@ -218,10 +228,13 @@ class _AuthScreenState extends State<AuthScreen> {
       builder: (ctx) => AlertDialog(
         title: Text(loc.enterOtp),
         content: TextField(controller: controller, keyboardType: TextInputType.number, decoration: InputDecoration(hintText: loc.checkOtpHint)),
-        actions: [TextButton(onPressed: () => Navigator.pop(ctx, controller.text), child: Text(loc.verify))],
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Not now')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, controller.text.trim()), child: Text(loc.verify)),
+        ],
       ),
     );
-    return code ?? '';
+    return code;
   }
 
   @override

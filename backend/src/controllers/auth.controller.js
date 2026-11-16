@@ -26,37 +26,50 @@ const PUBLIC_USER = `id, full_name, phone, email, role, region, sub_city, woreda
   preferred_language, accessibility_mode, is_verified, is_active, last_login_at, created_at`;
 
 export const register = async (req, res) => {
-  const { full_name, phone, email, password, region, sub_city, woreda, preferred_language, accessibility_mode, accepted_terms, accepted_privacy } = req.body;
-  if (!full_name || !phone || !password) return fail(res, 'full_name, phone and password are required');
-  if (!accepted_terms) return fail(res, 'You must accept the Terms of Service to register', 400);
-  const existing = await query('SELECT id FROM users WHERE phone = $1 OR email = $2', [phone, email || '']);
-  if (existing.rows.length) return fail(res, 'An account with this phone or email already exists', 409);
+  try {
+    const { full_name, phone, email, password, region, sub_city, woreda, preferred_language, accessibility_mode, accepted_terms, accepted_privacy } = req.body;
+    if (!full_name || !phone || !password) return fail(res, 'full_name, phone and password are required');
+    if (!accepted_terms) return fail(res, 'You must accept the Terms of Service to register', 400);
+    const existing = await query('SELECT id FROM users WHERE phone = $1 OR email = $2', [phone, email || '']);
+    if (existing.rows.length) return fail(res, 'An account with this phone or email already exists', 409);
 
-  const password_hash = await hashPassword(password);
-  const { rows } = await query(
-    `INSERT INTO users (full_name, phone, email, password_hash, region, sub_city, woreda, preferred_language, accessibility_mode, accepted_terms_at, accepted_privacy_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9, $10, $11)
-     RETURNING ${PUBLIC_USER}`,
-    [full_name, phone, email || null, password_hash, region || null, sub_city || null, woreda || null,
-      preferred_language || 'en', accessibility_mode || false,
-      accepted_terms ? new Date() : null,
-      accepted_privacy ? new Date() : null],
-  );
-  await query(
-    `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'register','users',$1)`,
-    [rows[0].id],
-  );
-  const { code, sms } = await createOtp({ contact: phone, purpose: 'verify_phone' });
-  const smsDelivered = sms && sms.status === 'sent';
-  // When the SMS gateway is unavailable (e.g. no/invalid Africa's Talking key)
-  // the user would otherwise be stuck at the OTP step, so trust the signup and
-  // mark the phone verified, and hand the code back for the app to use.
-  if (!smsDelivered) {
-    await query('UPDATE users SET is_verified = true WHERE phone = $1', [phone]);
+    const password_hash = await hashPassword(password);
+    const { rows } = await query(
+      `INSERT INTO users (full_name, phone, email, password_hash, region, sub_city, woreda, preferred_language, accessibility_mode, accepted_terms_at, accepted_privacy_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9, $10, $11)
+       RETURNING ${PUBLIC_USER}`,
+      [full_name, phone, email || null, password_hash, region || null, sub_city || null, woreda || null,
+        preferred_language || 'en', accessibility_mode || false,
+        accepted_terms ? new Date() : null,
+        accepted_privacy ? new Date() : null],
+    );
+    await query(
+      `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'register','users',$1)`,
+      [rows[0].id],
+    );
+    // OTP delivery must never block or fail account creation.
+    let code;
+    let smsDelivered = false;
+    try {
+      const otp = await createOtp({ contact: phone, purpose: 'verify_phone' });
+      code = otp.code;
+      smsDelivered = otp.sms && otp.sms.status === 'sent';
+    } catch (e) {
+      console.error('[REGISTER] OTP delivery failed:', e.message);
+    }
+    // When the SMS gateway is unavailable (e.g. no/invalid Africa's Talking key)
+    // the user would otherwise be stuck at the OTP step, so trust the signup and
+    // mark the phone verified, and hand the code back for the app to use.
+    if (!smsDelivered) {
+      await query('UPDATE users SET is_verified = true WHERE phone = $1', [phone]);
+    }
+    if (env.nodeEnv !== 'production' && code) console.log(`[DEV OTP] ${code} -> ${phone}`);
+    ok(res, { ...rows[0], is_verified: rows[0].is_verified || !smsDelivered, devOtp: smsDelivered ? undefined : code },
+      smsDelivered ? 'Registered. Verify your phone with the OTP sent.' : 'Registered. You are signed in.', 201);
+  } catch (e) {
+    console.error('[REGISTER]', e);
+    if (!res.headersSent) return fail(res, 'Registration failed. Please try again.', 500);
   }
-  if (env.nodeEnv !== 'production') console.log(`[DEV OTP] ${code} -> ${phone}`);
-  ok(res, { ...rows[0], is_verified: rows[0].is_verified || !smsDelivered, devOtp: smsDelivered ? undefined : code },
-    smsDelivered ? 'Registered. Verify your phone with the OTP sent.' : 'Registered. You are signed in.', 201);
 };
 
 export const requestOtp = async (req, res) => {

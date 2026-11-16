@@ -251,8 +251,8 @@ class Api {
     if (_token != null) headers['Authorization'] = 'Bearer $_token';
     final req = http.Request(method, uri)..headers.addAll(headers);
     if (body != null) req.body = jsonEncode(body);
-    final streamed = await req.send();
-    final res = await http.Response.fromStream(streamed);
+    final streamed = await req.send().timeout(const Duration(seconds: 45));
+    final res = await http.Response.fromStream(streamed).timeout(const Duration(seconds: 45));
     dynamic data;
     try {
       data = res.body.isEmpty ? null : jsonDecode(res.body);
@@ -328,8 +328,8 @@ class Api {
     for (final f in files) {
       req.files.add(await http.MultipartFile.fromPath(f.key, f.value));
     }
-    final streamed = await req.send();
-    final res = await http.Response.fromStream(streamed);
+    final streamed = await req.send().timeout(const Duration(seconds: 120));
+    final res = await http.Response.fromStream(streamed).timeout(const Duration(seconds: 120));
     dynamic data;
     try {
       data = res.body.isEmpty ? null : jsonDecode(res.body);

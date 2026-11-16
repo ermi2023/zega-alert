@@ -32,6 +32,8 @@ export async function sendSms(to, message) {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: params.toString(),
+      // Never let an unreachable SMS gateway hang the request that triggered it.
+      signal: AbortSignal.timeout(8000),
     });
 
     const data = await response.json();

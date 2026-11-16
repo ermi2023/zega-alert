@@ -37,6 +37,7 @@ try {
   await applyFile('migration_defence.sql', { tolerant: true });
   await applyFile('migration_gaps.sql', { tolerant: false });
   await applyFile('migration_spec_align.sql', { tolerant: false });
+  await applyFile('migration_consent.sql', { tolerant: false });
   await applyFile('seed.sql', { tolerant: true });
   console.log('[DB] Migrations complete');
 } catch (e) {

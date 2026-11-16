@@ -91,8 +91,8 @@ export const login = async (req, res) => {
   if (!user.is_active) return fail(res, 'Account disabled', 403);
 
   // 2FA OTP gate for admin roles
-  if (user.role === 'system_admin' || user.role === 'regional_admin') {
-    const { code } = await createOtp({ contact: user.phone, purpose: 'admin_2fa' });
+  if ((user.role === 'system_admin' || user.role === 'regional_admin') && env.admin2faEnabled) {
+    const { code } = await createOtp({ contact: user.phone, purpose: 'login' });
     if (env.nodeEnv !== 'production') console.log(`[DEV 2FA OTP] ${code} -> ${user.phone}`);
     const masked = user.phone.replace(/^(.{3})(.*)(.{2})$/, (_, a, b, c) => a + '*'.repeat(b.length) + c);
     return ok(res, { requires_otp: true, phone: masked }, 'OTP sent for 2FA verification');
@@ -208,7 +208,7 @@ export const changePassword = async (req, res) => {
 export const verifyAdminOtp = async (req, res) => {
   const { phone, otp } = req.body;
   if (!phone || !otp) return fail(res, 'phone and otp are required');
-  const result = await verifyOtp({ contact: phone, code: otp, purpose: 'admin_2fa' });
+  const result = await verifyOtp({ contact: phone, code: otp, purpose: 'login' });
   if (!result.ok) return fail(res, `OTP invalid/expired (${result.reason})`, 400);
   const { rows } = await query('SELECT * FROM users WHERE phone = $1', [phone]);
   const user = rows[0];

@@ -40,6 +40,8 @@ export const env = {
   faydaApiUrl: process.env.FAYDA_API_URL || '',
   faydaApiKey: process.env.FAYDA_API_KEY || '',
   faydaApiEnabled: Boolean(process.env.FAYDA_API_URL),
+  // Admin 2FA OTP requirement (requires active SMS provider or OTP UI in admin-web)
+  admin2faEnabled: process.env.ADMIN_2FA_ENABLED === 'true',
   // Geocoding/reverse geocoding (BigDataCloud)
   bigDataCloudApiKey: process.env.BIGDATACLOUD_API_KEY || '',
 };

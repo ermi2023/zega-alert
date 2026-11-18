@@ -52,10 +52,10 @@ export async function login(baseUrl, phone, password = 'password123') {
 }
 
 export const DEMO = {
-  admin: '0911000001',
+  admin: '0911000006',
   regionalAdmin: '0911000002',
   dispatcher: '0911000003',
   police: '0911000004',
   citizen: '0911000005',
-  citizen2: '0911000006',
+  citizen2: '0911999999',
 };

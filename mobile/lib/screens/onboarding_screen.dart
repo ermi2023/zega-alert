@@ -146,8 +146,8 @@ class _OnboardPage extends StatelessWidget {
             height: 120,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: color.withOpacity(0.15),
-              border: Border.all(color: color.withOpacity(0.4), width: 2),
+              color: color.withValues(alpha: 0.15),
+              border: Border.all(color: color.withValues(alpha: 0.4), width: 2),
             ),
             child: Icon(icon, size: 60, color: color),
           ),

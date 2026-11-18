@@ -13,6 +13,8 @@ class Api {
   /// Empty in normal local builds (falls back to LAN auto-detect).
   static const String _envBase = String.fromEnvironment('ZEGA_API_BASE');
 
+  static const String appVersion = '1.0.2';
+
   /// User-set backend base URL (e.g. a public HTTPS tunnel), persisted from the
   /// Settings screen. Takes precedence over everything else when present.
   static String? _overrideBase;
@@ -166,6 +168,7 @@ class Api {
   static String? _refreshToken;
   static String? _region;
   static String? _subCity;
+  static String? _role;
   static String? get token => _token;
   static String? get userId => _userId;
   static String? get refreshToken => _refreshToken;
@@ -177,15 +180,21 @@ class Api {
   /// missing-person submissions). Null when the user has not set a location.
   static String? get region => _region;
   static String? get subCity => _subCity;
+  static String? get role => _role;
 
   /// Cache the region/sub-city from a user object (login or /auth/me).
   static Future<void> setProfile(Map<String, dynamic>? user) async {
     if (user == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    final role = (user['role'] as String?)?.trim();
+    if (role != null && role.isNotEmpty) {
+      _role = role;
+      await prefs.setString('role', role);
+    }
     final r = (user['region'] as String?)?.trim();
     final s = (user['sub_city'] as String?)?.trim();
     _region = (r != null && r.isNotEmpty) ? r : _region;
     _subCity = (s != null && s.isNotEmpty) ? s : _subCity;
-    final prefs = await SharedPreferences.getInstance();
     if (_region != null) await prefs.setString('region', _region!);
     if (_subCity != null) await prefs.setString('sub_city', _subCity!);
   }
@@ -215,6 +224,7 @@ class Api {
     _refreshToken = prefs.getString('refreshToken');
     _region = prefs.getString('region');
     _subCity = prefs.getString('sub_city');
+    _role = prefs.getString('role');
   }
 
   /// Exchange the stored refresh token for a fresh access token.
@@ -237,12 +247,36 @@ class Api {
     _refreshToken = null;
     _region = null;
     _subCity = null;
+    _role = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');
     await prefs.remove('userId');
     await prefs.remove('refreshToken');
     await prefs.remove('region');
     await prefs.remove('sub_city');
+    await prefs.remove('role');
+  }
+
+  /// Preserve the refresh token when logout happens offline so it can be
+  /// revoked on the server once connectivity returns.
+  static Future<void> queuePendingLogout(String? refreshToken) async {
+    if (refreshToken == null || refreshToken.isEmpty) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('pendingRefreshRevoke', refreshToken);
+  }
+
+  static Future<void> flushPendingLogout() async {
+    final prefs = await SharedPreferences.getInstance();
+    final pending = prefs.getString('pendingRefreshRevoke');
+    if (pending == null || pending.isEmpty) return;
+    try {
+      await _send('POST', '/auth/logout', {'refreshToken': pending});
+      await prefs.remove('pendingRefreshRevoke');
+    } on ApiException {
+      await prefs.remove('pendingRefreshRevoke');
+    } catch (_) {
+      // Still offline; retry on the next connectivity event.
+    }
   }
 
   static Future<dynamic> _send(String method, String path, [Map<String, dynamic>? body]) async {

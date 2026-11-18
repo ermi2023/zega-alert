@@ -433,7 +433,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _legalCategory,
+                  initialValue: _legalCategory,
                   decoration: const InputDecoration(labelText: 'Category', border: OutlineInputBorder(), isDense: true),
                   items: [null, 'rights', 'duties', 'penalties', 'procedures', 'other']
                       .map((c) => DropdownMenuItem(value: c, child: Text(c ?? 'All')))
@@ -447,7 +447,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
               const SizedBox(width: 8),
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _legalLang,
+                  initialValue: _legalLang,
                   decoration: const InputDecoration(labelText: 'Language', border: OutlineInputBorder(), isDense: true),
                   items: [null, 'en', 'am', 'om', 'ti']
                       .map((l) => DropdownMenuItem(value: l, child: Text(l ?? 'All')))

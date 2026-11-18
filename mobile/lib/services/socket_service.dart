@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import '../services/api.dart';
 import '../services/webrtc_service.dart';
@@ -33,8 +34,8 @@ class SocketService {
           .setAuth({'token': Api.token})
           .build(),
     );
-    _socket!.onConnect((_) => print('[socket] connected'));
-    _socket!.onConnectError((err) => print('[socket] connect error: $err'));
+    _socket!.onConnect((_) => debugPrint('[socket] connected'));
+    _socket!.onConnectError((err) => debugPrint('[socket] connect error: $err'));
     _socket!.on('sos:status', (data) {
       if (data is Map) onSosStatus?.call(JsonMap.from(data));
     });

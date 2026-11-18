@@ -148,7 +148,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                     onPressed: id != null ? () => _markRead(id) : null,
                                   ),
                             isThreeLine: true,
-                            tileColor: isRead ? null : Colors.blue.withOpacity(0.04),
+                            tileColor: isRead ? null : Colors.blue.withValues(alpha: 0.04),
                           );
                         },
                       ),

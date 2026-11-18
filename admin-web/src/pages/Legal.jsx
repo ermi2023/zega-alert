@@ -51,6 +51,14 @@ export default function Legal() {
     } catch (ex) { setMsg({ type: 'err', text: ex.message }); }
   };
 
+  const translate = async (l) => {
+    try {
+      const res = await api.post(`/legal/${l.id}/translate`, {});
+      addToast(`Translations updated (${Object.keys(res.translations || {}).length} languages)`, 'ok');
+      load();
+    } catch (ex) { setMsg({ type: 'err', text: ex.message }); }
+  };
+
   const showHistory = async (l) => {
     setHistoryFor(l);
     try { setHistory(await api.get(`/legal/${l.id}/history`)); } catch { setHistory([]); }
@@ -104,6 +112,7 @@ export default function Legal() {
                   {l.review_status !== 'under_review'
                     ? <button className="btn small" onClick={() => review(l.id, 'under_review')}>Under Review</button>
                     : <button className="btn small" onClick={() => review(l.id, 'published')}>Publish</button>}
+                  <button className="btn small ghost" style={{ marginLeft: 4 }} onClick={() => translate(l)}>Translate</button>
                   <button className="btn small ghost" style={{ marginLeft: 4 }} onClick={() => showHistory(l)}>History</button>
                   <button className="btn small ghost" style={{ marginLeft: 4 }} onClick={() => startEdit(l)}>{t('legal.editBtn')}</button>
                   <button className="btn small danger" style={{ marginLeft: 4 }} onClick={() => remove(l.id)}>{t('legal.delete')}</button>

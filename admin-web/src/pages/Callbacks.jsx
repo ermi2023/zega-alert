@@ -43,6 +43,19 @@ export default function Callbacks() {
     catch (ex) { setMsg({ type: 'err', text: ex.message }); }
   };
 
+  const acceptProposed = async (id) => {
+    try { await api.patch(`/callbacks/${id}`, { status: 'accepted' }); setMsg({ type: 'ok', text: 'New time confirmed.' }); load(); }
+    catch (ex) { setMsg({ type: 'err', text: ex.message }); }
+  };
+
+  const startSession = async (c) => {
+    try {
+      const res = await api.post(`/callbacks/${c.id}/session`, {});
+      setMsg({ type: 'ok', text: `In-app ${c.mode} session started. Room: ${res.session_id}` });
+      load();
+    } catch (ex) { setMsg({ type: 'err', text: ex.message }); }
+  };
+
   const fmt = (iso) => {
     if (!iso) return '—';
     const d = new Date(iso);
@@ -89,20 +102,28 @@ export default function Callbacks() {
         <h2>{t('callbacks.myCallbacks')}</h2>
         <table>
           <thead>
-            <tr><th>{t('callbacks.report')}</th><th>Citizen</th><th>{t('callbacks.mode')}</th><th>{t('callbacks.slot')}</th><th>{t('callbacks.status')}</th><th></th></tr>
+            <tr><th>{t('callbacks.report')}</th><th>Citizen</th><th>{t('callbacks.mode')}</th><th>{t('callbacks.slot')}</th><th>Citizen proposed</th><th>Session</th><th>{t('callbacks.status')}</th><th></th></tr>
           </thead>
           <tbody>
-            {items.length === 0 && <tr><td colSpan="6" style={{ textAlign: 'center', color: '#888' }}>{t('callbacks.noCallbacks')}</td></tr>}
+            {items.length === 0 && <tr><td colSpan="8" style={{ textAlign: 'center', color: '#888' }}>{t('callbacks.noCallbacks')}</td></tr>}
             {items.map((c) => (
               <tr key={c.id}>
                 <td>{c.report_title || c.report_id?.slice(0, 8) || '—'}</td>
                 <td>{c.citizen_name || '—'} <small>({c.citizen_phone || '—'})</small></td>
                 <td>{c.mode}</td>
                 <td>{fmt(c.requested_slot)}</td>
+                <td>{c.proposed_slot ? <span className="badge amber">{fmt(c.proposed_slot)}</span> : '—'}</td>
+                <td>{c.session_id ? <span className="badge green">Started</span> : '—'}</td>
                 <td><span className={`badge ${STATUS_COLOR[c.status] || 'gray'}`}>{c.status}</span></td>
-                <td>
+                <td style={{ whiteSpace: 'nowrap' }}>
+                  {c.proposed_slot && ['pending', 'rescheduled'].includes(c.status) && (
+                    <button className="btn small" onClick={() => acceptProposed(c.id)}>Accept new time</button>
+                  )}
                   {c.status === 'accepted' && (
-                    <button className="btn ghost" onClick={() => markDone(c.id)}>{t('callbacks.markComplete')}</button>
+                    <>
+                      <button className="btn small" onClick={() => startSession(c)}>{c.session_id ? 'Restart session' : 'Start session'}</button>
+                      <button className="btn small ghost" onClick={() => markDone(c.id)}>{t('callbacks.markComplete')}</button>
+                    </>
                   )}
                 </td>
               </tr>

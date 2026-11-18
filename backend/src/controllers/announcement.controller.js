@@ -5,17 +5,27 @@ import { translateAnnouncement } from '../services/translation.service.js';
 
 const CATEGORIES = ['news', 'warning', 'legal', 'event', 'road_closure', 'missing_item', 'wanted', 'missing'];
 
+const audit = (userId, action, entityId, detail) => query(
+  `INSERT INTO audit_log (user_id, action, entity, entity_id, detail)
+   VALUES ($1, $2, 'announcements', $3, $4)`,
+  [userId, action, entityId, detail ? JSON.stringify(detail) : null],
+).catch(() => {});
+
 export const createAnnouncement = async (req, res) => {
-  const { title, body, category, region, sub_city, language } = req.body;
+  const { title, body, category, region, sub_city, language, is_published, latitude, longitude } = req.body;
   if (!title || !body) return fail(res, 'title and body are required');
   if (category && !CATEGORIES.includes(category)) {
     return fail(res, `category must be one of: ${CATEGORIES.join(', ')}`);
   }
   const lang = language || 'en';
+  const published = is_published !== false;
   const { rows } = await query(
-    `INSERT INTO announcements (title, body, category, language, region, sub_city, author_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-    [title, body, category || 'news', lang, region || null, sub_city || null, req.user.id],
+    `INSERT INTO announcements (title, body, category, language, region, sub_city, latitude, longitude,
+       author_id, is_published, published_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+    [title, body, category || 'news', lang, region || null, sub_city || null,
+      latitude ?? null, longitude ?? null, req.user.id,
+      published, published ? new Date() : null],
   );
   const announcement = rows[0];
 
@@ -33,7 +43,9 @@ export const createAnnouncement = async (req, res) => {
   }
 
   mirrorSet('announcements', announcement.id, announcement).catch(() => {});
-  ok(res, { ...announcement, translations }, 'Announcement published', 201);
+  await audit(req.user.id, published ? 'publish_announcement' : 'create_announcement_draft',
+    announcement.id, { title, category: announcement.category, region: announcement.region });
+  ok(res, { ...announcement, translations }, published ? 'Announcement published' : 'Draft saved', 201);
 };
 
 /**
@@ -54,6 +66,7 @@ export const retranslateAnnouncement = async (req, res) => {
       [a.id, t.language, t.title, t.body, t.source],
     );
   }
+  await audit(req.user.id, 'retranslate_announcement', a.id, { title: a.title });
   ok(res, translations, 'Translations regenerated');
 };
 
@@ -61,6 +74,10 @@ export const listAnnouncements = async (req, res) => {
   const { region, sub_city, category, language } = req.query;
   const where = [];
   const params = [];
+  const staffRoles = ['police', 'dispatcher', 'regional_admin', 'system_admin'];
+  const includeUnpublished = req.query.include_unpublished === 'true'
+    && staffRoles.includes(req.user?.role);
+  if (!includeUnpublished) where.push('a.is_published = true');
   if (region) { params.push(region); where.push(`(a.region = $${params.length} OR a.region IS NULL)`); }
   if (sub_city) { params.push(sub_city); where.push(`(a.sub_city = $${params.length} OR a.sub_city IS NULL)`); }
   if (category) { params.push(category); where.push(`a.category = $${params.length}`); }
@@ -87,6 +104,10 @@ export const listAnnouncements = async (req, res) => {
 export const getAnnouncement = async (req, res) => {
   const { rows } = await query('SELECT * FROM announcements WHERE id = $1', [req.params.id]);
   if (!rows[0]) return fail(res, 'Not found', 404);
+  const staffRoles = ['police', 'dispatcher', 'regional_admin', 'system_admin'];
+  if (!rows[0].is_published && !staffRoles.includes(req.user?.role)) {
+    return fail(res, 'Not found', 404);
+  }
   const { rows: trans } = await query(
     'SELECT * FROM announcement_translations WHERE announcement_id = $1 ORDER BY language',
     [req.params.id],
@@ -96,21 +117,31 @@ export const getAnnouncement = async (req, res) => {
 };
 
 export const updateAnnouncement = async (req, res) => {
-  const { title, body, category, is_published } = req.body;
+  const { title, body, category, is_published, latitude, longitude } = req.body;
   const { rows } = await query(
     `UPDATE announcements SET title = COALESCE($1, title), body = COALESCE($2, body),
-       category = COALESCE($3, category), is_published = COALESCE($4, is_published)
-     WHERE id = $5 RETURNING *`,
-    [title || null, body || null, category || null, is_published ?? null, req.params.id],
+       category = COALESCE($3, category), is_published = COALESCE($4, is_published),
+       latitude = COALESCE($5, latitude), longitude = COALESCE($6, longitude),
+       published_at = CASE
+         WHEN $4 = true AND is_published = false THEN now()
+         WHEN $4 = false THEN NULL
+         ELSE published_at END
+     WHERE id = $7 RETURNING *`,
+    [title || null, body || null, category || null, is_published ?? null,
+      latitude ?? null, longitude ?? null, req.params.id],
   );
   if (!rows[0]) return fail(res, 'Not found', 404);
   mirrorSet('announcements', rows[0].id, rows[0]).catch(() => {});
+  await audit(req.user.id, is_published === false ? 'unpublish_announcement' : 'update_announcement',
+    rows[0].id, { title: rows[0].title, is_published: rows[0].is_published });
   ok(res, rows[0], 'Updated');
 };
 
 export const deleteAnnouncement = async (req, res) => {
-  await query('DELETE FROM announcements WHERE id = $1', [req.params.id]);
+  const { rows } = await query('DELETE FROM announcements WHERE id = $1 RETURNING title', [req.params.id]);
+  if (!rows[0]) return fail(res, 'Not found', 404);
   mirrorDelete('announcements', req.params.id).catch(() => {});
+  await audit(req.user.id, 'delete_announcement', req.params.id, { title: rows[0].title });
   ok(res, null, 'Deleted');
 };
 

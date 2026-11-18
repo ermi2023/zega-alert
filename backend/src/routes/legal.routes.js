@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import {
-  listLegal, getLegal, listLegalHistory, createLegal, updateLegal, reviewLegal, deleteLegal,
+  listLegal, getLegal, listLegalHistory, createLegal, updateLegal, reviewLegal, translateLegal, deleteLegal,
 } from '../controllers/legal.controller.js';
 
 const router = Router();
@@ -15,6 +15,7 @@ router.get('/:id/history', listLegalHistory);
 router.post('/', authenticate, requireRole('regional_admin', 'system_admin'), createLegal);
 router.patch('/:id', authenticate, requireRole('system_admin'), updateLegal);
 router.patch('/:id/review', authenticate, requireRole('system_admin'), reviewLegal);
+router.post('/:id/translate', authenticate, requireRole('system_admin', 'regional_admin'), translateLegal);
 router.delete('/:id', authenticate, requireRole('system_admin'), deleteLegal);
 
 export default router;

@@ -47,7 +47,7 @@ class _AuthScreenState extends State<AuthScreen> {
       final r = await Api.get('/app/version');
       final latest = r['version']?.toString() ?? '';
       final url = r['url']?.toString();
-      if (latest != '1.0.0' && url != null && mounted) {
+      if (latest.isNotEmpty && latest != Api.appVersion && url != null && mounted) {
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
@@ -330,14 +330,13 @@ class _AuthScreenState extends State<AuthScreen> {
     try {
       await Api.post('/auth/request-otp', {'contact': phone, 'purpose': 'reset_password'});
       final code = await _askOtpText(codeCtrl);
-      if (code == null || code.isEmpty) return;
-      final np = newPassCtrl.text;
+      if (code == null || code.isEmpty || !mounted) return;
       // ask new password
       final passOk = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text('New password'),
-          content: TextField(controller: newPassCtrl, obscureText: true, decoration: const InputDecoration(labelText: 'New password (min 6)')),
+          content: TextField(controller: newPassCtrl, obscureText: true, decoration: const InputDecoration(labelText: 'New password (8+ chars, upper, number, symbol)')),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
             FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Reset')),
@@ -346,8 +345,10 @@ class _AuthScreenState extends State<AuthScreen> {
       );
       if (passOk != true) return;
       await Api.post('/auth/reset-password', {'phone': phone, 'code': code, 'new_password': newPassCtrl.text});
-      if (mounted) setState(() => _error = '');
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password reset. Please sign in.')));
+      if (mounted) {
+        setState(() => _error = '');
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password reset. Please sign in.')));
+      }
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
     } finally {
@@ -539,7 +540,7 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _region,
+                initialValue: _region,
                 isExpanded: true,
                 decoration: InputDecoration(labelText: loc.regionLabel, prefixIcon: const Icon(Icons.location_on_outlined), border: const OutlineInputBorder()),
                 items: ethiopianRegions.map((r) => DropdownMenuItem(value: r, child: Text(r, overflow: TextOverflow.ellipsis))).toList(),
@@ -551,7 +552,7 @@ class _AuthScreenState extends State<AuthScreen> {
               if ((subCitiesByRegion[_region] ?? []).isNotEmpty) ...[
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: _subCity,
+                  initialValue: _subCity,
                   isExpanded: true,
                   decoration: InputDecoration(labelText: loc.subCityLabel, prefixIcon: const Icon(Icons.location_city_outlined), border: const OutlineInputBorder()),
                   items: subCitiesByRegion[_region]!.map((s) => DropdownMenuItem(value: s, child: Text(s, overflow: TextOverflow.ellipsis))).toList(),
@@ -603,7 +604,7 @@ class _AuthScreenState extends State<AuthScreen> {
               onFieldSubmitted: (_) => _busy ? null : _submit(),
               decoration: InputDecoration(
                 labelText: loc.password,
-                helperText: _register ? 'At least 6 characters. A 6-digit PIN is fine.' : null,
+                helperText: _register ? 'At least 8 characters with an uppercase letter, number and symbol.' : null,
                 prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
                   icon: Icon(_showPassword ? Icons.visibility_off : Icons.visibility),
@@ -612,7 +613,15 @@ class _AuthScreenState extends State<AuthScreen> {
                 border: const OutlineInputBorder(),
               ),
               validator: _register
-                  ? (v) => (v == null || v.length < 6) ? 'Use at least 6 characters or a 6-digit PIN' : null
+                  ? (v) {
+                      if (v == null || v.length < 8) return 'Use at least 8 characters';
+                      if (!RegExp(r'[A-Z]').hasMatch(v) ||
+                          !RegExp(r'[0-9]').hasMatch(v) ||
+                          !RegExp(r'[^A-Za-z0-9]').hasMatch(v)) {
+                        return 'Include an uppercase letter, number and symbol';
+                      }
+                      return null;
+                    }
                   : null,
             ),
             if (!_register)

@@ -3,6 +3,12 @@ import { ok, fail } from '../utils/response.js';
 
 const MAX_CITIZEN_GEOFENCES = 10;
 const SENSITIVITIES = ['low', 'medium', 'high'];
+const TYPES = ['zone', 'school', 'police_station', 'hospital', 'event', 'residence', 'market'];
+
+const audit = (userId, action, id, detail) => query(
+  `INSERT INTO audit_log (user_id, action, entity, entity_id, detail) VALUES ($1,$2,'geofences',$3,$4)`,
+  [userId, action, id, JSON.stringify(detail || {})],
+).catch(() => {});
 
 export const listGeofences = async (req, res) => {
   const { region, type, active } = req.query;
@@ -18,8 +24,14 @@ export const listGeofences = async (req, res) => {
 };
 
 export const createGeofence = async (req, res) => {
-  const { name, type, region, sub_city, woreda, center_lat, center_lng, radius_m, polygon, sensitivity } = req.body;
+  const { name, label, type, region, sub_city, woreda, center_lat, center_lng, radius_m, polygon, sensitivity } = req.body;
   if (!name) return fail(res, 'name is required');
+  if (type && !TYPES.includes(type)) return fail(res, `type must be one of ${TYPES.join(', ')}`);
+  if (sensitivity && !SENSITIVITIES.includes(sensitivity)) {
+    return fail(res, `sensitivity must be one of ${SENSITIVITIES.join(', ')}`);
+  }
+  if (center_lat != null && center_lng == null) return fail(res, 'center_lng is required with center_lat');
+  if (center_lng != null && center_lat == null) return fail(res, 'center_lat is required with center_lng');
 
   // NFR: each citizen may define at most 10 active safety zones (doc 4.3.4).
   if (req.user.role === 'citizen') {
@@ -33,12 +45,13 @@ export const createGeofence = async (req, res) => {
   }
 
   const { rows } = await query(
-    `INSERT INTO geofences (name, type, region, sub_city, woreda, center_lat, center_lng, radius_m, polygon, sensitivity, created_by)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
-    [name, req.user.role === 'citizen' ? 'zone' : (type || 'zone'), region || null, sub_city || null, woreda || null,
-      center_lat || null, center_lng || null, radius_m || null,
+    `INSERT INTO geofences (name, label, type, region, sub_city, woreda, center_lat, center_lng, radius_m, polygon, sensitivity, created_by)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+    [name, label || name, type || 'zone', region || null, sub_city || null, woreda || null,
+      center_lat ?? null, center_lng ?? null, radius_m || null,
       polygon ? JSON.stringify(polygon) : '[]', sensitivity || 'medium', req.user.id],
   );
+  await audit(req.user.id, 'create_geofence', rows[0].id, { name, type: type || 'zone', sensitivity });
   ok(res, rows[0], 'Geofence created', 201);
 };
 
@@ -49,16 +62,38 @@ export const updateGeofence = async (req, res) => {
   if (!isAdmin && existing.rows[0].created_by !== req.user.id) {
     return fail(res, 'Forbidden: not your geofence', 403);
   }
-  const { name, sensitivity, is_active, radius_m } = req.body;
+  const {
+    name, label, type, region, sub_city, woreda, center_lat, center_lng,
+    radius_m, polygon, sensitivity, is_active,
+  } = req.body;
   if (sensitivity && !SENSITIVITIES.includes(sensitivity)) {
     return fail(res, `sensitivity must be one of ${SENSITIVITIES.join(', ')}`);
   }
+  if (type && !TYPES.includes(type)) return fail(res, `type must be one of ${TYPES.join(', ')}`);
   const { rows } = await query(
-    `UPDATE geofences SET name = COALESCE($1, name), sensitivity = COALESCE($2, sensitivity),
-       is_active = COALESCE($3, is_active), radius_m = COALESCE($4, radius_m)
-     WHERE id = $5 RETURNING *`,
-    [name || null, sensitivity || null, is_active ?? null, radius_m || null, req.params.id],
+    `UPDATE geofences SET
+       name = COALESCE($1, name),
+       label = COALESCE($2, label),
+       type = COALESCE($3, type),
+       region = COALESCE($4, region),
+       sub_city = COALESCE($5, sub_city),
+       woreda = COALESCE($6, woreda),
+       center_lat = COALESCE($7, center_lat),
+       center_lng = COALESCE($8, center_lng),
+       radius_m = COALESCE($9, radius_m),
+       polygon = COALESCE($10, polygon),
+       sensitivity = COALESCE($11, sensitivity),
+       is_active = COALESCE($12, is_active)
+     WHERE id = $13 RETURNING *`,
+    [name || null, label || null, type || null, region || null, sub_city || null, woreda || null,
+      center_lat ?? null, center_lng ?? null, radius_m ?? null,
+      polygon != null ? JSON.stringify(polygon) : null, sensitivity || null, is_active ?? null,
+      req.params.id],
   );
+  await audit(req.user.id, 'update_geofence', req.params.id, {
+    name: name || existing.rows[0].name, sensitivity: sensitivity || existing.rows[0].sensitivity,
+    is_active: is_active ?? existing.rows[0].is_active,
+  });
   ok(res, rows[0], 'Geofence updated');
 };
 
@@ -70,5 +105,6 @@ export const deleteGeofence = async (req, res) => {
     return fail(res, 'Forbidden: not your geofence', 403);
   }
   await query('DELETE FROM geofences WHERE id = $1', [req.params.id]);
+  await audit(req.user.id, 'delete_geofence', req.params.id, { name: existing.rows[0].name });
   ok(res, null, 'Deleted');
 };

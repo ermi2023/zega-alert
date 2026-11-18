@@ -5,6 +5,7 @@ import { hashPassword, comparePassword } from '../utils/password.js';
 import { signTokens, verifyToken } from '../utils/jwt.js';
 import { createOtp, verifyOtp } from '../utils/otp.js';
 import { ok, fail } from '../utils/response.js';
+import { getSecurityPolicy, validatePassword, accessTokenExpiry } from '../services/security-policy.service.js';
 
 // In-memory single-use refresh-token jti store. For multi-instance deploys
 // replace with a Redis/DB table; this keeps the feature working on Render's
@@ -25,6 +26,21 @@ const revokeJti = (jti) => {
 const PUBLIC_USER = `id, full_name, phone, email, role, region, sub_city, woreda, photo_url,
   preferred_language, accessibility_mode, is_verified, is_active, last_login_at, created_at`;
 
+const issueTokens = (user, policy) =>
+  signTokens(user, { accessExpiresIn: accessTokenExpiry(policy) });
+
+const recordFailedLogin = async (user, policy) => {
+  if (!user) return;
+  const attempts = (user.failed_login_attempts || 0) + 1;
+  const locked = attempts >= (policy.max_login_attempts || 5);
+  await query(
+    `UPDATE users SET failed_login_attempts = $1,
+       locked_until = CASE WHEN $2 THEN now() + ($3 || ' minutes')::interval ELSE locked_until END
+     WHERE id = $4`,
+    [attempts, locked, String(policy.lockout_duration_minutes || 30), user.id],
+  ).catch(() => {});
+};
+
 // Accept local (09xxxxxxxx / 9xxxxxxxx) and international (+251...) forms and
 // store the local format used across the platform.
 const normalizePhone = (raw) => {
@@ -43,6 +59,9 @@ export const register = async (req, res) => {
     const existing = await query('SELECT id FROM users WHERE phone = $1 OR email = $2', [phone, email || '']);
     if (existing.rows.length) return fail(res, 'An account with this phone or email already exists', 409);
 
+    const policy = await getSecurityPolicy();
+    const passwordError = validatePassword(password, policy);
+    if (passwordError) return fail(res, passwordError, 400);
     const password_hash = await hashPassword(password);
     const { rows } = await query(
       `INSERT INTO users (full_name, phone, email, password_hash, region, sub_city, woreda, preferred_language, accessibility_mode, accepted_terms_at, accepted_privacy_at)
@@ -108,7 +127,12 @@ export const login = async (req, res) => {
   if (!contact || !password) return fail(res, 'Credentials required');
   const { rows } = await query('SELECT * FROM users WHERE phone = $1 OR email = $1', [contact]);
   const user = rows[0];
+  const policy = await getSecurityPolicy();
+  if (user?.locked_until && new Date(user.locked_until) > new Date()) {
+    return fail(res, 'Account temporarily locked after repeated failed attempts. Try again later.', 423);
+  }
   if (!user || !user.password_hash || !(await comparePassword(password, user.password_hash))) {
+    await recordFailedLogin(user, policy);
     return fail(res, 'Invalid credentials', 401);
   }
   if (!user.is_active) return fail(res, 'Account disabled', 403);
@@ -121,12 +145,15 @@ export const login = async (req, res) => {
     return ok(res, { requires_otp: true, phone: masked }, 'OTP sent for 2FA verification');
   }
 
-  await query('UPDATE users SET last_login_at = now() WHERE id = $1', [user.id]);
+  await query(
+    `UPDATE users SET last_login_at = now(), failed_login_attempts = 0, locked_until = NULL WHERE id = $1`,
+    [user.id],
+  );
   await query(
     `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'login','users',$1)`,
     [user.id],
   );
-  const tokens = signTokens(user);
+  const tokens = issueTokens(user, policy);
   ok(res, { user: publicUser(user), ...tokens }, 'Login successful');
 };
 
@@ -138,8 +165,12 @@ export const loginWithOtp = async (req, res) => {
   const user = rows[0];
   if (!user) return fail(res, 'No account found for this phone. Register first.', 404);
   if (!user.is_active) return fail(res, 'Account disabled', 403);
-  await query('UPDATE users SET last_login_at = now() WHERE id = $1', [user.id]);
-  const tokens = signTokens(user);
+  const policy = await getSecurityPolicy();
+  await query(
+    `UPDATE users SET last_login_at = now(), failed_login_attempts = 0, locked_until = NULL WHERE id = $1`,
+    [user.id],
+  );
+  const tokens = issueTokens(user, policy);
   ok(res, { user: publicUser(user), ...tokens }, 'Login successful');
 };
 
@@ -161,7 +192,8 @@ export const refresh = async (req, res) => {
       return fail(res, 'Refresh token has been revoked', 401);
     }
     if (payload.jti) revokeJti(payload.jti);
-    ok(res, signTokens(rows[0]), 'Tokens refreshed');
+    const policy = await getSecurityPolicy();
+    ok(res, issueTokens(rows[0], policy), 'Tokens refreshed');
   } catch (e) {
     fail(res, 'Invalid refresh token', 401);
   }
@@ -247,27 +279,38 @@ export const resetPassword = async (req, res) => {
   try {
     const { phone, code, new_password } = req.body;
     if (!phone || !code || !new_password) return fail(res, 'phone, code and new_password are required');
-    if (String(new_password).length < 6) return fail(res, 'Password must be at least 6 characters');
+    const policy = await getSecurityPolicy();
+    const passwordError = validatePassword(new_password, policy);
+    if (passwordError) return fail(res, passwordError, 400);
     const result = await verifyOtp({ contact: phone, code, purpose: 'reset_password' });
     if (!result.ok) return fail(res, `OTP invalid/expired (${result.reason})`, 400);
     const { rows } = await query('SELECT id FROM users WHERE phone = $1', [phone]);
     if (!rows[0]) return fail(res, 'No account found for this phone.', 404);
     const hash = await hashPassword(new_password);
-    await query('UPDATE users SET password_hash = $1, updated_at = now() WHERE phone = $2', [hash, phone]);
+    await query(
+      `UPDATE users SET password_hash = $1, failed_login_attempts = 0, locked_until = NULL,
+         updated_at = now() WHERE phone = $2`,
+      [hash, phone],
+    );
     ok(res, null, 'Password reset successful. You can now sign in.');
   } catch (e) {
     console.error('[RESET_PASSWORD]', e);
     if (!res.headersSent) return fail(res, 'Could not reset password. Please try again.', 500);
   }
 };
+
+export const changePassword = async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   if (!currentPassword || !newPassword) return fail(res, 'currentPassword and newPassword required');
   const { rows } = await query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
   if (!rows[0].password_hash || !(await comparePassword(currentPassword, rows[0].password_hash))) {
     return fail(res, 'Current password is incorrect', 401);
   }
+  const policy = await getSecurityPolicy();
+  const passwordError = validatePassword(newPassword, policy);
+  if (passwordError) return fail(res, passwordError, 400);
   const password_hash = await hashPassword(newPassword);
-  await query('UPDATE users SET password_hash = $1 WHERE id = $2', [password_hash, req.user.id]);
+  await query('UPDATE users SET password_hash = $1, updated_at = now() WHERE id = $2', [password_hash, req.user.id]);
   ok(res, null, 'Password changed');
 };
 
@@ -280,12 +323,16 @@ export const verifyAdminOtp = async (req, res) => {
   const user = rows[0];
   if (!user) return fail(res, 'User not found', 404);
   if (!user.is_active) return fail(res, 'Account disabled', 403);
-  await query('UPDATE users SET last_login_at = now() WHERE id = $1', [user.id]);
+  const policy = await getSecurityPolicy();
+  await query(
+    `UPDATE users SET last_login_at = now(), failed_login_attempts = 0, locked_until = NULL WHERE id = $1`,
+    [user.id],
+  );
   await query(
     `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'login','users',$1)`,
     [user.id],
   );
-  const tokens = signTokens(user);
+  const tokens = issueTokens(user, policy);
   ok(res, { user: publicUser(user), ...tokens }, 'Login successful');
 };
 

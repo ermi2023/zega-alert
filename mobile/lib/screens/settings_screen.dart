@@ -8,6 +8,7 @@ import '../services/api.dart';
 import '../widgets/auth_gate.dart';
 import '../widgets/pod_actions.dart';
 import 'callbacks_screen.dart';
+import 'geofence_editor_screen.dart';
 import '../config/constants.dart';
 
 const _languages = [
@@ -81,6 +82,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'sub_city': _subCity,
       });
       await Api.setProfile({'region': _region, 'sub_city': _subCity});
+      if (!mounted) return;
       ZegaAlertApp.of(context)?.setLanguage(_language);
       setState(() => _status = 'Saved.');
     } catch (e) {
@@ -94,61 +96,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Maximum of 10 active safety zones reached. Delete one first.')));
       return;
     }
-    final name = TextEditingController();
-    final radius = TextEditingController();
-    final lat = TextEditingController();
-    final lng = TextEditingController();
-    String type = 'zone';
-
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(loc.newSafetyZone),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: name, decoration: InputDecoration(labelText: loc.name, border: const OutlineInputBorder())),
-            const SizedBox(height: 10),
-            DropdownButtonFormField<String>(
-              value: type,
-              decoration: InputDecoration(labelText: loc.type, border: const OutlineInputBorder()),
-              items: ['zone', 'school', 'police_station', 'hospital', 'event'].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
-              onChanged: (v) => type = v!,
-            ),
-            const SizedBox(height: 10),
-            TextField(controller: lat, keyboardType: TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: loc.centerLatitude, border: const OutlineInputBorder())),
-            const SizedBox(height: 10),
-            TextField(controller: lng, keyboardType: TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: loc.centerLongitude, border: const OutlineInputBorder())),
-            const SizedBox(height: 10),
-            TextField(controller: radius, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: loc.radiusMeters, border: const OutlineInputBorder())),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(loc.cancel)),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(loc.create)),
-        ],
-      ),
+    final created = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => const GeofenceEditorScreen()),
     );
-    if (ok != true || name.text.trim().isEmpty) return;
-    try {
-      await Api.post('/geofences', {
-        'name': name.text.trim(),
-        'type': type,
-        'center_lat': lat.text.isEmpty ? null : double.tryParse(lat.text),
-        'center_lng': lng.text.isEmpty ? null : double.tryParse(lng.text),
-        'radius_m': radius.text.isEmpty ? null : int.tryParse(radius.text),
-        'region': Api.region,
-      });
-      _load();
-      setState(() => _status = loc.safetyZoneCreated);
-    } catch (e) {
-      setState(() => _status = 'Failed: $e');
+    if (created == true) {
+      await _load();
+      if (mounted) setState(() => _status = loc.safetyZoneCreated);
     }
+  }
+
+  Future<void> _editGeofence(Map<String, dynamic> geofence) async {
+    final updated = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => GeofenceEditorScreen(geofence: geofence)),
+    );
+    if (updated == true) {
+      await _load();
+      if (mounted) setState(() => _status = 'Safety zone updated.');
+    }
+  }
+
+  Map<String, dynamic>? _legalTranslation(dynamic item) {
+    final translations = item['translations'];
+    if (translations is! Map) return null;
+    final localized = translations[_language];
+    return localized is Map ? Map<String, dynamic>.from(localized) : null;
   }
 
   Future<void> _deleteGeofence(String id) async {
     try {
       await Api.delete('/geofences/$id');
+      if (!mounted) return;
       final loc = AppLocalizations.of(context);
       setState(() => _status = loc.safetyZoneDeleted);
     } catch (e) {
@@ -167,10 +144,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _logout() async {
+    final refreshToken = Api.refreshToken;
     try {
-      await Api.post('/auth/logout', {'refreshToken': Api.refreshToken});
+      await Api.post('/auth/logout', {'refreshToken': refreshToken});
     } catch (_) {
-      // Offline or already-expired session — clear locally regardless.
+      // Offline or already-expired session - revoke when connectivity returns.
+      await Api.queuePendingLogout(refreshToken);
     }
     await Api.clear();
     if (mounted) {
@@ -210,14 +189,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Semantics(
             label: 'Region dropdown. Currently set to $_region.',
             child: DropdownButtonFormField<String>(
-              value: ethiopianRegions.contains(_region) ? _region : null,
+              initialValue: ethiopianRegions.contains(_region) ? _region : null,
               decoration: InputDecoration(labelText: loc.regionLabel, border: const OutlineInputBorder()),
               items: ethiopianRegions.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
               onChanged: (v) {
-                if (v != null) setState(() {
-                  _region = v;
-                  _subCity = subCitiesByRegion[v]?.first ?? '';
-                });
+                if (v != null) {
+                  setState(() {
+                    _region = v;
+                    _subCity = subCitiesByRegion[v]?.first ?? '';
+                  });
+                }
               },
             ),
           ),
@@ -226,7 +207,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Semantics(
               label: 'Sub city dropdown. Currently set to $_subCity.',
               child: DropdownButtonFormField<String>(
-                value: (subCitiesByRegion[_region] ?? const []).contains(_subCity) ? _subCity : null,
+                initialValue: (subCitiesByRegion[_region] ?? const []).contains(_subCity) ? _subCity : null,
                 decoration: InputDecoration(labelText: loc.subCityLabel, border: const OutlineInputBorder()),
                 items: subCitiesByRegion[_region]!.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                 onChanged: (v) => setState(() => _subCity = v ?? ''),
@@ -240,7 +221,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Semantics(
           label: 'Preferred language dropdown. Currently set to $_language.',
           child: DropdownButtonFormField<String>(
-            value: _language,
+            initialValue: _language,
             decoration: InputDecoration(labelText: loc.preferredLanguage, border: const OutlineInputBorder()),
             items: _languages.map((l) => DropdownMenuItem(value: l.code, child: Text(l.label))).toList(),
             onChanged: (v) {
@@ -258,13 +239,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (_loggedIn) ...[
           _section(loc.safetyZones, Icons.location_on_outlined),
           ..._geofences.map((g) => Semantics(
-            label: 'Safety zone: ${g['name'] ?? 'Zone'}. Type: ${g['type'] ?? 'zone'}. Radius: ${g['radius_m'] != null ? '${g['radius_m']} meters' : 'not set'}.',
+            label: 'Safety zone: ${g['label'] ?? g['name'] ?? 'Zone'}. Type: ${g['type'] ?? 'zone'}. Sensitivity: ${g['sensitivity'] ?? 'medium'}. Radius: ${g['radius_m'] != null ? '${g['radius_m']} meters' : 'not set'}.',
             child: Card(
               child: ListTile(
                 dense: true,
+                onTap: () => _editGeofence(Map<String, dynamic>.from(g as Map)),
                 leading: const Icon(Icons.radar, color: Colors.green),
-                title: Text(g['name'] ?? 'Zone'),
-                subtitle: Text('${g['type'] ?? 'zone'} · ${g['radius_m'] != null ? '${g['radius_m']}m' : 'radius not set'}'),
+                title: Text(g['label'] ?? g['name'] ?? 'Zone'),
+                subtitle: Text('${g['type'] ?? 'zone'} · ${g['sensitivity'] ?? 'medium'} · ${g['radius_m'] != null ? '${g['radius_m']}m' : 'radius not set'}'),
                 trailing: Semantics(
                   button: true,
                   label: 'Delete safety zone: ${g['name'] ?? 'Zone'}',
@@ -292,18 +274,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
 
         _section(loc.legalInformation, Icons.gavel),
-        ..._legal.take(5).map((l) => Semantics(
-          label: 'Legal information: ${l['title'] ?? ''}. Category: ${l['category'] ?? ''}. Language: ${l['language'] ?? 'en'}.',
-          child: Card(
-            child: ExpansionTile(
-              dense: true,
-              leading: const Icon(Icons.menu_book_outlined),
-              title: Text(l['title'] ?? ''),
-              subtitle: Text('${l['category'] ?? ''} · ${l['language'] ?? 'en'}'),
-              children: [Padding(padding: const EdgeInsets.all(12), child: Text(l['body'] ?? ''))],
+        ..._legal.take(5).map((l) {
+          final tr = _legalTranslation(l);
+          final title = tr?['title'] ?? l['title'] ?? '';
+          final body = tr?['body'] ?? l['body'] ?? '';
+          return Semantics(
+            label: 'Legal information: $title. Category: ${l['category'] ?? ''}. Language: $_language.',
+            child: Card(
+              child: ExpansionTile(
+                dense: true,
+                leading: const Icon(Icons.menu_book_outlined),
+                title: Text(title),
+                subtitle: Text('${l['category'] ?? ''} · ${l['language'] ?? 'en'}'),
+                children: [Padding(padding: const EdgeInsets.all(12), child: Text(body))],
+              ),
             ),
-          ),
-        )),
+          );
+        }),
         if (_legal.isEmpty) Padding(padding: const EdgeInsets.only(bottom: 12), child: Text(loc.noLegalContent, style: const TextStyle(color: Colors.grey))),
         const SizedBox(height: 16),
 
@@ -424,7 +411,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 16),
           Semantics(
             label: 'People of Determination actions. Request a direct call or record a sign language video.',
-            child: PodActions(showHeading: false),
+            child: const PodActions(showHeading: false),
           ),
           const SizedBox(height: 20),
 

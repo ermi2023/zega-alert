@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api.dart';
+import 'callback_session_screen.dart';
 
 class CallbacksScreen extends StatefulWidget {
   const CallbacksScreen({super.key});
@@ -36,6 +37,48 @@ class _CallbacksScreenState extends State<CallbacksScreen> {
       _load();
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
+    }
+  }
+
+  Future<void> _proposeTime(dynamic cb) async {
+    final now = DateTime.now();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: now.add(const Duration(days: 1)),
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 60)),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(context: context, initialTime: const TimeOfDay(hour: 10, minute: 0));
+    if (time == null) return;
+    final slot = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    if (!slot.isAfter(DateTime.now())) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Choose a future time.')));
+      return;
+    }
+    try {
+      await Api.patch('/callbacks/${cb['id']}', {'proposed_slot': slot.toUtc().toIso8601String()});
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Alternative time sent to the officer.')));
+      _load();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
+    }
+  }
+
+  Future<void> _joinSession(dynamic cb) async {
+    var data = Map<String, dynamic>.from(cb as Map);
+    try {
+      if (data['session_id'] == null) {
+        data = Map<String, dynamic>.from(await Api.post('/callbacks/${data['id']}/session', {}) as Map);
+      }
+      if (!mounted) return;
+      final ended = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (_) => CallbackSessionScreen(callback: data)),
+      );
+      if (ended == true) _load();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not start session: $e')));
     }
   }
 
@@ -87,8 +130,12 @@ class _CallbacksScreenState extends State<CallbacksScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text('${loc.mode}: ${cb['mode'] ?? 'voice'} · ${_slot(cb['requested_slot'])}', style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                    if (cb['proposed_slot'] != null)
+                      Text('You proposed: ${_slot(cb['proposed_slot'])} (waiting for officer)', style: const TextStyle(fontSize: 13, color: Colors.orange)),
+                    if (cb['session_id'] != null)
+                      const Text('In-app session started', style: TextStyle(fontSize: 13, color: Colors.green, fontWeight: FontWeight.bold)),
                     if (cb['notes'] != null && cb['notes'].toString().isNotEmpty) Text(cb['notes'].toString(), style: const TextStyle(fontSize: 13)),
-                    if (cb['status'] == 'pending') ...[
+                    if (cb['status'] == 'pending' || cb['status'] == 'rescheduled') ...[
                       const SizedBox(height: 10),
                       Row(
                         children: [
@@ -104,6 +151,22 @@ class _CallbacksScreenState extends State<CallbacksScreen> {
                             label: Text(loc.decline),
                           )),
                         ],
+                      ),
+                      if (cb['status'] == 'pending') ...[
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          onPressed: () => _proposeTime(cb),
+                          icon: const Icon(Icons.schedule, size: 18),
+                          label: const Text('Propose another time'),
+                        ),
+                      ],
+                    ],
+                    if (cb['status'] == 'accepted') ...[
+                      const SizedBox(height: 10),
+                      FilledButton.icon(
+                        onPressed: () => _joinSession(cb),
+                        icon: Icon(cb['mode'] == 'video' ? Icons.videocam : cb['mode'] == 'chat' ? Icons.chat : Icons.call),
+                        label: Text(cb['session_id'] != null ? 'Rejoin session' : 'Start in-app session'),
                       ),
                     ],
                   ],

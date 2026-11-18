@@ -143,9 +143,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          Card(
+          const Card(
             child: Padding(
-              padding: const EdgeInsets.all(14),
+              padding: EdgeInsets.all(14),
               child: PodActions(),
             ),
           ),
@@ -284,7 +284,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   tooltip: loc.reportSighting,
                   onPressed: () async {
                     if (!await ensureAuthed(context, reason: 'Sign in to report a sighting.')) return;
-                    if (!context.mounted) return;
+                    if (!mounted) return;
                     Navigator.of(context).push(MaterialPageRoute(
                       builder: (_) => SightingReportScreen(
                         missingPersonId: wanted ? null : person['id'] as String?,

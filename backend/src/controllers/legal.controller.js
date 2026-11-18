@@ -1,8 +1,14 @@
 import { query } from '../config/db.js';
 import { ok, fail } from '../utils/response.js';
 import { mirrorSet, mirrorDelete } from '../services/firebase.service.js';
+import { translateAnnouncement } from '../services/translation.service.js';
 
 const REVIEW_STATUSES = ['published', 'under_review', 'draft'];
+
+const buildTranslations = async (title, body, language) => {
+  const rows = await translateAnnouncement({ title, body, source: language || 'en' });
+  return Object.fromEntries(rows.map((r) => [r.language, { title: r.title, body: r.body }]));
+};
 
 const writeHistory = (legalId, action, fromStatus, toStatus, note, userId) =>
   query(
@@ -23,7 +29,8 @@ export const listLegal = async (req, res) => {
   if (language) { params.push(language); where.push(`language = $${params.length}`); }
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
   const { rows } = await query(
-    `SELECT id, title, body, category, language, is_published, review_status, reviewed_at, created_at, updated_at
+    `SELECT id, title, body, category, language, translations, is_published, review_status,
+            reviewed_at, created_at, updated_at
      FROM legal_content ${whereSql} ORDER BY created_at DESC`,
     params,
   );
@@ -55,10 +62,11 @@ export const createLegal = async (req, res) => {
   const { title, body, category, language, review_status } = req.body;
   if (!title || !body) return fail(res, 'title and body are required');
   const status = REVIEW_STATUSES.includes(review_status) ? review_status : 'published';
+  const translations = await buildTranslations(title, body, language || 'en');
   const { rows } = await query(
-    `INSERT INTO legal_content (title, body, category, language, review_status, is_published)
-     VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-    [title, body, category || 'general', language || 'en', status, status === 'published'],
+    `INSERT INTO legal_content (title, body, category, language, translations, review_status, is_published)
+     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+    [title, body, category || 'general', language || 'en', JSON.stringify(translations), status, status === 'published'],
   );
   await writeHistory(rows[0].id, 'created', null, status, 'Content created', req.user.id);
   mirrorSet('legal_content', rows[0].id, rows[0]).catch(() => {});
@@ -71,13 +79,20 @@ export const updateLegal = async (req, res) => {
   if (!current.rows[0]) return fail(res, 'Not found', 404);
   const prev = current.rows[0];
   const nextStatus = REVIEW_STATUSES.includes(review_status) ? review_status : prev.review_status;
+  const nextTitle = title || prev.title;
+  const nextBody = body || prev.body;
+  const nextLanguage = language || prev.language || 'en';
+  const contentChanged = nextTitle !== prev.title || nextBody !== prev.body || nextLanguage !== prev.language;
+  const translations = contentChanged
+    ? await buildTranslations(nextTitle, nextBody, nextLanguage)
+    : prev.translations;
   const { rows } = await query(
     `UPDATE legal_content SET title = COALESCE($1,title), body = COALESCE($2,body),
        category = COALESCE($3,category), language = COALESCE($4,language),
-       is_published = COALESCE($5, is_published), review_status = $6,
-       updated_at = now() WHERE id = $7 RETURNING *`,
-    [title || null, body || null, category || null, language || null, is_published ?? null,
-      nextStatus, req.params.id],
+       translations = $5, is_published = COALESCE($6, is_published), review_status = $7,
+       updated_at = now() WHERE id = $8 RETURNING *`,
+    [title || null, body || null, category || null, language || null,
+      JSON.stringify(translations || {}), is_published ?? null, nextStatus, req.params.id],
   );
   if (nextStatus !== prev.review_status) {
     await writeHistory(req.params.id, 'status_change', prev.review_status, nextStatus, note, req.user.id);
@@ -115,6 +130,24 @@ export const reviewLegal = async (req, res) => {
   );
   mirrorSet('legal_content', rows[0].id, rows[0]).catch(() => {});
   ok(res, rows[0], `Legal content marked as ${review_status}`);
+};
+
+export const translateLegal = async (req, res) => {
+  const current = await query('SELECT * FROM legal_content WHERE id = $1', [req.params.id]);
+  if (!current.rows[0]) return fail(res, 'Not found', 404);
+  const item = current.rows[0];
+  const translations = await buildTranslations(item.title, item.body, item.language || 'en');
+  const { rows } = await query(
+    'UPDATE legal_content SET translations = $1, updated_at = now() WHERE id = $2 RETURNING *',
+    [JSON.stringify(translations), item.id],
+  );
+  await writeHistory(item.id, 'translated', item.review_status, item.review_status, 'Translations regenerated', req.user.id);
+  await query(
+    `INSERT INTO audit_log (user_id, action, entity, entity_id, detail)
+     VALUES ($1,'translate_legal','legal_content',$2,$3)`,
+    [req.user.id, item.id, JSON.stringify({ languages: Object.keys(translations) })],
+  );
+  ok(res, rows[0], 'Translations updated');
 };
 
 export const deleteLegal = async (req, res) => {

@@ -7,6 +7,7 @@ import { notFound, errorHandler } from './middleware/errorHandler.js';
 import { rateLimit } from './middleware/rateLimit.js';
 import { UPLOAD_DIR } from './controllers/upload.controller.js';
 import appRoutes from './routes/app.routes.js';
+import authRoutes from './routes/auth.routes.js';
 import reportRoutes from './routes/report.routes.js';
 import sosRoutes from './routes/sos.routes.js';
 import personRoutes from './routes/person.routes.js';
@@ -64,6 +65,7 @@ app.get('/health', (req, res) => res.json({ ok: true }));
 app.use('/api', rateLimit({ windowMs: 60000, max: 100 }));
 
 app.use('/api/app', appRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/sos', sosRoutes);
 app.use('/api/persons', personRoutes);

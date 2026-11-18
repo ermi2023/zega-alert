@@ -1,6 +1,7 @@
 import { query } from '../config/db.js';
 import { ok, fail } from '../utils/response.js';
-import { sendFcmPush, pushToUsers } from '../services/notification.service.js';
+import { pushToUsers } from '../services/notification.service.js';
+import { sendSms } from '../services/sms.service.js';
 
 export const listNotifications = async (req, res) => {
   const { limit = 30, page = 1 } = req.query;
@@ -55,10 +56,28 @@ export const sendNotification = async (req, res) => {
     created.push(rows[0]);
   }
 
-  // Push FCM
-  pushToUsers(targetIds, title, body, metadata).catch(() => {});
+  let sms = null;
+  if (delivery_type === 'sms') {
+    const { rows } = await query(
+      `SELECT phone FROM users WHERE id = ANY($1) AND phone IS NOT NULL AND phone != ''`,
+      [targetIds],
+    );
+    const phones = rows.map((r) => r.phone);
+    if (phones.length) {
+      sms = await sendSms(phones, `[ZEGA-ALERT] ${title}\n${body}`);
+    }
+  } else {
+    // Push/in-app broadcast. SMS is only used when the admin selects SMS.
+    await pushToUsers(targetIds, title, body, metadata).catch(() => {});
+  }
 
-  ok(res, { count: created.length }, 'Notifications dispatched', 201);
+  await query(
+    `INSERT INTO audit_log (user_id, action, entity, entity_id, detail)
+     VALUES ($1, 'send_notification', 'notifications', NULL, $2)`,
+    [req.user.id, JSON.stringify({ title, delivery_type, recipients: created.length, sms: sms?.status || null })],
+  ).catch(() => {});
+
+  ok(res, { count: created.length, sms: sms?.status || null }, 'Notifications dispatched', 201);
 };
 
 export const getUnreadCount = async (req, res) => {

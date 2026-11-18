@@ -31,9 +31,13 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
-    // Background sync of the offline outbox. Runs even when the app is closed.
+    // Background work that runs even when the app is closed.
     try {
-      await SyncService.flushInBackground();
+      if (task == 'zega-officer-position') {
+        await OfficerPositionService.reportInBackground();
+      } else {
+        await SyncService.flushInBackground();
+      }
     } catch (_) {}
     return true;
   });
@@ -51,6 +55,12 @@ void main() async {
       await Workmanager().registerPeriodicTask(
         'zega-outbox-sync',
         'zega-outbox-sync',
+        frequency: const Duration(minutes: 15),
+        constraints: Constraints(networkType: NetworkType.connected),
+      );
+      await Workmanager().registerPeriodicTask(
+        'zega-officer-position',
+        'zega-officer-position',
         frequency: const Duration(minutes: 15),
         constraints: Constraints(networkType: NetworkType.connected),
       );

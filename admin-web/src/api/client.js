@@ -8,7 +8,7 @@ export const USER_KEY = 'zega_admin_user';
 const PROD_API_BASE = 'https://zega-alert-api.onrender.com';
 export const API_BASE = (
   import.meta.env.VITE_API_URL ||
-  (import.meta.env.PROD ? PROD_API_BASE : '')
+  (import.meta.env.PROD ? PROD_API_BASE : (window.location.hostname === 'localhost' ? 'http://localhost:5000' : ''))
 ).replace(/\/$/, '');
 
 // Resolve a stored upload path into an absolute URL. Backends may return either
@@ -16,7 +16,8 @@ export const API_BASE = (
 export const assetUrl = (url) => {
   if (!url) return url;
   if (/^(https?:|data:|blob:)/.test(url)) return url;
-  return `${API_BASE}${url.startsWith('/') ? '' : '/'}${url}`;
+  const base = API_BASE || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : '');
+  return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
 };
 
 const request = async (path, options = {}) => {

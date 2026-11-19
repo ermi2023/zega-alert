@@ -216,13 +216,30 @@ export const listSightings = async (req, res) => {
 };
 
 export const createWanted = async (req, res) => {
-  const { name, age, gender, photo_url, crime_description, danger_level } = req.body;
+  const { name, age, gender, photo_url, photos, crime_description, danger_level } = req.body;
   if (!name) return fail(res, 'name is required');
+
+  const photoList = Array.isArray(photos) ? photos.filter(Boolean) : (photo_url ? [photo_url] : []);
+  const primaryPhoto = photoList.length > 0 ? photoList[0] : (photo_url || null);
+
   const { rows } = await query(
     `INSERT INTO wanted_persons (name, age, gender, photo_url, crime_description, danger_level)
      VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-    [name, age || null, gender || null, photo_url || null, crime_description || null, danger_level || 'low'],
+    [name, age || null, gender || null, primaryPhoto, crime_description || null, danger_level || 'low'],
   );
+
+  const wantedId = rows[0].id;
+
+  if (photoList.length > 0) {
+    for (let i = 0; i < photoList.length; i++) {
+      await query(
+        `INSERT INTO person_photos (entity_type, entity_id, photo_url, sort_order)
+         VALUES ($1, $2, $3, $4)`,
+        ['wanted_person', wantedId, photoList[i], i]
+      );
+    }
+  }
+
   ok(res, rows[0], 'Wanted person registered', 201);
 };
 

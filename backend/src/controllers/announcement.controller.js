@@ -8,7 +8,7 @@ const CATEGORIES = ['news', 'warning', 'legal', 'event', 'road_closure', 'missin
 export const createAnnouncement = async (req, res) => {
   const {
     title, body, category, region, sub_city, language,
-    image_url, badge_label, badge_color, source_label,
+    image_url, photos, badge_label, badge_color, source_label,
     start_time_label, detour_info,
     closure_start_lat, closure_start_lng, closure_end_lat, closure_end_lng,
   } = req.body;
@@ -17,6 +17,9 @@ export const createAnnouncement = async (req, res) => {
     return fail(res, `category must be one of: ${CATEGORIES.join(', ')}`);
   }
   const lang = language || 'en';
+  const photoList = Array.isArray(photos) ? photos.filter(Boolean) : (image_url ? [image_url] : []);
+  const primaryImage = photoList.length > 0 ? photoList[0] : (image_url || null);
+
   const { rows } = await query(
     `INSERT INTO announcements (
        title, body, category, language, region, sub_city, author_id,
@@ -26,7 +29,7 @@ export const createAnnouncement = async (req, res) => {
      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
     [
       title, body, category || 'news', lang, region || null, sub_city || null, req.user.id,
-      image_url || null, badge_label || null, badge_color || null, source_label || 'EthioShield News',
+      primaryImage, badge_label || null, badge_color || null, source_label || 'EthioShield News',
       start_time_label || null, detour_info || null,
       closure_start_lat || null, closure_start_lng || null, closure_end_lat || null, closure_end_lng || null,
     ],

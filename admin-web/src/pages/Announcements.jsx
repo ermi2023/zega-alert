@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { api } from '../api/client';
+import { api, API_BASE, assetUrl } from '../api/client';
 import { useToast } from '../components/Toast';
 
 export default function Announcements() {
   const { t } = useTranslation();
   const [rows, setRows] = useState([]);
-  const [form, setForm] = useState({ title: '', body: '', category: 'news', region: '', sub_city: '' });
+  const [form, setForm] = useState({ title: '', body: '', category: 'news', region: '', sub_city: '', image_url: '' });
   const [msg, setMsg] = useState({ type: '', text: '' });
   const [editing, setEditing] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const { addToast } = useToast();
 
   const load = () => api.get('/announcements').then(setRows);
@@ -25,7 +26,7 @@ export default function Announcements() {
         await api.post('/announcements', form);
         addToast(t('announcements.publishedMsg'), 'ok');
       }
-      setForm({ title: '', body: '', category: 'news', region: '', sub_city: '' });
+      setForm({ title: '', body: '', category: 'news', region: '', sub_city: '', image_url: '' });
       load();
     } catch (ex) { setMsg({ type: 'err', text: ex.message }); }
   };
@@ -49,7 +50,7 @@ export default function Announcements() {
 
   const startEdit = (a) => {
     setEditing(a);
-    setForm({ title: a.title, body: a.body, category: a.category, region: a.region || '', sub_city: a.sub_city || '' });
+    setForm({ title: a.title, body: a.body, category: a.category, region: a.region || '', sub_city: a.sub_city || '', image_url: a.image_url || '' });
   };
 
   return (
@@ -70,12 +71,74 @@ export default function Announcements() {
             <label>{t('announcements.region')}<input value={form.region} onChange={(e) => setForm({ ...form, region: e.target.value })} /></label>
             <label>{t('announcements.subCity')}<input value={form.sub_city} onChange={(e) => setForm({ ...form, sub_city: e.target.value })} /></label>
           </div>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: 12, color: 'var(--muted)' }}>{t('announcements.body')}
+          <div className="form-row" style={{ marginTop: 8 }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', fontWeight: 600, marginBottom: 4, fontSize: 13 }}>Cover / Header Photo</label>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={uploading}
+                  style={{ fontSize: 12, flex: 1 }}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setUploading(true);
+                    try {
+                      const token = localStorage.getItem('zega_admin_token');
+                      const baseUrl = API_BASE || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : '');
+                      const fd = new FormData();
+                      fd.append('file', file);
+                      const res = await fetch(`${baseUrl}/api/upload/single`, {
+                        method: 'POST',
+                        headers: token ? { Authorization: `Bearer ${token}` } : {},
+                        body: fd,
+                      });
+                      const data = await res.json();
+                      const url = data?.data?.url;
+                      if (url) setForm(f => ({ ...f, image_url: assetUrl(url) }));
+                    } catch (err) { setMsg({ type: 'err', text: 'Upload failed: ' + err.message }); }
+                    finally { setUploading(false); }
+                  }}
+                />
+                {uploading && <span style={{ fontSize: 12, color: 'var(--muted)' }}>Uploading...</span>}
+                {form.image_url && (
+                  <div style={{ position: 'relative', display: 'inline-block' }}>
+                    <img
+                      src={assetUrl(form.image_url)}
+                      alt="Preview"
+                      style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--line)' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, image_url: '' }))}
+                      style={{
+                        position: 'absolute', top: -4, right: -4, background: '#ef4444', color: '#fff',
+                        border: 'none', borderRadius: '50%', width: 18, height: 18, fontSize: 11,
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                      }}
+                      title="Remove image"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+              </div>
+              <input
+                type="text"
+                value={form.image_url || ''}
+                onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))}
+                placeholder="Or paste image URL"
+                style={{ marginTop: 6, width: '100%', fontSize: 12 }}
+              />
+            </div>
+          </div>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>{t('announcements.body')}
             <textarea rows={3} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} required />
           </label>
           <div className="form-actions" style={{ marginTop: 12 }}>
             <button className="btn">{editing ? t('announcements.update') : t('announcements.publishBtn')}</button>
-            {editing && <button type="button" className="btn ghost" onClick={() => { setEditing(null); setForm({ title: '', body: '', category: 'news', region: '', sub_city: '' }); }}>{t('announcements.cancel')}</button>}
+            {editing && <button type="button" className="btn ghost" onClick={() => { setEditing(null); setForm({ title: '', body: '', category: 'news', region: '', sub_city: '', image_url: '' }); }}>{t('announcements.cancel')}</button>}
           </div>
         </form>
       </div>

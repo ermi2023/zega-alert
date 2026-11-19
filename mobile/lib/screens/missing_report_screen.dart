@@ -22,6 +22,7 @@ class _MissingReportScreenState extends State<MissingReportScreen> {
   final _address = TextEditingController();
   String _gender = 'Unknown';
   String? _photoUrl;
+  List<String> _photos = [];
   DateTime? _lastSeenAt;
   bool _busy = false;
   String? _status;
@@ -33,11 +34,13 @@ class _MissingReportScreenState extends State<MissingReportScreen> {
     try {
       Position? pos;
       try { pos = await LocationService.best(); } catch (_) {}
+      final allPhotos = _photos.isNotEmpty ? _photos : (_photoUrl != null ? [_photoUrl!] : <String>[]);
       final result = await Api.postOrQueue('/persons/missing', {
         'name': _name.text.trim(),
         'age': int.tryParse(_age.text),
         'gender': _gender,
-        'photo_url': _photoUrl,
+        'photo_url': allPhotos.isNotEmpty ? allPhotos.first : null,
+        'photos': allPhotos,
         'description': _desc.text.trim(),
         'last_seen_address': _address.text.trim(),
         'last_seen_lat': pos?.latitude,
@@ -54,6 +57,7 @@ class _MissingReportScreenState extends State<MissingReportScreen> {
       _desc.clear();
       _address.clear();
       _photoUrl = null;
+      _photos = [];
       _lastSeenAt = null;
       widget.onDone?.call();
     } catch (e) {
@@ -111,7 +115,12 @@ class _MissingReportScreenState extends State<MissingReportScreen> {
                   label: Text(_lastSeenAt == null ? loc.lastSeenDateTime : loc.lastSeenPrefix(_lastSeenAt!.toLocal())),
                 ),
                 const SizedBox(height: 12),
-                PhotoUploadField(label: loc.photoOfPerson, onUploaded: (url) => setState(() => _photoUrl = url)),
+                PhotoUploadField(
+                  label: loc.photoOfPerson,
+                  allowMultiple: true,
+                  onUploaded: (url) => setState(() => _photoUrl = url),
+                  onPhotosChanged: (list) => setState(() => _photos = list),
+                ),
                 const SizedBox(height: 12),
                 TextFormField(controller: _desc, maxLines: 4, decoration: InputDecoration(labelText: loc.descriptionIdentifying, border: const OutlineInputBorder())),
                 const SizedBox(height: 16),

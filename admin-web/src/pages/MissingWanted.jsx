@@ -7,7 +7,7 @@ import Icon from '../components/Icon';
 const personBadge = (v) => ({ missing: 'amber', found: 'green', wanted: 'red', captured: 'green' }[v] || 'gray');
 
 const emptyForm = (kind) => ({
-  name: '', age: '', gender: '', photo_url: '', description: '', last_seen_address: '',
+  name: '', age: '', gender: '', photo_url: '', photos: [], description: '', last_seen_address: '',
   crime_description: '', danger_level: 'low', contact_phone: '',
   kind,
 });
@@ -75,11 +75,15 @@ export default function MissingWanted() {
   const submit = async (e) => {
     e.preventDefault();
     const kind = form.kind;
+    const allPhotos = Array.isArray(form.photos) && form.photos.length > 0
+      ? form.photos
+      : (form.photo_url?.trim() ? [form.photo_url.trim()] : []);
     const payload = {
       name: form.name.trim(),
       age: form.age ? parseInt(form.age, 10) : null,
       gender: form.gender || null,
-      photo_url: form.photo_url.trim() || null,
+      photo_url: allPhotos[0] || null,
+      photos: allPhotos,
       description: form.description.trim() || null,
       contact_phone: form.contact_phone.trim() || null,
     };
@@ -201,35 +205,92 @@ export default function MissingWanted() {
               <label>{t('persons.contactPhone')}<input value={form.contact_phone} onChange={(e) => setForm({ ...form, contact_phone: e.target.value })} /></label>
             </div>
             <div className="form-row">
-              <div>
-                <label style={{ display: 'block', fontWeight: 600, marginBottom: 4, fontSize: 13 }}>Photo</label>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', fontWeight: 600, marginBottom: 4, fontSize: 13 }}>Photos (Multi-upload supported)</label>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                   <input
                     type="file"
                     accept="image/*"
+                    multiple
                     style={{ fontSize: 12, flex: 1 }}
                     disabled={uploading}
                     onChange={async (e) => {
-                      const file = e.target.files[0];
-                      if (!file) return;
+                      const files = Array.from(e.target.files || []);
+                      if (files.length === 0) return;
                       setUploading(true);
                       try {
-                        const fd = new FormData();
-                        fd.append('file', file);
                         const token = localStorage.getItem('zega_admin_token');
-                        const baseUrl = API_BASE;
-                        const res = await fetch(`${baseUrl}/api/upload/single`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
-                        const data = await res.json();
-                        const url = data?.data?.url;
-                        if (url) setForm(f => ({ ...f, photo_url: assetUrl(url) }));
+                        const baseUrl = API_BASE || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : '');
+                        const newUrls = [];
+                        for (const file of files) {
+                          const fd = new FormData();
+                          fd.append('file', file);
+                          const res = await fetch(`${baseUrl}/api/upload/single`, {
+                            method: 'POST',
+                            headers: token ? { Authorization: `Bearer ${token}` } : {},
+                            body: fd,
+                          });
+                          const data = await res.json();
+                          const url = data?.data?.url;
+                          if (url) newUrls.push(assetUrl(url));
+                        }
+                        if (newUrls.length > 0) {
+                          setForm(f => {
+                            const updated = [...(f.photos || []), ...newUrls];
+                            return { ...f, photos: updated, photo_url: updated[0] || '' };
+                          });
+                        }
                       } catch (err) { setMsg({ type: 'err', text: 'Upload failed: ' + err.message }); }
-                      finally { setUploading(false); }
+                      finally { setUploading(false); e.target.value = ''; }
                     }}
                   />
                   {uploading && <span style={{ fontSize: 12, color: 'var(--muted)' }}>Uploading...</span>}
-                  {form.photo_url && <img src={assetUrl(form.photo_url)} alt="Preview" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--line)' }} />}
                 </div>
-                {form.photo_url && <input type="text" value={form.photo_url} onChange={e => setForm(f => ({ ...f, photo_url: e.target.value }))} placeholder="Or paste photo URL" style={{ marginTop: 6, width: '100%', fontSize: 12 }} />}
+
+                {form.photos && form.photos.length > 0 && (
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                    {form.photos.map((pUrl, idx) => (
+                      <div key={idx} style={{ position: 'relative', display: 'inline-block' }}>
+                        <img
+                          src={assetUrl(pUrl)}
+                          alt={`Uploaded ${idx + 1}`}
+                          style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--line)' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setForm(f => {
+                              const updated = f.photos.filter((_, i) => i !== idx);
+                              return { ...f, photos: updated, photo_url: updated[0] || '' };
+                            });
+                          }}
+                          style={{
+                            position: 'absolute', top: -4, right: -4, background: '#ef4444', color: '#fff',
+                            border: 'none', borderRadius: '50%', width: 18, height: 18, fontSize: 11,
+                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                          }}
+                          title="Remove photo"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <input
+                  type="text"
+                  value={form.photo_url || ''}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setForm(f => ({
+                      ...f,
+                      photo_url: val,
+                      photos: val ? (f.photos?.length ? [val, ...f.photos.slice(1)] : [val]) : (f.photos || [])
+                    }));
+                  }}
+                  placeholder="Or paste photo URL"
+                  style={{ marginTop: 6, width: '100%', fontSize: 12 }}
+                />
               </div>
               {form.kind === 'missing'
                 ? <label>{t('persons.lastSeen')}<input value={form.last_seen_address} onChange={(e) => setForm({ ...form, last_seen_address: e.target.value })} /></label>

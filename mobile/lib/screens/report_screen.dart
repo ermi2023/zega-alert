@@ -418,18 +418,26 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
     if (source == null) return;
     setState(() => _busy = true);
     try {
-      final file = isVideo
-          ? await ImagePicker().pickVideo(
-              source: source,
-              maxDuration: Duration(seconds: type == 'Sign language' ? 90 : 120),
-            )
-          : await ImagePicker().pickImage(
-              source: source,
-              maxWidth: 1600,
-              imageQuality: 80,
-            );
-      if (file != null) {
-        await _uploadEvidence(file.path, type == 'Sign language' ? 'sign_language_video' : type.toLowerCase());
+      if (!isVideo && source == ImageSource.gallery) {
+        // Multi-image selection from gallery
+        final files = await ImagePicker().pickMultiImage(maxWidth: 1600, imageQuality: 80);
+        for (final file in files) {
+          await _uploadEvidence(file.path, 'photo');
+        }
+      } else {
+        final file = isVideo
+            ? await ImagePicker().pickVideo(
+                source: source,
+                maxDuration: Duration(seconds: type == 'Sign language' ? 90 : 120),
+              )
+            : await ImagePicker().pickImage(
+                source: source,
+                maxWidth: 1600,
+                imageQuality: 80,
+              );
+        if (file != null) {
+          await _uploadEvidence(file.path, type == 'Sign language' ? 'sign_language_video' : type.toLowerCase());
+        }
       }
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(loc.uploadFailed(e))));

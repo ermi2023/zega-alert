@@ -15,15 +15,14 @@ const LANGUAGES = [
 
 export default function Layout({ children }) {
   const { t, i18n } = useTranslation();
-  const { user, logout, updateUser } = useAuth();
+  const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [chatUnread, setChatUnread] = useState(0);
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('zega_theme') !== 'light');
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [profileForm, setProfileForm] = useState({ full_name: '', phone: '', email: '' });
-  const [profileSaving, setProfileSaving] = useState(false);
-  const [profileMsg, setProfileMsg] = useState({ type: '', text: '' });
+  // Read-only theme flag: the Settings page owns the toggle and writes
+  // localStorage; we just read it once here so the correct palette applies
+  // on every route, not only when /settings is open.
+  const [darkMode] = useState(() => localStorage.getItem('zega_theme') !== 'light');
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
@@ -116,35 +115,6 @@ export default function Layout({ children }) {
     localStorage.setItem('zega_lang', lang);
   };
 
-  const openProfile = () => {
-    setProfileForm({
-      full_name: user?.full_name || '',
-      phone: user?.phone || '',
-      email: user?.email || '',
-    });
-    setProfileMsg({ type: '', text: '' });
-    setProfileOpen(true);
-  };
-
-  const saveProfile = async (e) => {
-    e.preventDefault();
-    setProfileSaving(true);
-    setProfileMsg({ type: '', text: '' });
-    try {
-      const data = await api.put('/auth/me', {
-        full_name: profileForm.full_name.trim(),
-        phone: profileForm.phone.trim(),
-        email: profileForm.email.trim(),
-      });
-      updateUser(data);
-      setProfileMsg({ type: 'ok', text: 'Profile updated.' });
-    } catch (err) {
-      setProfileMsg({ type: 'err', text: err.message });
-    } finally {
-      setProfileSaving(false);
-    }
-  };
-
   return (
     <div className="layout">
       <div style={{ height: 3, width: '100%', background: 'linear-gradient(90deg, #078930 33.3%, #fcdd09 33.3% 66.6%, #da121a 66.6%)', position: 'fixed', top: 0, left: 0, zIndex: 1000 }} />
@@ -214,74 +184,10 @@ export default function Layout({ children }) {
             </NavLink>
           ))}
         </nav>
-        <div className="sidebar-foot">
-          <button type="button" className="user-chip user-chip-btn" onClick={openProfile} title="Edit my profile">
-            <span className="avatar">{user?.full_name?.[0]}</span>
-            <div>
-              <b>{user?.full_name}</b>
-              <small>{user?.phone || 'Add phone number'} · Edit</small>
-            </div>
-          </button>
-          <button
-            className="btn ghost"
-            onClick={() => setDarkMode(d => !d)}
-            style={{ width: '100%', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}
-            aria-label="Toggle theme"
-          >
-            {darkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
-          </button>
-          <select value={i18n.language} onChange={changeLang} className="lang-select">
-            {LANGUAGES.map((l) => (
-              <option key={l.code} value={l.code}>{l.label}</option>
-            ))}
-          </select>
-          <button className="btn ghost" onClick={logout}>{t('logout')}</button>
-        </div>
       </aside>
       <main className="main">
         {children}
       </main>
-
-      {profileOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }} onClick={() => setProfileOpen(false)}>
-          <form
-            onSubmit={saveProfile}
-            onClick={(e) => e.stopPropagation()}
-            style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--r-md)', padding: 24, maxWidth: 440, width: '100%' }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <h3 style={{ margin: 0 }}>My profile</h3>
-              <button type="button" className="btn ghost small" onClick={() => setProfileOpen(false)}>&times;</button>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: 13 }}>
-                Full name
-                <input value={profileForm.full_name} onChange={(e) => setProfileForm((f) => ({ ...f, full_name: e.target.value }))} required />
-              </label>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: 13 }}>
-                Phone number
-                <input
-                  value={profileForm.phone}
-                  onChange={(e) => setProfileForm((f) => ({ ...f, phone: e.target.value }))}
-                  placeholder="0911234567"
-                  inputMode="tel"
-                  required
-                />
-                <small style={{ color: 'var(--muted)', fontWeight: 400 }}>Used to sign in and receive dispatch calls. Ethiopian format, e.g. 0911234567.</small>
-              </label>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: 13 }}>
-                Email
-                <input type="email" value={profileForm.email} onChange={(e) => setProfileForm((f) => ({ ...f, email: e.target.value }))} />
-              </label>
-              {profileMsg.text && <div className={`msg ${profileMsg.type}`}>{profileMsg.text}</div>}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 4 }}>
-                <button type="button" className="btn ghost" onClick={() => setProfileOpen(false)}>Cancel</button>
-                <button className="btn" disabled={profileSaving}>{profileSaving ? 'Saving...' : 'Save changes'}</button>
-              </div>
-            </div>
-          </form>
-        </div>
-      )}
     </div>
   );
 }

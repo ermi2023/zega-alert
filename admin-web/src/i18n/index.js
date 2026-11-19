@@ -5,11 +5,16 @@ import en from './en.json';
 import am from './am.json';
 import om from './om.json';
 import ti from './ti.json';
+import so from './so.json';
 
-// Languages we ship as static JSON bundles. Anything else is fetched from the
-// backend /api/i18n/bundle/:lang endpoint (Google Translate, cached server-side
-// and client-side) so the admin UI can be used in any language Google supports.
-const STATIC_RESOURCES = { en: { translation: en }, am: { translation: am }, om: { translation: om }, ti: { translation: ti } };
+// The five official UI languages are all shipped as static JSON bundles, so
+// they render instantly with no network call. (The remote-loading path below
+// is retained for any future language added without a static bundle.)
+const STATIC_RESOURCES = {
+  en: { translation: en }, am: { translation: am },
+  om: { translation: om }, ti: { translation: ti },
+  so: { translation: so },
+};
 const STATIC_LANGS = new Set(Object.keys(STATIC_RESOURCES));
 
 // Client-side cache version. Bumped when the English source bundle changes

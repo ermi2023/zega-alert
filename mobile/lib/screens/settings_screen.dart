@@ -15,7 +15,8 @@ const _languages = [
   (code: 'en', label: 'English'),
   (code: 'am', label: 'አማርኛ (Amharic)'),
   (code: 'om', label: 'Afaan Oromoo (Oromifa)'),
-  (code: 'ti', label: 'ትግርኛ (Tigrigna)'),
+  (code: 'ti', label: 'ትግርኛ (Tigrinya)'),
+  (code: 'so', label: 'Soomaali (Ethio Somali)'),
 ];
 
 class SettingsScreen extends StatefulWidget {
@@ -425,7 +426,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             'ZEGA-ALERT is the Ethiopian Federal Police citizen safety app. '
             'It connects you to emergency dispatch, crime reporting, missing and '
             'wanted persons, official announcements and two-way communication '
-            'with officers — in English, Amharic, Oromifa and Tigrigna.\n\n'
+            'with officers — in English, Amharic, Oromifa, Tigrinya and Ethio Somali.\n\n'
             'Version 1.0.0',
             style: TextStyle(height: 1.4),
           ),

@@ -30,8 +30,9 @@ const ActivityPage = lazy(() => import('./SystemAdmin/Activity'));
 const DEFAULT_LANGUAGES = [
   { code: 'en', label: 'English' },
   { code: 'am', label: 'አማርኛ (Amharic)' },
-  { code: 'om', label: 'Afaan Oromoo' },
+  { code: 'om', label: 'Afaan Oromoo (Oromifa)' },
   { code: 'ti', label: 'ትግርኛ (Tigrinya)' },
+  { code: 'so', label: 'Soomaali (Ethio Somali)' },
 ];
 
 export default function Settings() {
@@ -165,7 +166,7 @@ export default function Settings() {
 
           <h2>{t('settings.language.title', { defaultValue: 'Language' })}</h2>
           <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 0 }}>
-            {t('settings.language.help', { defaultValue: 'The four official languages are built-in. Other languages are translated live by Google Translate and cached after first use.' })}
+            {t('settings.language.help', { defaultValue: 'Choose the interface language. All five official languages — English, Amharic, Oromifa, Tigrinya and Ethio Somali — are built in.' })}
           </p>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, maxWidth: 360 }}>
             {t('settings.language.select', { defaultValue: 'Interface language' })}
@@ -177,7 +178,7 @@ export default function Settings() {
             >
               {languages.map((l) => (
                 <option key={l.code} value={l.code}>
-                  {l.label}{l.bundled ? '' : ` · ${t('settings.language.translated', { defaultValue: 'auto-translated' })}`}
+                  {l.label}
                 </option>
               ))}
             </select>

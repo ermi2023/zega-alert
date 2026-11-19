@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 /// [GlobalMaterialLocalizations] only ships translations for the locales that
-/// Flutter bundles: Amharic (`am`) is included, but Oromifa (`om`) and Tigrinya
-/// (`ti`) are not. When the app's locale is one of those, no
+/// Flutter bundles: Amharic (`am`) is included, but Oromifa (`om`), Tigrinya
+/// (`ti`) and Somali (`so`) are not. When the app's locale is one of those, no
 /// [MaterialLocalizations] is provided and every [Scaffold] throws
 /// "No MaterialLocalizations found", breaking the app.
 ///

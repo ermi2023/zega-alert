@@ -8,6 +8,7 @@ import 'package:intl/intl.dart' as intl;
 import 'app_localizations_am.dart';
 import 'app_localizations_en.dart';
 import 'app_localizations_om.dart';
+import 'app_localizations_so.dart';
 import 'app_localizations_ti.dart';
 
 // ignore_for_file: type=lint
@@ -95,10 +96,11 @@ abstract class AppLocalizations {
   ];
 
   /// A list of this localizations delegate's supported locales.
-  static const List<Locale> supportedLocales = <Locale>[
+  static const List<Locale> supportedLocales = <Locale> [
     Locale('am'),
     Locale('en'),
     Locale('om'),
+    Locale('so'),
     Locale('ti')
   ];
 
@@ -1176,7 +1178,7 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) =>
-      <String>['am', 'en', 'om', 'ti'].contains(locale.languageCode);
+      <String>['am', 'en', 'om', 'so', 'ti'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -1191,6 +1193,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       return AppLocalizationsEn();
     case 'om':
       return AppLocalizationsOm();
+    case 'so':
+      return AppLocalizationsSo();
     case 'ti':
       return AppLocalizationsTi();
   }

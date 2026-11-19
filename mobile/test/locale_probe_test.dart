@@ -5,10 +5,11 @@ import 'package:zega_alert_mobile/main.dart';
 import 'package:zega_alert_mobile/l10n/app_localizations.dart';
 
 /// Regression test: switching to a language Flutter does not ship Material
-/// translations for (Oromifa `om`, Tigrinya `ti`) used to crash with
-/// "No MaterialLocalizations found". The fallback delegates must prevent that.
+/// translations for (Oromifa `om`, Tigrinya `ti`, Somali `so`) used to crash
+/// with "No MaterialLocalizations found". The fallback delegates must prevent
+/// that.
 void main() {
-  for (final code in ['en', 'am', 'om', 'ti']) {
+  for (final code in ['en', 'am', 'om', 'ti', 'so']) {
     testWidgets('app renders in locale "$code" without exceptions', (tester) async {
       SharedPreferences.setMockInitialValues({});
       await tester.pumpWidget(const ZegaAlertApp());

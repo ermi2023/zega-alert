@@ -15,8 +15,9 @@
  */
 import { ok, fail } from '../utils/response.js';
 
-// Languages we ship as static JSON in admin-web/src/i18n — no need to translate.
-const BUNDLED_LANGS = new Set(['en', 'am', 'om', 'ti']);
+// Languages we ship as static JSON bundles — no need to translate. Includes
+// Somali because the so.json file is generated once and shipped statically.
+const BUNDLED_LANGS = new Set(['en', 'am', 'om', 'ti', 'so']);
 
 // In-memory cache: { [lang]: { version, strings } }. Survives until the process
 // restarts. Versioned so a deploy that bumps BUNDLE_VERSION invalidates stale
@@ -32,7 +33,8 @@ const loadEnBundle = async () => {
   if (enBundle) return enBundle;
   try {
     // Read the JSON the Vite build ships — admin-web is a sibling of backend.
-    const url = new URL('../../admin-web/src/i18n/en.json', import.meta.url);
+    // Three levels up from backend/src/controllers/ reaches the repo root.
+    const url = new URL('../../../admin-web/src/i18n/en.json', import.meta.url);
     const fs = await import('fs/promises');
     enBundle = JSON.parse(await fs.readFile(url, 'utf8'));
   } catch {
@@ -78,38 +80,40 @@ const unflatten = (flat) => {
 };
 
 // Batch a flat map of strings through Google's free translate endpoint.
-// Returns a flat map of the same keys with translated values. Uses
-// client=gtx (the public web-widget client) which is free but rate-limited;
-// on any failure (429, network, blocked IP) callers should retry via MyMemory.
+// We send ONE q= per HTTP request (not multiple q= in one request) because
+// Google's multi-q response packs sentences into segments in a way that
+// doesn't map 1:1 to the input q params — short labels get dropped or
+// misaligned. One-at-a-time is slower but unambiguous. Concurrency is capped
+// so we don't trip Google's rate limiter.
+const translateOneGoogle = async (text, target) => {
+  const url = 'https://translate.googleapis.com/translate_a/single'
+    + `?client=gtx&sl=en&tl=${encodeURIComponent(target)}&dt=t`
+    + `&q=${encodeURIComponent(text)}`;
+  const res = await fetch(url, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (ZEGA-Alert)', 'Accept': 'application/json' },
+  });
+  if (!res.ok) throw new Error(`Google translate HTTP ${res.status}`);
+  const json = await res.json();
+  // Response: [ [ ["translated", "source", ...], ... ], ... ]. The first
+  // array holds sentence segments; concatenate all [0] entries to get the
+  // full translation (Google splits long source strings into multiple segments).
+  const segs = json?.[0] || [];
+  return segs.map((s) => s?.[0]).filter(Boolean).join('') || text;
+};
+
 const translateBatchGoogle = async (flat, target) => {
-  const chunks = [];
   const keys = Object.keys(flat);
-  // Google accepts multiple `q=` params; keep each chunk small to stay well
-  // under URL length limits (~120 strings or ~6KB per chunk).
-  const CHUNK = 100;
-  for (let i = 0; i < keys.length; i += CHUNK) {
-    const slice = keys.slice(i, i + CHUNK);
-    const url = 'https://translate.googleapis.com/translate_a/single'
-      + `?client=gtx&sl=en&tl=${encodeURIComponent(target)}&dt=t`
-      + slice.map(k => `&q=${encodeURIComponent(flat[k])}`).join('');
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (ZEGA-Alert)', 'Accept': 'application/json' },
-    });
-    if (!res.ok) throw new Error(`Google translate HTTP ${res.status}`);
-    const json = await res.json();
-    // Response shape: [ [ ["translated", "source", ...], ... ], ... ]
-    // The first array holds sentence pairs in order; concatenate per chunk.
-    const segs = json?.[0] || [];
-    slice.forEach((k, idx) => {
-      // Google splits long strings into multiple segments; rejoin by source
-      // boundary is complex, so use the simple 1:1 mapping (works for the
-      // short UI labels we ship). When the count mismatches, fall back to the
-      // original string so the UI never renders `undefined`.
-      const seg = segs[idx];
-      flat[k] = seg?.[0] ? String(seg[0]) : flat[k];
-    });
-    chunks.push(slice.length);
-  }
+  const CONCURRENCY = 8; // parallel requests — high enough to be fast, low enough to avoid rate limits
+  let cursor = 0;
+  const workers = Array.from({ length: CONCURRENCY }, async () => {
+    while (cursor < keys.length) {
+      const k = keys[cursor++];
+      try {
+        flat[k] = await translateOneGoogle(flat[k], target);
+      } catch { /* leave original — caller falls back to MyMemory */ }
+    }
+  });
+  await Promise.all(workers);
   return flat;
 };
 
@@ -171,28 +175,54 @@ export const getUiBundle = async (req, res) => {
     strings: nested, version: BUNDLE_VERSION });
 };
 
-// List of languages offered in the Settings picker. Includes the four bundled
-// ones plus every language Google supports that's relevant to the platform.
+// Translate an arbitrary flat map of strings (e.g. a Flutter .arb key->value
+// dump) into the target language. Used as a one-shot generation tool to
+// produce static translation bundles (e.g. app_so.arb) — NOT called at runtime
+// by the UI. Auth required so it can't be abused as an open translate proxy.
+// Body: { target: 'so', strings: { k0: 'v0', k1: 'v1', ... } }
+// Returns: { target, source, strings: { k0: '...', k1: '...' } }
+export const translateStrings = async (req, res) => {
+  const target = String(req.body?.target || '').toLowerCase();
+  const strings = req.body?.strings;
+  if (!target || !/^[a-z]{2}(-[a-z0-9]+)?$/i.test(target)) {
+    return fail(res, 'Invalid target language code', 400);
+  }
+  if (!strings || typeof strings !== 'object' || Array.isArray(strings)) {
+    return fail(res, 'strings must be a flat object of { key: value }', 400);
+  }
+  // Reject huge payloads — this is a dev-time tool, not a public API.
+  const keys = Object.keys(strings);
+  if (keys.length > 500) {
+    return fail(res, 'Too many strings (max 500). Split into batches.', 400);
+  }
+  // Normalize values to strings; preserve non-string as-is in the response.
+  const flat = {};
+  for (const k of keys) flat[k] = String(strings[k]);
+
+  let translated;
+  try {
+    translated = await translateBatchGoogle({ ...flat }, target);
+  } catch (googleErr) {
+    try {
+      translated = await translateBatchMyMemory({ ...flat }, target);
+    } catch (mmErr) {
+      return fail(res, 'Translation providers unavailable. Try again later.', 502);
+    }
+  }
+  ok(res, { target, source: 'translate', strings: translated });
+};
+
+// List of languages offered in the Settings picker. The four original UI
+// languages are bundled as static JSON; Somali is also bundled (the so.json
+// file is generated once via translateStrings and shipped statically), so all
+// five render instantly with no network call.
 export const listLanguages = async (req, res) => {
   const languages = [
-    { code: 'en', label: 'English',     bundled: true },
-    { code: 'am', label: 'አማርኛ (Amharic)',     bundled: true },
-    { code: 'om', label: 'Afaan Oromoo', bundled: true },
-    { code: 'ti', label: 'ትግርኛ (Tigrinya)',     bundled: true },
-    { code: 'fr', label: 'Français (French)' },
-    { code: 'ar', label: 'العربية (Arabic)' },
-    { code: 'so', label: 'Soomaali (Somali)' },
-    { code: 'sw', label: 'Kiswahili (Swahili)' },
-    { code: 'es', label: 'Español (Spanish)' },
-    { code: 'pt', label: 'Português (Portuguese)' },
-    { code: 'de', label: 'Deutsch (German)' },
-    { code: 'it', label: 'Italiano (Italian)' },
-    { code: 'zh-CN', label: '中文 (Chinese)' },
-    { code: 'ja', label: '日本語 (Japanese)' },
-    { code: 'ko', label: '한국어 (Korean)' },
-    { code: 'ru', label: 'Русский (Russian)' },
-    { code: 'hi', label: 'हिन्दी (Hindi)' },
-    { code: 'tr', label: 'Türkçe (Turkish)' },
+    { code: 'en', label: 'English',                 bundled: true },
+    { code: 'am', label: 'አማርኛ (Amharic)',          bundled: true },
+    { code: 'om', label: 'Afaan Oromoo (Oromifa)',  bundled: true },
+    { code: 'ti', label: 'ትግርኛ (Tigrinya)',         bundled: true },
+    { code: 'so', label: 'Soomaali (Ethio Somali)', bundled: true },
   ];
   ok(res, { languages });
 };

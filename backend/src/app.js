@@ -34,6 +34,7 @@ import notificationRoutes from './routes/notification.routes.js';
 import configRoutes from './routes/config.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
 import socialRoutes from './routes/social.routes.js';
+import i18nRoutes from './routes/i18n.routes.js';
 
 const app = express();
 
@@ -93,6 +94,7 @@ app.use('/api/staff', staffRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/config', configRoutes);
 app.use('/api/social', socialRoutes);
+app.use('/api/i18n', i18nRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

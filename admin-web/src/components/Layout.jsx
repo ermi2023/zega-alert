@@ -66,9 +66,9 @@ export default function Layout({ children }) {
 
   // Operational nav — used by Regional Admin, Dispatcher, Police and Citizen
   // for case-work (reports, SOS, persons, etc.). System Admin does NOT use
-  // this nav — they get the dedicated 12-section admin nav below (spec §13 +
+  // this nav — they get the dedicated admin nav below (spec §13 +
   // implementation note: "Do not mix the System Admin and Regional Admin
-  // dashboards").
+  // dashboards"). Every role gets the Settings entry at the bottom.
   const operationalNav = [
     { to: '/', label: t('nav.dashboard'), icon: 'dashboard' },
     { to: '/sos', label: t('nav.sos'), icon: 'sos' },
@@ -82,22 +82,20 @@ export default function Layout({ children }) {
     { to: '/legal', label: t('nav.legal'), icon: 'legal' },
     { to: '/geofences', label: t('nav.geofences'), icon: 'geofences' },
     { to: '/notifications', label: t('nav.notifications'), icon: 'bell' },
+    { to: '/settings', label: t('nav.settings', { defaultValue: 'Settings' }), icon: 'settings' },
   ];
 
-  // System Admin 12-section sidebar (spec §13). All routes under /admin/* are
-  // role-guarded by RequireRole('system_admin') in main.jsx.
+  // System Admin nav (spec §13). The configuration pages that used to live here
+  // (Profile, Config, Carrier, Roles, Activity) now live under the consolidated
+  // /settings hub so every role has one place to manage account + system config.
   const systemAdminNav = [
     { to: '/admin',                label: t('systemAdmin.nav.dashboard',     { defaultValue: 'Dashboard' }),                icon: 'dashboard' },
     { to: '/admin/users',          label: t('systemAdmin.nav.users',          { defaultValue: 'User Management' }),           icon: 'users' },
-    { to: '/admin/roles',          label: t('systemAdmin.nav.roles',          { defaultValue: 'Roles & Permissions' }),        icon: 'shield' },
-    { to: '/admin/config',         label: t('systemAdmin.nav.config',         { defaultValue: 'System Configuration' }),      icon: 'audit' },
-    { to: '/admin/carrier',        label: t('systemAdmin.nav.carrier',        { defaultValue: 'Carrier Configuration' }),      icon: 'chat' },
     { to: '/admin/security',       label: t('systemAdmin.nav.security',       { defaultValue: 'Security Policies' }),        icon: 'security' },
     { to: '/admin/audit',          label: t('systemAdmin.nav.audit',         { defaultValue: 'Audit Logs' }),                icon: 'audit' },
     { to: '/admin/legal',          label: t('systemAdmin.nav.legal',          { defaultValue: 'Legal Content' }),             icon: 'legal' },
-    { to: '/admin/activity',       label: t('systemAdmin.nav.activity',       { defaultValue: 'System Activity' }),           icon: 'sos' },
     { to: '/admin/notifications',  label: t('systemAdmin.nav.notifications',  { defaultValue: 'Notifications' }),              icon: 'bell' },
-    { to: '/admin/profile',        label: t('systemAdmin.nav.profile',        { defaultValue: 'My Profile' }),                icon: 'feedback' },
+    { to: '/settings',             label: t('nav.settings', { defaultValue: 'Settings' }), icon: 'settings' },
   ];
 
   const ROLE_NAV = {

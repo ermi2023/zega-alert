@@ -17,7 +17,8 @@
     "users": "ተጠቃሚ",
     "audit": "የAudit ማሰሪያ",
     "security": "ደህንነት",
-    "notifications": "ምልክታት"
+    "notifications": "ምልክታት",
+    "settings": "ምድላው"
   },
   "roles": {
     "system_admin": "ስይስትም አድמין",
@@ -377,6 +378,41 @@
       "notifications": "ምልክታታት ሓፈሻ",
       "profile": "ናይ ገዛእ ርእሰይ መገለጺ",
       "logout": "ውጻእ"
+    }
+  },
+  "settings": {
+    "title": "ምድላው",
+    "subtitle": "መለያካ፡ ኣመርነትካ፡ ከምኡውን ምድሓን ስርስርዕ ኣመሓዳሪ",
+    "tabs": {
+      "general": "ሓፈሻ",
+      "profile": "መለያይ",
+      "config": "ስርስርዕ ምድሓን",
+      "roles": "ስልጣንን ፍቕዲን",
+      "carrier": "ካሪየር",
+      "activity": "ስርስርዕ ንጥፈት"
+    },
+    "appearance": {
+      "title": "ኣመርነት",
+      "theme": "ቴማ",
+      "dark": "ጸልማት ሁነታ",
+      "light": "ብርሃን ሁነታ"
+    },
+    "language": {
+      "title": "ቋንቋ",
+      "help": "ኣርባዕተ ፍሉይ ቋንቋታት ኣብ ውሽጢ ኣለዉ። ካልኦት ቋንቋታት ብ Google Translate ብቑጥር ይተረጎሙ እሞ ካብ ናይ ቀዳማይ ጥቕሚ ኣትሒዙ ይሓዙ።",
+      "select": "ቋንቋ መበገሲ",
+      "applied": "ቋንቋ ተሓዲሱ እዩ።",
+      "loading": "ትርጉም ኣብ ምጽዓን…",
+      "translated": "ብኣውቶ-ትርጉም"
+    },
+    "profile": {
+      "title": "መለያይ",
+      "fullName": "ምሉእ ስም",
+      "phone": "ቑጽሪ ስልኪ",
+      "email": "ኢመይል",
+      "save": "ለውጥ ኣቕርብ",
+      "saving": "ኣብ ምኣታእ…",
+      "saved": "መለያይ ተሓዲሱ እዩ።"
     }
   }
 }

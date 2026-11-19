@@ -21,6 +21,7 @@ import Callbacks from './pages/Callbacks';
 import PeopleOfDetermination from './pages/PeopleOfDetermination';
 import SecurityPolicy from './pages/SecurityPolicy';
 import Notifications from './pages/Notifications';
+import Settings from './pages/Settings';
 // System Admin 12-section dashboard (spec §13)
 import SystemAdminDashboard from './pages/SystemAdmin/Dashboard';
 import RolesPage from './pages/SystemAdmin/Roles';
@@ -80,6 +81,7 @@ const App = () => (
             <Route path="/pod" element={<Protected><PeopleOfDetermination /></Protected>} />
             <Route path="/security" element={<Protected><SecurityPolicy /></Protected>} />
             <Route path="/notifications" element={<Protected><Notifications /></Protected>} />
+            <Route path="/settings" element={<Protected><Settings /></Protected>} />
 
             {/* System Admin 12-section dashboard (spec §13). All routes are
                 role-guarded — only system_admin can reach them. The old

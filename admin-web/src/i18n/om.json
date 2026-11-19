@@ -17,7 +17,8 @@
     "users": "Fayyadamaa",
     "audit": "Kabajaa Raabsiinsa",
     "security": "Nageenya",
-    "notifications": "Beeksisaawwan"
+    "notifications": "Beeksisaawwan",
+    "settings": "Qindaa"
   },
   "roles": {
     "system_admin": "System Admin",
@@ -377,6 +378,41 @@
       "notifications": "Beeksisaa Guutuu",
       "profile": "Profaayilii Koo",
       "logout": "Ba'i"
+    }
+  },
+  "settings": {
+    "title": "Qindaa",
+    "subtitle": "Herrega keessaniifi, mul’ata, fi qindaa sirna bulchaa",
+    "tabs": {
+      "general": "Waliigalaa",
+      "profile": "Profaayilii koo",
+      "config": "Qindaa Sirnaa",
+      "roles": "Lakkoofsa fi Eeyyama",
+      "carrier": "Kanneen Kennan",
+      "activity": "Sochii Sirnaa"
+    },
+    "appearance": {
+      "title": "Mul’ata",
+      "theme": "Mata duree",
+      "dark": "Haala dukkanaa",
+      "light": "Haala ifaa"
+    },
+    "language": {
+      "title": "Afaan",
+      "help": "Afaanonni afur kan beekkamoon ni uffatamani. Afaanonni biroon Google Translatetiin walumaagalatti hiikamu fi erga tokko fayyadamee booda ni kuufatamu.",
+      "select": "Afaan interfeesii",
+      "applied": "Afaan haaroomsameera.",
+      "loading": "Hiika fe'aa jira…",
+      "translated": "hiika-ofumaa"
+    },
+    "profile": {
+      "title": "Profaayilii koo",
+      "fullName": "Maqaa guutuu",
+      "phone": "Lakkoofsa bilbilaa",
+      "email": "Imelii",
+      "save": "Jijjiirama olkaa'i",
+      "saving": "Olkaa'aa jira…",
+      "saved": "Profaayilii haaroomsameera."
     }
   }
 }

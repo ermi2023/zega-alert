@@ -17,7 +17,8 @@
     "users": "ተጠቃሚዎች",
     "audit": "የትምህርት መዝገብ",
     "security": "ደህንነት",
-    "notifications": "ማሳወቂያዎች"
+    "notifications": "ማሳወቂያዎች",
+    "settings": "ቅንብሮች"
   },
   "roles": {
     "system_admin": "System Admin",
@@ -377,6 +378,41 @@
       "notifications": "ሁለንተናዊ ማሳወቂያዎች",
       "profile": "የእኔ መገለጫ",
       "logout": "ውጣ"
+    }
+  },
+  "settings": {
+    "title": "ቅንብሮች",
+    "subtitle": "መለያዎን፣ እንዳየሁትን እና የመድረክ ማዋቀርን ያስተዳድሩ",
+    "tabs": {
+      "general": "አጠቃላይ",
+      "profile": "የእኔ መገለጫ",
+      "config": "የስርዓት ማዋቀር",
+      "roles": "ሚናዎች እና ፍቃዶች",
+      "carrier": "አገልግሎት አቅራቢ",
+      "activity": "የስርዓት እንቅስቃሴ"
+    },
+    "appearance": {
+      "title": "እንዳየሁት",
+      "theme": "ጭብጥ",
+      "dark": "ጨለማ ሁነታ",
+      "light": "ብርሃን ሁነታ"
+    },
+    "language": {
+      "title": "ቋንቋ",
+      "help": "አራቱ ይፋዊ ቋንቋዎች ውስን ናቸው። ሌሎች ቋንቋዎች በ Google Translate በቀጥታ ይተረጎማሉ እና ከመጀመሪያ አጠቃቀም በኋላ ይቀመጣሉ።",
+      "select": "የበይነገጽ ቋንቋ",
+      "applied": "ቋንቋ ተዘምኗል።",
+      "loading": "ትርጉም በመጫን ላይ…",
+      "translated": "በራስ-ተተረጎመ"
+    },
+    "profile": {
+      "title": "የእኔ መገለጫ",
+      "fullName": "ሙሉ ስም",
+      "phone": "ስልክ ቁጥር",
+      "email": "ኢሜይል",
+      "save": "ለውጦችን አስቀምጥ",
+      "saving": "በማስቀመጥ ላይ…",
+      "saved": "መገለጫ ተዘምኗል።"
     }
   }
 }

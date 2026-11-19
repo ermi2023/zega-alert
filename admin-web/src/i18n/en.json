@@ -17,7 +17,8 @@
     "users": "Users",
     "audit": "Audit Log",
     "security": "Security",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "settings": "Settings"
   },
   "roles": {
     "system_admin": "System Admin",
@@ -377,6 +378,41 @@
       "notifications": "Global Notifications",
       "profile": "My Profile",
       "logout": "Logout"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your account, appearance, and platform configuration",
+    "tabs": {
+      "general": "General",
+      "profile": "My Profile",
+      "config": "System Config",
+      "roles": "Roles & Permissions",
+      "carrier": "Carrier",
+      "activity": "System Activity"
+    },
+    "appearance": {
+      "title": "Appearance",
+      "theme": "Theme",
+      "dark": "Dark mode",
+      "light": "Light mode"
+    },
+    "language": {
+      "title": "Language",
+      "help": "The four official languages are built-in. Other languages are translated live by Google Translate and cached after first use.",
+      "select": "Interface language",
+      "applied": "Language updated.",
+      "loading": "Loading translation…",
+      "translated": "auto-translated"
+    },
+    "profile": {
+      "title": "My Profile",
+      "fullName": "Full name",
+      "phone": "Phone number",
+      "email": "Email",
+      "save": "Save changes",
+      "saving": "Saving…",
+      "saved": "Profile updated."
     }
   }
 }

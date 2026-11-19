@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { optionalAuth } from '../middleware/optionalAuth.js';
 import {
   createMissing, listMissing, getMissing, updateMissing, createSighting, listSightings,
   createWanted, listWanted, updateWanted, approveMissing, rejectMissing, getMissingStats,
@@ -8,10 +9,10 @@ import {
 
 const router = Router();
 
-// Public (guest) read access.
+// Public (guest) or authenticated staff read access.
 router.get('/missing/stats', getMissingStats);
-router.get('/missing', listMissing);
-router.get('/missing/:id', getMissing);
+router.get('/missing', optionalAuth, listMissing);
+router.get('/missing/:id', optionalAuth, getMissing);
 router.get('/wanted', listWanted);
 router.get('/sightings', listSightings);
 

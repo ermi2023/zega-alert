@@ -37,8 +37,12 @@ export const getMissingStats = async (req, res) => {
 };
 
 export const createMissing = async (req, res) => {
-  const { name, age, gender, photo_url, description, last_seen_lat, last_seen_lng, last_seen_address, last_seen_at, contact_phone } = req.body;
+  const { name, age, gender, photo_url, photos, description, last_seen_lat, last_seen_lng, last_seen_address, last_seen_at, contact_phone } = req.body;
   if (!name) return fail(res, 'name is required');
+
+  const photoList = Array.isArray(photos) ? photos.filter(Boolean) : (photo_url ? [photo_url] : []);
+  const primaryPhoto = photoList.length > 0 ? photoList[0] : (photo_url || null);
+
   // Every new case starts as a draft. Staff must explicitly publish it before
   // it is shown to the public in the mobile app; citizen submissions also wait
   // for official approval.
@@ -46,13 +50,27 @@ export const createMissing = async (req, res) => {
     `INSERT INTO missing_persons (name, age, gender, photo_url, description, last_seen_lat, last_seen_lng,
        last_seen_address, last_seen_at, reporter_id, contact_phone, is_approved, approved_by, approved_at)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,false,NULL,NULL) RETURNING *`,
-    [name, age || null, gender || null, photo_url || null, description || null,
+    [name, age || null, gender || null, primaryPhoto, description || null,
       last_seen_lat || null, last_seen_lng || null, last_seen_address || null,
       last_seen_at || null, req.user.id, encrypt(contact_phone || req.user.phone)],
   );
+
+  const missingId = rows[0].id;
+
+  // Insert photos into person_photos table for multi-image carousels
+  if (photoList.length > 0) {
+    for (let i = 0; i < photoList.length; i++) {
+      await query(
+        `INSERT INTO person_photos (entity_type, entity_id, photo_url, sort_order)
+         VALUES ($1, $2, $3, $4)`,
+        ['missing_person', missingId, photoList[i], i]
+      );
+    }
+  }
+
   await query(
     `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'create_missing_person','missing_persons',$2)`,
-    [req.user.id, rows[0].id],
+    [req.user.id, missingId],
   );
   ok(res, decryptRow(rows[0]), 'Missing person saved as a draft. Publish it to make it visible in the mobile app.', 201);
 };
@@ -84,7 +102,15 @@ export const listMissing = async (req, res) => {
   if (sort === 'oldest') orderBy = 'created_at ASC';
   else if (sort === 'name') orderBy = 'name ASC';
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
-  const { rows } = await query(`SELECT * FROM missing_persons ${whereSql} ORDER BY ${orderBy}`, params);
+  const { rows } = await query(`
+    SELECT m.*,
+      COALESCE((SELECT COUNT(*)::int FROM post_likes l WHERE l.entity_type = 'missing_person' AND l.entity_id = m.id), 0) AS like_count,
+      COALESCE((SELECT COUNT(*)::int FROM post_comments c WHERE c.entity_type = 'missing_person' AND c.entity_id = m.id), 0) AS comment_count,
+      COALESCE((SELECT json_agg(p.photo_url ORDER BY p.sort_order) FROM person_photos p WHERE p.entity_type = 'missing_person' AND p.entity_id = m.id), '[]'::json) AS photos
+    FROM missing_persons m
+    ${whereSql}
+    ORDER BY ${orderBy}
+  `, params);
   ok(res, rows.map(decryptRow));
 };
 
@@ -202,9 +228,17 @@ export const createWanted = async (req, res) => {
 
 export const listWanted = async (req, res) => {
   const { status } = req.query;
-  const rows = status
-    ? (await query('SELECT * FROM wanted_persons WHERE status = $1 ORDER BY created_at DESC', [status])).rows
-    : (await query('SELECT * FROM wanted_persons ORDER BY created_at DESC')).rows;
+  const whereSql = status ? 'WHERE w.status = $1' : '';
+  const params = status ? [status] : [];
+  const { rows } = await query(`
+    SELECT w.*,
+      COALESCE((SELECT COUNT(*)::int FROM post_likes l WHERE l.entity_type = 'wanted_person' AND l.entity_id = w.id), 0) AS like_count,
+      COALESCE((SELECT COUNT(*)::int FROM post_comments c WHERE c.entity_type = 'wanted_person' AND c.entity_id = w.id), 0) AS comment_count,
+      COALESCE((SELECT json_agg(p.photo_url ORDER BY p.sort_order) FROM person_photos p WHERE p.entity_type = 'wanted_person' AND p.entity_id = w.id), '[]'::json) AS photos
+    FROM wanted_persons w
+    ${whereSql}
+    ORDER BY w.created_at DESC
+  `, params);
   ok(res, rows);
 };
 

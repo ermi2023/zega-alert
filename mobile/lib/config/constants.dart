@@ -1,3 +1,13 @@
+import 'package:flutter/material.dart';
+
+/// Official Brand Colors
+/// Deep Royal Blue #00338D
+const Color kBrandColor = Color(0xFF00338D);
+const Color kBrandColorDark = Color(0xFF00225E);
+const Color kBrandColorLight = Color(0xFF1A4FA8);
+
+const String kAppLogo = 'assets/images/efp_logo.png';
+
 const List<String> ethiopianRegions = [
   'Addis Ababa',
   'Afar',

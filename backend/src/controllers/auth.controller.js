@@ -260,6 +260,8 @@ export const resetPassword = async (req, res) => {
     if (!res.headersSent) return fail(res, 'Could not reset password. Please try again.', 500);
   }
 };
+
+export const changePassword = async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   if (!currentPassword || !newPassword) return fail(res, 'currentPassword and newPassword required');
   const { rows } = await query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);

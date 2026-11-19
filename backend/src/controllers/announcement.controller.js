@@ -6,16 +6,30 @@ import { translateAnnouncement } from '../services/translation.service.js';
 const CATEGORIES = ['news', 'warning', 'legal', 'event', 'road_closure', 'missing_item', 'wanted', 'missing'];
 
 export const createAnnouncement = async (req, res) => {
-  const { title, body, category, region, sub_city, language } = req.body;
+  const {
+    title, body, category, region, sub_city, language,
+    image_url, badge_label, badge_color, source_label,
+    start_time_label, detour_info,
+    closure_start_lat, closure_start_lng, closure_end_lat, closure_end_lng,
+  } = req.body;
   if (!title || !body) return fail(res, 'title and body are required');
   if (category && !CATEGORIES.includes(category)) {
     return fail(res, `category must be one of: ${CATEGORIES.join(', ')}`);
   }
   const lang = language || 'en';
   const { rows } = await query(
-    `INSERT INTO announcements (title, body, category, language, region, sub_city, author_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-    [title, body, category || 'news', lang, region || null, sub_city || null, req.user.id],
+    `INSERT INTO announcements (
+       title, body, category, language, region, sub_city, author_id,
+       image_url, badge_label, badge_color, source_label,
+       start_time_label, detour_info,
+       closure_start_lat, closure_start_lng, closure_end_lat, closure_end_lng
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
+    [
+      title, body, category || 'news', lang, region || null, sub_city || null, req.user.id,
+      image_url || null, badge_label || null, badge_color || null, source_label || 'EthioShield News',
+      start_time_label || null, detour_info || null,
+      closure_start_lat || null, closure_start_lng || null, closure_end_lat || null, closure_end_lng || null,
+    ],
   );
   const announcement = rows[0];
 
@@ -67,7 +81,11 @@ export const listAnnouncements = async (req, res) => {
   if (language) { params.push(language); where.push(`a.language = $${params.length}`); }
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
   const { rows } = await query(
-    `SELECT a.*, u.full_name AS author_name FROM announcements a
+    `SELECT a.*, u.full_name AS author_name,
+       COALESCE((SELECT COUNT(*)::int FROM post_likes l WHERE l.entity_type = 'announcement' AND l.entity_id = a.id AND (l.reaction = 'like' OR l.reaction IS NULL)), 0) AS like_count,
+       COALESCE((SELECT COUNT(*)::int FROM post_likes l WHERE l.entity_type = 'announcement' AND l.entity_id = a.id AND l.reaction = 'dislike'), 0) AS dislike_count,
+       COALESCE((SELECT COUNT(*)::int FROM post_comments c WHERE c.entity_type = 'announcement' AND c.entity_id = a.id), 0) AS comment_count
+     FROM announcements a
      LEFT JOIN users u ON u.id = a.author_id ${whereSql} ORDER BY a.published_at DESC`,
     params,
   );

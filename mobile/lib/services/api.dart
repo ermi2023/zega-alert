@@ -319,6 +319,25 @@ class Api {
 
   static Future<dynamic> getReport(String id) => _send('GET', '/reports/$id');
 
+  // Social endpoints
+  static Future<dynamic> toggleLike(String entityType, String entityId, {String reaction = 'like'}) =>
+      _send('POST', '/social/$entityType/$entityId/like', {'reaction': reaction});
+
+  static Future<dynamic> getSocialCounts(String entityType, String entityId) =>
+      _send('GET', '/social/$entityType/$entityId/counts');
+
+  static Future<dynamic> getComments(String entityType, String entityId) =>
+      _send('GET', '/social/$entityType/$entityId/comments');
+
+  static Future<dynamic> addComment(String entityType, String entityId, String body) =>
+      _send('POST', '/social/$entityType/$entityId/comments', {'body': body});
+
+  static Future<dynamic> getPhotos(String entityType, String entityId) =>
+      _send('GET', '/social/$entityType/$entityId/photos');
+
+  static Future<dynamic> addPhotos(String entityType, String entityId, List<String> photos) =>
+      _send('POST', '/social/$entityType/$entityId/photos', {'photos': photos});
+
   static Future<dynamic> upload(String path, List<MapEntry<String, String>> files,
       {Map<String, String>? fields}) async {
     final uri = Uri.parse('$baseUrl/api$path');

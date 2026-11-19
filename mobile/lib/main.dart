@@ -25,6 +25,7 @@ import 'services/officer_position_service.dart';
 import 'package:workmanager/workmanager.dart';
 import 'services/sync_service.dart';
 import 'widgets/auth_gate.dart';
+import 'widgets/sos_dialog.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -228,17 +229,9 @@ class _MainShellState extends State<MainShell> {
 
   static const _tabs = [
     HomeScreen(),
-    AuthGate(
-      title: 'Sign in to file a report',
-      message: 'You can browse announcements, missing & wanted persons as a guest. Sign in to submit crime reports.',
-      child: ReportScreen(),
-    ),
+    ReportScreen(),
     NewsScreen(),
-    AuthGate(
-      title: 'Sign in to send messages',
-      message: 'Messaging and callbacks are available once you create a free account or sign in.',
-      child: CommunicationScreen(),
-    ),
+    CommunicationScreen(),
     SettingsScreen(),
   ];
 
@@ -339,35 +332,140 @@ class _MainShellState extends State<MainShell> {
     final loc = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(4),
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF0F172A),
+        elevation: 0,
+        centerTitle: true,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 12),
+          child: Center(
+            child: Container(
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
-                color: const Color(0xFF1E40AF).withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.5)),
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFF00338D).withOpacity(0.2), width: 1.5),
               ),
-              child: const Icon(Icons.shield, color: Color(0xFFF59E0B), size: 19),
+              child: ClipOval(
+                child: Image.asset(
+                  'assets/images/efp_logo.png',
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const Icon(Icons.shield, color: Color(0xFF00338D), size: 22),
+                ),
+              ),
             ),
-            const SizedBox(width: 8),
-            const Text('ZEGA-ALERT', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-          ],
+          ),
+        ),
+        title: const Text(
+          'EthioShield',
+          style: TextStyle(
+            color: Color(0xFF00338D),
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+            letterSpacing: 0.3,
+          ),
         ),
         actions: const [
           _NotificationBell(),
+          SizedBox(width: 4),
         ],
       ),
       body: _tabs[_index],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: [
-          NavigationDestination(icon: const Icon(Icons.home), label: loc.home),
-          NavigationDestination(icon: const Icon(Icons.report), label: loc.report),
-          NavigationDestination(icon: const Icon(Icons.newspaper), label: loc.news),
-          NavigationDestination(icon: const Icon(Icons.chat), label: loc.messages),
-          NavigationDestination(icon: const Icon(Icons.settings), label: loc.settings),
+      bottomNavigationBar: Container(
+        height: 64,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 10,
+              offset: const Offset(0, -3),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _navItem(Icons.home, loc.home, 0),
+            _navItem(Icons.assignment_outlined, loc.report, 1),
+            _sosNavItem(context),
+            _navItem(Icons.newspaper, loc.news, 2),
+            _navItem(Icons.settings_outlined, loc.settings, 4),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _navItem(IconData icon, String label, int index) {
+    final isSelected = _index == index;
+    return InkWell(
+      onTap: () => setState(() => _index = index),
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isSelected)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00338D),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: Colors.white, size: 20),
+              )
+            else
+              Icon(icon, color: const Color(0xFF64748B), size: 22),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: isSelected ? const Color(0xFF1E3A8A) : const Color(0xFF64748B),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sosNavItem(BuildContext context) {
+    return GestureDetector(
+      onTap: () => triggerEmergencySos(context),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFFDC2626),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFDC2626).withOpacity(0.4),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: const Icon(Icons.emergency_share, color: Colors.white, size: 20),
+          ),
+          const SizedBox(height: 2),
+          const Text(
+            'SOS',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFFDC2626),
+            ),
+          ),
         ],
       ),
     );

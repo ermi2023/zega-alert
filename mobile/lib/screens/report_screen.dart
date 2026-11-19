@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import '../l10n/app_localizations.dart';
 import '../screens/report_detail_screen.dart';
+import '../screens/communication_screen.dart';
 import '../services/api.dart';
 import '../services/database_service.dart';
 import '../services/location_service.dart';
@@ -16,7 +17,8 @@ class ReportScreen extends StatefulWidget {
   State<ReportScreen> createState() => _ReportScreenState();
 }
 
-class _ReportScreenState extends State<ReportScreen> {
+class _ReportScreenState extends State<ReportScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabs;
   List<dynamic> _mine = [];
   String? _loadError;
   bool _loading = true;
@@ -25,15 +27,29 @@ class _ReportScreenState extends State<ReportScreen> {
   @override
   void initState() {
     super.initState();
+    _tabs = TabController(length: 2, vsync: this);
     _load();
   }
 
+  @override
+  void dispose() {
+    _tabs.dispose();
+    super.dispose();
+  }
+
   Future<void> _load() async {
+    if (!Api.isLoggedIn) {
+      setState(() {
+        _loading = false;
+        _mine = [];
+      });
+      return;
+    }
     setState(() { _loading = true; _loadError = null; _offline = false; });
     try {
       final mine = await Api.get('/reports/mine');
       await DatabaseService.cacheList('reports', mine);
-      setState(() => _mine = mine);
+      setState(() => _mine = mine is List ? mine : []);
     } catch (e) {
       final mine = await DatabaseService.getCachedList('reports');
       if (mine.isNotEmpty) {
@@ -110,83 +126,129 @@ class _ReportScreenState extends State<ReportScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    return RefreshIndicator(
-      onRefresh: _load,
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text(loc.reportACrime, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          Text(loc.yourReportGoesTo, style: const TextStyle(color: Colors.grey)),
-          const SizedBox(height: 16),
-          Semantics(
-            button: true,
-            label: 'New crime report button. Double tap to open the crime report form.',
-            child: SizedBox(
-              height: 84,
-              child: FilledButton.icon(
-                onPressed: _openSubmission,
-                style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                icon: const Icon(Icons.edit_note, size: 30, color: Colors.white),
-                label: Text(loc.newCrimeReport, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(48),
+        child: Container(
+          color: Colors.white,
+          child: TabBar(
+            controller: _tabs,
+            labelColor: const Color(0xFF0F172A),
+            unselectedLabelColor: const Color(0xFF64748B),
+            indicatorColor: const Color(0xFF0F172A),
+            indicatorWeight: 3,
+            labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            tabs: const [
+              Tab(
+                iconMargin: EdgeInsets.zero,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.assignment_outlined, size: 18),
+                    SizedBox(width: 8),
+                    Text('My Reports'),
+                  ],
+                ),
               ),
-            ),
+              Tab(
+                iconMargin: EdgeInsets.zero,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.forum_outlined, size: 18),
+                    SizedBox(width: 8),
+                    Text('Follow-up / Chat'),
+                  ],
+                ),
+              ),
+            ],
           ),
-          if (_offline)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              color: Colors.amber.shade100,
-              child: Row(
-                children: [
-                  const Icon(Icons.wifi_off, size: 16, color: Colors.amber),
-                  const SizedBox(width: 8),
-                  Text(loc.offlineMode, style: const TextStyle(fontSize: 13, color: Colors.amber)),
-                ],
-              ),
-            ),
-          if (_loadError != null) Card(color: Colors.red.shade50, child: Padding(padding: const EdgeInsets.all(12), child: Row(children: [const Icon(Icons.error_outline, color: Colors.red), const SizedBox(width: 8), Expanded(child: Text(_loadError!, style: const TextStyle(color: Colors.red)))]))),
-          if (_loading) const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
-          Text(loc.myReports, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          if (_mine.isEmpty)
-            Padding(padding: const EdgeInsets.symmetric(vertical: 24), child: Center(child: Text(loc.noReportsYet, style: const TextStyle(color: Colors.grey)))),
-          ..._mine.take(10).map((r) => Semantics(
-            label: 'Report: ${r['title'] ?? 'Untitled'}. Category: ${r['category'] ?? 'unknown'}. Status: ${_statusLabel(r['status'] ?? '')}.',
-            child: Card(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-              ListTile(
-                leading: Icon(Icons.assignment_outlined, color: _statusColor(r['status'] ?? '')),
-                title: Text(r['title'] ?? 'Untitled'),
-                subtitle: Text('${r['category'] ?? ''} · ${_shortDate(r['reported_at'])}'),
-                trailing: Text(_statusLabel(r['status'] ?? ''), style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _statusColor(r['status'] ?? ''))),
-                onTap: () {
-                  final id = r['id']?.toString();
-                  if (id != null && id.isNotEmpty) {
-                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => ReportDetailScreen(id: id)));
-                  }
-                },
-              ),
-                  if (r['status'] == 'resolved')
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Semantics(
-                          button: true,
-                          label: 'Rate response for report: ${r['title'] ?? "Untitled"}',
-                          child: TextButton.icon(
-                            onPressed: () => _rate(r),
-                            icon: const Icon(Icons.star_outline, size: 18),
-                            label: Text(loc.rateThisResponse),
-                          ),
-                        ),
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabs,
+        children: [
+          // Tab 1: Crime & Incident Reports
+          RefreshIndicator(
+            onRefresh: _load,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                Text(loc.reportACrime, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                Text(loc.yourReportGoesTo, style: const TextStyle(color: Colors.grey)),
+                const SizedBox(height: 16),
+                Semantics(
+                  button: true,
+                  label: 'New crime report button. Double tap to open the crime report form.',
+                  child: SizedBox(
+                    height: 72,
+                    child: FilledButton.icon(
+                      onPressed: _openSubmission,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF0F172A),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      icon: const Icon(Icons.edit_note, size: 28, color: Colors.white),
+                      label: Text(loc.newCrimeReport, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    ),
+                  ),
+                ),
+                if (_offline)
+                  Container(
+                    margin: const EdgeInsets.only(top: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    color: Colors.amber.shade100,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.wifi_off, size: 16, color: Colors.amber),
+                        const SizedBox(width: 8),
+                        Text(loc.offlineMode, style: const TextStyle(fontSize: 13, color: Colors.amber)),
+                      ],
+                    ),
+                  ),
+                if (_loadError != null)
+                  Card(
+                    color: Colors.red.shade50,
+                    margin: const EdgeInsets.only(top: 12),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.error_outline, color: Colors.red),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(_loadError!, style: const TextStyle(color: Colors.red))),
+                        ],
                       ),
                     ),
-                ],
-              ),
+                  ),
+                if (_loading) const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
+                const SizedBox(height: 20),
+                Text(loc.myReports, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                if (_mine.isEmpty && !_loading)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(child: Text(loc.noReportsYet, style: const TextStyle(color: Colors.grey))),
+                  ),
+                ..._mine.map((r) => Card(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  elevation: 1,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: ListTile(
+                    leading: Icon(Icons.assignment_outlined, color: _statusColor(r['status'] ?? '')),
+                    title: Text(r['title'] ?? 'Untitled', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text('${r['category'] ?? ''} • ${_statusLabel(r['status'] ?? '')}'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ReportDetailScreen(id: r['id']))),
+                  ),
+                )),
+              ],
             ),
-          )),
+          ),
+
+          // Tab 2: Follow-up with Admin (Chat / Message System)
+          const CommunicationScreen(),
         ],
       ),
     );

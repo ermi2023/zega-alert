@@ -4,6 +4,7 @@ import '../l10n/app_localizations.dart';
 import '../main.dart';
 import 'auth_screen.dart';
 import 'id_verification_screen.dart';
+import 'communication_screen.dart';
 import '../services/api.dart';
 import '../widgets/auth_gate.dart';
 import '../widgets/pod_actions.dart';
@@ -34,7 +35,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _darkMode = false;
   String? _status;
 
-  List<dynamic> _geofences = [];
   List<dynamic> _legal = [];
 
   String? _loadError;
@@ -43,7 +43,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _load() async {
     try {
-      _geofences = [];
       final legal = await Api.get('/legal');
       _legal = legal as List<dynamic>;
       if (_loggedIn) {
@@ -54,7 +53,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _region = me['region'] ?? 'Addis Ababa';
         _subCity = me['sub_city'] ?? (subCitiesByRegion[_region]?.first ?? '');
         await Api.setProfile(me);
-        _geofences = await Api.get('/geofences') as List<dynamic>;
         if (mounted) ZegaAlertApp.of(context)?.setLanguage(_language);
       } else if (mounted) {
         _language = ZegaAlertApp.of(context)?.languageCode ?? _language;
@@ -85,84 +83,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() => _status = 'Saved.');
     } catch (e) {
       setState(() => _status = 'Failed: $e');
-    }
-  }
-
-  Future<void> _addGeofence() async {
-    final loc = AppLocalizations.of(context);
-    if (_geofences.length >= 10) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Maximum of 10 active safety zones reached. Delete one first.')));
-      return;
-    }
-    final name = TextEditingController();
-    final radius = TextEditingController();
-    final lat = TextEditingController();
-    final lng = TextEditingController();
-    String type = 'zone';
-
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(loc.newSafetyZone),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: name, decoration: InputDecoration(labelText: loc.name, border: const OutlineInputBorder())),
-            const SizedBox(height: 10),
-            DropdownButtonFormField<String>(
-              value: type,
-              decoration: InputDecoration(labelText: loc.type, border: const OutlineInputBorder()),
-              items: ['zone', 'school', 'police_station', 'hospital', 'event'].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
-              onChanged: (v) => type = v!,
-            ),
-            const SizedBox(height: 10),
-            TextField(controller: lat, keyboardType: TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: loc.centerLatitude, border: const OutlineInputBorder())),
-            const SizedBox(height: 10),
-            TextField(controller: lng, keyboardType: TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: loc.centerLongitude, border: const OutlineInputBorder())),
-            const SizedBox(height: 10),
-            TextField(controller: radius, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: loc.radiusMeters, border: const OutlineInputBorder())),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(loc.cancel)),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(loc.create)),
-        ],
-      ),
-    );
-    if (ok != true || name.text.trim().isEmpty) return;
-    try {
-      await Api.post('/geofences', {
-        'name': name.text.trim(),
-        'type': type,
-        'center_lat': lat.text.isEmpty ? null : double.tryParse(lat.text),
-        'center_lng': lng.text.isEmpty ? null : double.tryParse(lng.text),
-        'radius_m': radius.text.isEmpty ? null : int.tryParse(radius.text),
-        'region': Api.region,
-      });
-      _load();
-      setState(() => _status = loc.safetyZoneCreated);
-    } catch (e) {
-      setState(() => _status = 'Failed: $e');
-    }
-  }
-
-  Future<void> _deleteGeofence(String id) async {
-    try {
-      await Api.delete('/geofences/$id');
-      final loc = AppLocalizations.of(context);
-      setState(() => _status = loc.safetyZoneDeleted);
-    } catch (e) {
-      setState(() => _status = 'Failed: $e');
-    }
-    _load();
-  }
-
-  Future<void> _toggleGeofence(String id, bool active) async {
-    try {
-      await Api.patch('/geofences/$id', {'is_active': active});
-      _load();
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
     }
   }
 
@@ -254,42 +174,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
         const SizedBox(height: 16),
-
-        if (_loggedIn) ...[
-          _section(loc.safetyZones, Icons.location_on_outlined),
-          ..._geofences.map((g) => Semantics(
-            label: 'Safety zone: ${g['name'] ?? 'Zone'}. Type: ${g['type'] ?? 'zone'}. Radius: ${g['radius_m'] != null ? '${g['radius_m']} meters' : 'not set'}.',
-            child: Card(
-              child: ListTile(
-                dense: true,
-                leading: const Icon(Icons.radar, color: Colors.green),
-                title: Text(g['name'] ?? 'Zone'),
-                subtitle: Text('${g['type'] ?? 'zone'} · ${g['radius_m'] != null ? '${g['radius_m']}m' : 'radius not set'}'),
-                trailing: Semantics(
-                  button: true,
-                  label: 'Delete safety zone: ${g['name'] ?? 'Zone'}',
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Switch(value: g['is_active'] != false, onChanged: (v) => _toggleGeofence(g['id'] as String, v)),
-                      IconButton(icon: const Icon(Icons.delete_outline), onPressed: () => _deleteGeofence(g['id'] as String)),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          )),
-          Semantics(
-            button: true,
-            label: 'Add safety zone',
-            child: OutlinedButton.icon(
-              onPressed: _addGeofence,
-              icon: const Icon(Icons.add_location_alt_outlined),
-              label: Text(loc.addSafetyZone),
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
 
         _section(loc.legalInformation, Icons.gavel),
         ..._legal.take(5).map((l) => Semantics(
@@ -392,17 +276,70 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         const SizedBox(height: 16),
 
-        _section('Backend server', Icons.dns_outlined),
-        Semantics(
-          label: 'Backend server. Currently ${Api.baseUrl}. Double tap to change.',
-          child: Card(
-            child: ListTile(
-              leading: const Icon(Icons.dns_outlined, color: Colors.deepPurple),
-              title: const Text('Backend server'),
-              subtitle: Text(Api.baseUrl),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: _editServerUrl,
-            ),
+        _section('Support & Feedback', Icons.support_agent_outlined),
+        Card(
+          child: Column(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.chat_bubble_outline, color: Color(0xFF1E40AF)),
+                title: const Text('Chat with Admin'),
+                subtitle: const Text('Follow up on reports'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CommunicationScreen()));
+                },
+              ),
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Leave Feedback', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    const SizedBox(height: 8),
+                    TextField(
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: 'Tell us how we can improve...',
+                        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: List.generate(
+                            5,
+                            (i) => Icon(Icons.star_outline, size: 20, color: Colors.grey.shade400),
+                          ),
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Feedback submitted. Thank you!')),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0F172A),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          ),
+                          child: const Text('Submit', style: TextStyle(fontSize: 12)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 16),
@@ -469,44 +406,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
     );
-  }
-
-  Future<void> _editServerUrl() async {
-    final controller = TextEditingController(text: Api.overrideBaseUrl ?? '');
-    final result = await showDialog<String?>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Backend server'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Current: ${Api.baseUrl}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              keyboardType: TextInputType.url,
-              decoration: const InputDecoration(
-                labelText: 'Server URL',
-                hintText: 'https://zega-api.example.et',
-                helperText: 'Leave blank to auto-detect on the local network.',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, ''), child: const Text('Auto-detect')),
-          TextButton(onPressed: () => Navigator.pop(ctx, null), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, controller.text), child: const Text('Save')),
-        ],
-      ),
-    );
-    if (result == null) return;
-    await Api.setBaseUrl(result);
-    setState(() => _status = result.trim().isEmpty
-        ? 'Backend set to auto-detect on the local network.'
-        : 'Backend server saved: ${Api.baseUrl}');
   }
 
   Future<void> _dial(String number) async {

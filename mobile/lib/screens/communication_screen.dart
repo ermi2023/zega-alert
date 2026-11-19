@@ -26,6 +26,7 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
   int? _waitMinutes;
 
   Future<void> _loadWait() async {
+    if (!Api.isLoggedIn) return;
     try {
       final d = await Api.get('/chat/wait-time');
       if (mounted) setState(() => _waitMinutes = d['estimated_wait_minutes']);
@@ -33,9 +34,16 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
   }
 
   Future<void> _loadConversations() async {
+    if (!Api.isLoggedIn) {
+      setState(() {
+        _conversations = [];
+        _loadError = null;
+      });
+      return;
+    }
     try {
       final data = await Api.get('/chat/conversations');
-      setState(() { _conversations = data; _loadError = null; });
+      setState(() { _conversations = data is List ? data : []; _loadError = null; });
       if (data.isNotEmpty && _active == null) _open(data.first['id'] as String);
     } catch (e) {
       setState(() => _loadError = 'Failed to load conversations: $e');

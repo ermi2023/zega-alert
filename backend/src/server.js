@@ -24,7 +24,11 @@ const start = async () => {
     await pool.query('SELECT 1');
     console.log('[DB] PostgreSQL connected');
   } catch (e) {
-    console.error('[DB] Connection failed:', e.message);
+    const detail = e.message
+      || (Array.isArray(e.errors) ? e.errors.map((error) => error?.message || String(error)).join('; ') : '')
+      || e.code
+      || String(e);
+    console.error('[DB] Connection failed:', detail);
     process.exit(1);
   }
   server.listen(env.port, '0.0.0.0', () => {

@@ -6,6 +6,7 @@ import { env } from './config/env.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 import { rateLimit } from './middleware/rateLimit.js';
 import { UPLOAD_DIR } from './controllers/upload.controller.js';
+import authRoutes from './routes/auth.routes.js';
 import appRoutes from './routes/app.routes.js';
 import reportRoutes from './routes/report.routes.js';
 import sosRoutes from './routes/sos.routes.js';
@@ -32,6 +33,7 @@ import staffRoutes from './routes/staff.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import configRoutes from './routes/config.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
+import socialRoutes from './routes/social.routes.js';
 
 const app = express();
 
@@ -63,6 +65,7 @@ app.get('/health', (req, res) => res.json({ ok: true }));
 
 app.use('/api', rateLimit({ windowMs: 60000, max: 100 }));
 
+app.use('/api/auth', authRoutes);
 app.use('/api/app', appRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/sos', sosRoutes);
@@ -89,6 +92,7 @@ app.use('/api/sync', syncRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/config', configRoutes);
+app.use('/api/social', socialRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

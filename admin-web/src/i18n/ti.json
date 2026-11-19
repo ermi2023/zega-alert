@@ -361,5 +361,22 @@
     "somethingWrong": "ሠ Somali ነገር ተሠርቧል",
     "unexpectedError": "ያልተጠበቀ ስህተት ተፈጥሯል።",
     "reloadPage": "ገጹን እንደገና ጫን"
+  },
+  "systemAdmin": {
+    "sectionTitle": "ሲስተም ኣስተዳዳሪ",
+    "nav": {
+      "dashboard": "ዳሽቦርድ",
+      "users": "ኣብ ተጠቃሚ ምሕዝቶ",
+      "roles": "ስራሕቲን ፍቓድን",
+      "config": "ስርዓት ምድላው",
+      "carrier": "ኣብ መልእኽቲ ምድላው",
+      "security": "ፖሊሲታት ደህንነት",
+      "audit": "መዝገባ ግምገማ",
+      "legal": "ኣብ ሕግጋት ምሕዝቶ",
+      "activity": "ንጥፈት ስርዓት ምክትል",
+      "notifications": "ምልክታታት ሓፈሻ",
+      "profile": "ናይ ገዛእ ርእሰይ መገለጺ",
+      "logout": "ውጻእ"
+    }
   }
 }

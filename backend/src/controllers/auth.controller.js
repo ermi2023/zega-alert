@@ -5,6 +5,7 @@ import { hashPassword, comparePassword } from '../utils/password.js';
 import { signTokens, verifyToken } from '../utils/jwt.js';
 import { createOtp, verifyOtp } from '../utils/otp.js';
 import { ok, fail } from '../utils/response.js';
+import { writeAudit } from '../utils/audit.js';
 
 // In-memory single-use refresh-token jti store. For multi-instance deploys
 // replace with a Redis/DB table; this keeps the feature working on Render's
@@ -139,6 +140,15 @@ export const loginWithOtp = async (req, res) => {
   if (!user) return fail(res, 'No account found for this phone. Register first.', 404);
   if (!user.is_active) return fail(res, 'Account disabled', 403);
   await query('UPDATE users SET last_login_at = now() WHERE id = $1', [user.id]);
+  // Audit: OTP-based login was previously unaudited (spec §8.3 — record all login paths).
+  await writeAudit({
+    userId: user.id,
+    action: 'login',
+    entity: 'users',
+    entityId: user.id,
+    detail: { method: 'otp' },
+    req,
+  });
   const tokens = signTokens(user);
   ok(res, { user: publicUser(user), ...tokens }, 'Login successful');
 };
@@ -254,6 +264,15 @@ export const resetPassword = async (req, res) => {
     if (!rows[0]) return fail(res, 'No account found for this phone.', 404);
     const hash = await hashPassword(new_password);
     await query('UPDATE users SET password_hash = $1, updated_at = now() WHERE phone = $2', [hash, phone]);
+    // Audit: password reset via OTP is security-sensitive (spec §8.3 + business rule §14.7).
+    await writeAudit({
+      userId: rows[0].id,
+      action: 'reset_password',
+      entity: 'users',
+      entityId: rows[0].id,
+      detail: { method: 'otp', phone },
+      req,
+    });
     ok(res, null, 'Password reset successful. You can now sign in.');
   } catch (e) {
     console.error('[RESET_PASSWORD]', e);
@@ -270,6 +289,15 @@ export const changePassword = async (req, res) => {
   }
   const password_hash = await hashPassword(newPassword);
   await query('UPDATE users SET password_hash = $1 WHERE id = $2', [password_hash, req.user.id]);
+  // Audit: password change by an authenticated user (spec §8.3 + business rule §14.7).
+  await writeAudit({
+    userId: req.user.id,
+    action: 'change_password',
+    entity: 'users',
+    entityId: req.user.id,
+    detail: { method: 'self' },
+    req,
+  });
   ok(res, null, 'Password changed');
 };
 

@@ -14,7 +14,7 @@ const pinCache = {};
 // bundlers) so no image assets are needed.
 const pin = (kind) => {
   if (pinCache[kind]) return pinCache[kind];
-  const color = PIN_COLORS[kind] || '#2563eb';
+  const color = PIN_COLORS[kind] || '#183C59';
   pinCache[kind] = L.divIcon({
     className: 'zega-pin',
     html: `<span style="display:block;width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.4)"></span>`,
@@ -88,7 +88,7 @@ export default function LiveMap({
             key={`g-${g.id}`}
             center={[Number(g.center_lat), Number(g.center_lng)]}
             radius={Number(g.radius_m) || 300}
-            pathOptions={{ color: '#2563eb', fillColor: '#2563eb', fillOpacity: 0.15, weight: 1 }}
+            pathOptions={{ color: '#183C59', fillColor: '#183C59', fillOpacity: 0.15, weight: 1 }}
           >
             <Popup>
               <div style={{ fontSize: 13 }}>

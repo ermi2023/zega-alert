@@ -64,7 +64,12 @@ export default function Layout({ children }) {
     }).catch(() => {});
   }, []);
 
-  const nav = [
+  // Operational nav — used by Regional Admin, Dispatcher, Police and Citizen
+  // for case-work (reports, SOS, persons, etc.). System Admin does NOT use
+  // this nav — they get the dedicated 12-section admin nav below (spec §13 +
+  // implementation note: "Do not mix the System Admin and Regional Admin
+  // dashboards").
+  const operationalNav = [
     { to: '/', label: t('nav.dashboard'), icon: 'dashboard' },
     { to: '/sos', label: t('nav.sos'), icon: 'sos' },
     { to: '/reports', label: t('nav.reports'), icon: 'reports' },
@@ -76,20 +81,36 @@ export default function Layout({ children }) {
     { to: '/chat', label: t('nav.chat'), icon: 'chat' },
     { to: '/legal', label: t('nav.legal'), icon: 'legal' },
     { to: '/geofences', label: t('nav.geofences'), icon: 'geofences' },
-    { to: '/users', label: t('nav.users'), icon: 'users' },
-    { to: '/audit', label: t('nav.audit'), icon: 'audit' },
-    { to: '/security', label: t('nav.security'), icon: 'security' },
     { to: '/notifications', label: t('nav.notifications'), icon: 'bell' },
   ];
 
+  // System Admin 12-section sidebar (spec §13). All routes under /admin/* are
+  // role-guarded by RequireRole('system_admin') in main.jsx.
+  const systemAdminNav = [
+    { to: '/admin',                label: t('systemAdmin.nav.dashboard',     { defaultValue: 'Dashboard' }),                icon: 'dashboard' },
+    { to: '/admin/users',          label: t('systemAdmin.nav.users',          { defaultValue: 'User Management' }),           icon: 'users' },
+    { to: '/admin/roles',          label: t('systemAdmin.nav.roles',          { defaultValue: 'Roles & Permissions' }),        icon: 'shield' },
+    { to: '/admin/config',         label: t('systemAdmin.nav.config',         { defaultValue: 'System Configuration' }),      icon: 'audit' },
+    { to: '/admin/carrier',        label: t('systemAdmin.nav.carrier',        { defaultValue: 'Carrier Configuration' }),      icon: 'chat' },
+    { to: '/admin/security',       label: t('systemAdmin.nav.security',       { defaultValue: 'Security Policies' }),        icon: 'security' },
+    { to: '/admin/audit',          label: t('systemAdmin.nav.audit',         { defaultValue: 'Audit Logs' }),                icon: 'audit' },
+    { to: '/admin/legal',          label: t('systemAdmin.nav.legal',          { defaultValue: 'Legal Content' }),             icon: 'legal' },
+    { to: '/admin/activity',       label: t('systemAdmin.nav.activity',       { defaultValue: 'System Activity' }),           icon: 'sos' },
+    { to: '/admin/notifications',  label: t('systemAdmin.nav.notifications',  { defaultValue: 'Notifications' }),              icon: 'bell' },
+    { to: '/admin/profile',        label: t('systemAdmin.nav.profile',        { defaultValue: 'My Profile' }),                icon: 'feedback' },
+  ];
+
   const ROLE_NAV = {
-    system_admin: nav,
-    regional_admin: nav.filter((n) => !['/users', '/audit'].includes(n.to)),
-    dispatcher: nav.filter((n) => ['/', '/sos', '/reports', '/persons', '/callbacks', '/pod', '/chat', '/notifications'].includes(n.to)),
-    police: nav.filter((n) => ['/', '/reports', '/persons', '/callbacks', '/pod', '/announcements', '/chat', '/notifications'].includes(n.to)),
+    // System Admin sees ONLY the admin nav — fully separated from operational roles.
+    system_admin: systemAdminNav,
+    // Regional Admin: operational nav, minus user-management & audit (which are System Admin only).
+    regional_admin: operationalNav.filter((n) => !['/users', '/audit'].includes(n.to)),
+    dispatcher: operationalNav.filter((n) => ['/', '/sos', '/reports', '/persons', '/callbacks', '/pod', '/chat', '/notifications'].includes(n.to)),
+    police: operationalNav.filter((n) => ['/', '/reports', '/persons', '/callbacks', '/pod', '/announcements', '/chat', '/notifications'].includes(n.to)),
+    citizen: operationalNav.filter((n) => ['/', '/reports', '/persons', '/announcements', '/chat', '/notifications'].includes(n.to)),
   };
 
-  const visibleNav = ROLE_NAV[user?.role] || [];
+  const visibleNav = ROLE_NAV[user?.role] || operationalNav;
 
   const changeLang = (e) => {
     const lang = e.target.value;
@@ -139,13 +160,13 @@ export default function Layout({ children }) {
           <span /><span /><span />
         </button>
         <div className="topbar-brand">
-          <img className="brand-flag" src="/brand/ethiopia-flag.png" alt="Ethiopia" />
+          <img className="brand-flag" src="/brand/logo.png" alt="ZEGA-ALERT logo" />
           <span style={{ color: '#f59e0b', display: 'flex', alignItems: 'center' }} title="Official Police CAD">
             <Icon name="shield" />
           </span>
           <strong>ZEGA-ALERT</strong>
         </div>
-        <div className="topbar-cad" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#93c5fd', background: 'rgba(37, 99, 235, 0.12)', padding: '4px 12px', borderRadius: 20, border: '1px solid rgba(37, 99, 235, 0.3)' }}>
+        <div className="topbar-cad" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#9bc1de', background: 'rgba(24, 60, 89, 0.35)', padding: '4px 12px', borderRadius: 20, border: '1px solid rgba(24, 60, 89, 0.6)' }}>
           <span className="dot blue pulse" />
           <span style={{ fontWeight: 600, letterSpacing: '0.5px' }}>POLICE CAD · DISPATCH ACTIVE</span>
         </div>
@@ -171,7 +192,7 @@ export default function Layout({ children }) {
       <aside className={`sidebar${menuOpen ? ' open' : ''}`}>
         <div className="brand">
           <div className="brand-row">
-            <img className="brand-flag" src="/brand/ethiopia-flag.png" alt="Ethiopia" />
+            <img className="brand-flag" src="/brand/logo.png" alt="ZEGA-ALERT logo" />
             <span style={{ color: '#f59e0b', display: 'flex', alignItems: 'center' }} title="Official Police CAD">
               <Icon name="shield" />
             </span>
@@ -185,6 +206,8 @@ export default function Layout({ children }) {
             <NavLink
               key={n.to}
               to={n.to}
+              // /admin and / should only show "active" on an exact match, not on every sub-route.
+              end={(n.to === '/admin' || n.to === '/')}
               className={({ isActive }) => (isActive ? 'active' : '')}
               onClick={() => setMenuOpen(false)}
             >

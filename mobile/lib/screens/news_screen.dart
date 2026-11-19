@@ -528,8 +528,8 @@ class _NewsScreenState extends State<NewsScreen> {
                       ),
                       child: ClipOval(
                         child: Image.asset(
-                          'assets/images/efp_logo.png',
-                          fit: BoxFit.cover,
+                          'assets/images/logo.png',
+                          fit: BoxFit.contain,
                           errorBuilder: (_, __, ___) => const Icon(Icons.shield, size: 14, color: Color(0xFF00338D)),
                         ),
                       ),

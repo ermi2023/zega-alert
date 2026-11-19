@@ -11,6 +11,8 @@ const Color _etYellow = Color(0xFFFCDD09);
 const Color _etRed = Color(0xFFDA121A);
 const Color _deepGreen = Color(0xFF0C2D48);
 const Color _ink = Color(0xFF0A1929);
+const Color _brandNavy = Color(0xFF183C59);
+const Color _policeGold = Color(0xFFF59E0B);
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -377,15 +379,15 @@ class _AuthScreenState extends State<AuthScreen> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          const Image(image: AssetImage('assets/ethiopia_flag.png'), fit: BoxFit.cover, alignment: Alignment.center),
+          const Image(image: AssetImage('assets/images/logo.png'), fit: BoxFit.none, scale: 3.2, alignment: Alignment.center),
           DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  _deepGreen.withValues(alpha: 0.72),
-                  _deepGreen.withValues(alpha: 0.90),
+                  _brandNavy.withValues(alpha: 0.78),
+                  _brandNavy.withValues(alpha: 0.92),
                   _ink,
                 ],
                 stops: const [0.0, 0.58, 1.0],
@@ -402,9 +404,9 @@ class _AuthScreenState extends State<AuthScreen> {
                 height: 310,
                 child: Column(
                   children: [
-                    Expanded(child: ColoredBox(color: Color(0x8C078930))),
-                    Expanded(child: ColoredBox(color: Color(0x8CFCDD09))),
-                    Expanded(child: ColoredBox(color: Color(0x8CDA121A))),
+                    Expanded(child: ColoredBox(color: _brandNavy.withValues(alpha: 0.55))),
+                    Expanded(child: ColoredBox(color: _policeGold.withValues(alpha: 0.55))),
+                    Expanded(child: ColoredBox(color: _brandNavy.withValues(alpha: 0.55))),
                   ],
                 ),
               ),
@@ -457,9 +459,9 @@ class _AuthScreenState extends State<AuthScreen> {
             height: 5,
             child: Row(
               children: [
-                Expanded(child: ColoredBox(color: _etGreen)),
-                Expanded(child: ColoredBox(color: _etYellow)),
-                Expanded(child: ColoredBox(color: _etRed)),
+                Expanded(child: ColoredBox(color: _brandNavy)),
+                Expanded(child: ColoredBox(color: _policeGold)),
+                Expanded(child: ColoredBox(color: _brandNavy)),
               ],
             ),
           ),
@@ -481,7 +483,7 @@ class _AuthScreenState extends State<AuthScreen> {
           padding: const EdgeInsets.all(3),
           child: ClipPath(
             clipper: _ShieldClipper(),
-            child: Image.asset('assets/ethiopia_flag.png', fit: BoxFit.cover),
+            child: Image.asset('assets/images/logo.png', fit: BoxFit.contain),
           ),
         ),
       ),

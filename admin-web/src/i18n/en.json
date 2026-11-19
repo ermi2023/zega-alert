@@ -361,5 +361,22 @@
     "somethingWrong": "Something went wrong",
     "unexpectedError": "An unexpected error occurred.",
     "reloadPage": "Reload page"
+  },
+  "systemAdmin": {
+    "sectionTitle": "System Admin",
+    "nav": {
+      "dashboard": "Dashboard",
+      "users": "User Management",
+      "roles": "Roles & Permissions",
+      "config": "System Configuration",
+      "carrier": "Carrier Configuration",
+      "security": "Security Policies",
+      "audit": "Audit Logs",
+      "legal": "Legal Content Management",
+      "activity": "System Activity Monitoring",
+      "notifications": "Global Notifications",
+      "profile": "My Profile",
+      "logout": "Logout"
+    }
   }
 }

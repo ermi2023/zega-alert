@@ -13,9 +13,9 @@ function ShieldFlag() {
         </clipPath>
       </defs>
       <image
-        href="/brand/ethiopia-flag.png"
-        x="0" y="0" width="48" height="56"
-        preserveAspectRatio="xMidYMid slice"
+        href="/brand/logo.png"
+        x="2" y="4" width="44" height="48"
+        preserveAspectRatio="xMidYMid meet"
         clipPath="url(#shieldClip)"
       />
       <path

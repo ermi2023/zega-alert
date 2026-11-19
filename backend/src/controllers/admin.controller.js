@@ -1,13 +1,40 @@
 import { query } from '../config/db.js';
 import { ok, fail } from '../utils/response.js';
 import { hashPassword } from '../utils/password.js';
+import { writeAudit } from '../utils/audit.js';
 
+/**
+ * GET /api/admin/stats
+ * Aggregated platform telemetry for the System Admin dashboard (spec §2).
+ * Includes per-role user counts, active vs suspended accounts, legal content
+ * publication status, and audit/notification counts — in addition to the
+ * existing reports / sos / missing-persons telemetry.
+ */
 export const stats = async (req, res) => {
-  const [users, reports, sos, missing, wanted, dispatches, recentReports, monthlyTrend] = await Promise.all([
+  const [
+    users,
+    usersByRole,
+    activeCounts,
+    reports,
+    sos,
+    missing,
+    wanted,
+    dispatches,
+    recentReports,
+    monthlyTrend,
+    legalOverview,
+    auditCount,
+    notificationCount,
+  ] = await Promise.all([
     query(`SELECT COUNT(*)::int AS total,
       COUNT(*) FILTER (WHERE role='citizen')::int AS citizens,
       COUNT(*) FILTER (WHERE role!='citizen')::int AS staff,
       COUNT(*) FILTER (WHERE role='police' AND is_active=true)::int AS active_officers
+      FROM users`),
+    query(`SELECT role, COUNT(*)::int AS n, COUNT(*) FILTER (WHERE is_active=true)::int AS active FROM users GROUP BY role`),
+    query(`SELECT
+        COUNT(*) FILTER (WHERE is_active=true)::int  AS active,
+        COUNT(*) FILTER (WHERE is_active=false)::int AS suspended
       FROM users`),
     query(`SELECT status, COUNT(*)::int AS n FROM reports GROUP BY status`),
     query(`SELECT status, COUNT(*)::int AS n,
@@ -24,7 +51,32 @@ export const stats = async (req, res) => {
       WHERE reported_at >= now() - interval '6 months'
       GROUP BY TO_CHAR(reported_at, 'Mon'), DATE_TRUNC('month', reported_at)
       ORDER BY DATE_TRUNC('month', reported_at) ASC`),
+    // Legal content overview for the System Admin dashboard (spec §2 #10).
+    query(`SELECT
+        COUNT(*)::int AS total,
+        COUNT(*) FILTER (WHERE is_published = true)::int AS published,
+        COUNT(*) FILTER (WHERE review_status = 'draft')::int AS draft,
+        COUNT(*) FILTER (WHERE review_status = 'under_review')::int AS under_review
+      FROM legal_content`),
+    // Audit log totals + 24h count (spec §2 #9 Recent Activities).
+    query(`SELECT COUNT(*)::int AS total,
+        COUNT(*) FILTER (WHERE created_at >= now() - interval '24 hours')::int AS last_24h
+      FROM audit_log`),
+    // Notification counts.
+    query(`SELECT COUNT(*)::int AS total,
+        COUNT(*) FILTER (WHERE is_read=false)::int AS unread
+      FROM notifications`),
   ]);
+
+  // Map role rows into an object keyed by role, including active/suspended counts.
+  const roleBreakdown = {};
+  for (const r of usersByRole.rows) {
+    roleBreakdown[r.role] = { total: r.n, active: r.active, suspended: r.n - r.active };
+  }
+  // Ensure all five roles are present in the response even if zero.
+  for (const role of ['system_admin', 'regional_admin', 'dispatcher', 'police', 'citizen']) {
+    if (!roleBreakdown[role]) roleBreakdown[role] = { total: 0, active: 0, suspended: 0 };
+  }
 
   const totalReports = reports.rows.reduce((sum, r) => sum + r.n, 0);
   const openCases = reports.rows
@@ -32,8 +84,16 @@ export const stats = async (req, res) => {
     .reduce((sum, r) => sum + r.n, 0);
   const sosToday = sos.rows.reduce((sum, r) => sum + (r.today || 0), 0);
 
+  // Pull the most recent admin activities for the activity feed (spec §2 #9).
+  const recentActivity = await query(
+    `SELECT a.id, a.action, a.entity, a.entity_id, a.detail, a.ip_address, a.created_at,
+        u.full_name AS actor_name
+     FROM audit_log a LEFT JOIN users u ON u.id = a.user_id
+     ORDER BY a.created_at DESC LIMIT 10`,
+  );
+
   ok(res, {
-    users: users.rows[0],
+    users: { ...users.rows[0], ...activeCounts.rows[0], byRole: roleBreakdown },
     reports: reports.rows,
     totalReports,
     openCases,
@@ -47,6 +107,11 @@ export const stats = async (req, res) => {
     wantedPersons: wanted.rows[0],
     dispatches: dispatches.rows,
     recentReports: recentReports.rows,
+    // New System Admin dashboard fields (spec §2):
+    legalOverview: legalOverview.rows[0],
+    audit: auditCount.rows[0],
+    notifications: notificationCount.rows[0],
+    recentActivity: recentActivity.rows,
   });
 };
 
@@ -76,6 +141,21 @@ export const createUser = async (req, res) => {
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,true) RETURNING id, full_name, phone, role, region, is_verified, is_active, created_at`,
     [full_name, phone, email || null, password_hash, role, region || null, sub_city || null, woreda || null],
   );
+  // Audit the account creation (spec §3.2 + business rule §14.3).
+  await writeAudit({
+    userId: req.user.id,
+    action: 'create_user',
+    entity: 'users',
+    entityId: rows[0].id,
+    detail: {
+      full_name: rows[0].full_name,
+      phone: rows[0].phone,
+      role: rows[0].role,
+      region: rows[0].region,
+      created_by: req.user.role,
+    },
+    req,
+  });
   ok(res, rows[0], 'User created', 201);
 };
 
@@ -139,11 +219,66 @@ export const updateUser = async (req, res) => {
       is_active ?? null, req.params.id],
   );
   if (!rows[0]) return fail(res, 'User not found', 404);
-  await query(
-    `INSERT INTO audit_log (user_id, action, entity, entity_id, detail) VALUES ($1,'update_user','users',$2,$3)`,
-    [req.user.id, rows[0].id, JSON.stringify(req.body)],
-  );
-  ok(res, rows[0], 'User updated');
+
+  const updated = rows[0];
+
+  // Emit distinct audit rows for the most security-relevant changes so the
+  // Audit Log page can filter on them (spec §8.3 — record role assignment,
+  // permission changes, account suspension). A generic update_user row is
+  // always written; specific actions are appended when they occurred.
+  const auditDetail = { ...req.body, target_id: updated.id, target_name: updated.full_name };
+  if (role && current.role !== role) {
+    auditDetail.role_change = { from: current.role, to: role };
+  }
+  if (is_active === false && current.is_active === true) {
+    auditDetail.suspended = true;
+  }
+  if (is_active === true && current.is_active === false) {
+    auditDetail.reactivated = true;
+  }
+
+  await writeAudit({
+    userId: req.user.id,
+    action: 'update_user',
+    entity: 'users',
+    entityId: updated.id,
+    detail: auditDetail,
+    req,
+  });
+
+  // Distinct rows for the high-signal changes (filtered easily in the UI).
+  if (auditDetail.role_change) {
+    await writeAudit({
+      userId: req.user.id,
+      action: 'change_role',
+      entity: 'users',
+      entityId: updated.id,
+      detail: auditDetail.role_change,
+      req,
+    });
+  }
+  if (auditDetail.suspended) {
+    await writeAudit({
+      userId: req.user.id,
+      action: 'suspend_user',
+      entity: 'users',
+      entityId: updated.id,
+      detail: { reason: req.body.suspend_reason || req.body.reason || 'Suspended by admin' },
+      req,
+    });
+  }
+  if (auditDetail.reactivated) {
+    await writeAudit({
+      userId: req.user.id,
+      action: 'activate_user',
+      entity: 'users',
+      entityId: updated.id,
+      detail: { note: 'Reactivated by admin' },
+      req,
+    });
+  }
+
+  ok(res, updated, 'User updated');
 };
 
 export const deleteUser = async (req, res) => {
@@ -180,11 +315,14 @@ export const deleteUser = async (req, res) => {
   }
 
   await query('DELETE FROM users WHERE id = $1', [t.id]);
-  await query(
-    `INSERT INTO audit_log (user_id, action, entity, entity_id, detail)
-     VALUES ($1,'delete_user','users',$2,$3)`,
-    [req.user.id, t.id, JSON.stringify({ full_name: t.full_name, role: t.role })],
-  );
+  await writeAudit({
+    userId: req.user.id,
+    action: 'delete_user',
+    entity: 'users',
+    entityId: t.id,
+    detail: { full_name: t.full_name, role: t.role, deleted_by: req.user.role },
+    req,
+  });
   ok(res, null, 'User deleted');
 };
 

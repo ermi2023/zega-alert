@@ -361,5 +361,22 @@
     "somethingWrong": "Waan haguutu ta'e",
     "unexpectedError": "Dogoggora hin eegamne dhufe.",
     "reloadPage": "Fuula haaromsi"
+  },
+  "systemAdmin": {
+    "sectionTitle": "Sirna Bulchaa",
+    "nav": {
+      "dashboard": "Daashboordii",
+      "users": "Bulchiinsa Fayyadamtootaa",
+      "roles": "Hojiilee fi Mirga",
+      "config": "Qindaa'ina Sirna",
+      "carrier": "Qindaa'ina Ergaa",
+      "security": "Tamsa'sa Biznes",
+      "audit": "Galmeewwan Xiyyeeffannoo",
+      "legal": "Bulchiinsa Qabiyyee Seera",
+      "activity": "Hordoffii Sochii Sirna",
+      "notifications": "Beeksisaa Guutuu",
+      "profile": "Profaayilii Koo",
+      "logout": "Ba'i"
+    }
   }
 }

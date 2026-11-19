@@ -361,5 +361,22 @@
     "somethingWrong": "ችግር ተፈጥሯል",
     "unexpectedError": "ያልተመlev ስህተት ተፈጥሯል።",
     "reloadPage": "ገጹን እንደገና ጫን"
+  },
+  "systemAdmin": {
+    "sectionTitle": "ስርዓት አስተዳዳሪ",
+    "nav": {
+      "dashboard": "ዳሽቦርድ",
+      "users": "የተጠቃሚ አስተዳደር",
+      "roles": "ሚናዎች እና ፍቃዶች",
+      "config": "የስርዓት ውቅረት",
+      "carrier": "የተላኪ ውቅረት",
+      "security": "የደህንነት ፖሊሲዎች",
+      "audit": "የንባብ ምዝገባ",
+      "legal": "የሕግ ይዘት አስተዳደር",
+      "activity": "የስርዓት እንቅስቃሴ መከታተል",
+      "notifications": "ሁለንተናዊ ማሳወቂያዎች",
+      "profile": "የእኔ መገለጫ",
+      "logout": "ውጣ"
+    }
   }
 }

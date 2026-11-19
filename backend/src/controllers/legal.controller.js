@@ -1,6 +1,7 @@
 import { query } from '../config/db.js';
 import { ok, fail } from '../utils/response.js';
 import { mirrorSet, mirrorDelete } from '../services/firebase.service.js';
+import { writeAudit } from '../utils/audit.js';
 
 const REVIEW_STATUSES = ['published', 'under_review', 'draft'];
 
@@ -61,6 +62,15 @@ export const createLegal = async (req, res) => {
     [title, body, category || 'general', language || 'en', status, status === 'published'],
   );
   await writeHistory(rows[0].id, 'created', null, status, 'Content created', req.user.id);
+  // Audit: legal content creation (spec §9.2 + business rule §14.3 / §14.11).
+  await writeAudit({
+    userId: req.user.id,
+    action: 'create_legal',
+    entity: 'legal_content',
+    entityId: rows[0].id,
+    detail: { title: rows[0].title, category: rows[0].category, language: rows[0].language, review_status: status },
+    req,
+  });
   mirrorSet('legal_content', rows[0].id, rows[0]).catch(() => {});
   ok(res, rows[0], 'Created', 201);
 };
@@ -83,6 +93,33 @@ export const updateLegal = async (req, res) => {
     await writeHistory(req.params.id, 'status_change', prev.review_status, nextStatus, note, req.user.id);
   } else {
     await writeHistory(req.params.id, 'updated', prev.review_status, nextStatus, note, req.user.id);
+  }
+  // Audit: legal content update (spec §9.3 + business rule §14.3 / §14.11).
+  // Capture the diff so reviewers can see exactly what changed.
+  const diff = {};
+  for (const k of ['title', 'body', 'category', 'language', 'is_published', 'review_status']) {
+    if (req.body[k] !== undefined && JSON.stringify(prev[k]) !== JSON.stringify(rows[0][k])) {
+      diff[k] = { from: prev[k], to: rows[0][k] };
+    }
+  }
+  await writeAudit({
+    userId: req.user.id,
+    action: 'update_legal',
+    entity: 'legal_content',
+    entityId: rows[0].id,
+    detail: { title: rows[0].title, diff, note: note || null },
+    req,
+  });
+  // If publish state flipped via this endpoint, record a publish/unpublish row too.
+  if (prev.is_published !== rows[0].is_published) {
+    await writeAudit({
+      userId: req.user.id,
+      action: rows[0].is_published ? 'publish_legal' : 'unpublish_legal',
+      entity: 'legal_content',
+      entityId: rows[0].id,
+      detail: { title: rows[0].title, from: prev.is_published, to: rows[0].is_published },
+      req,
+    });
   }
   mirrorSet('legal_content', rows[0].id, rows[0]).catch(() => {});
   ok(res, rows[0], 'Updated');
@@ -108,17 +145,43 @@ export const reviewLegal = async (req, res) => {
     [review_status, isPublished, req.user.id, req.params.id],
   );
   await writeHistory(req.params.id, 'review', prev.review_status, review_status, note, req.user.id);
-  await query(
-    `INSERT INTO audit_log (user_id, action, entity, entity_id, detail)
-     VALUES ($1,'review_legal','legal_content',$2,$3)`,
-    [req.user.id, req.params.id, JSON.stringify({ from: prev.review_status, to: review_status })],
-  );
+  await writeAudit({
+    userId: req.user.id,
+    action: 'review_legal',
+    entity: 'legal_content',
+    entityId: rows[0].id,
+    detail: { title: rows[0].title, from: prev.review_status, to: review_status, note: note || null },
+    req,
+  });
+  // If this review resulted in a publish, record a publish action too (spec §9.5).
+  if (review_status === 'published' && prev.review_status !== 'published') {
+    await writeAudit({
+      userId: req.user.id,
+      action: 'publish_legal',
+      entity: 'legal_content',
+      entityId: rows[0].id,
+      detail: { title: rows[0].title, from: prev.review_status, to: review_status },
+      req,
+    });
+  }
   mirrorSet('legal_content', rows[0].id, rows[0]).catch(() => {});
   ok(res, rows[0], `Legal content marked as ${review_status}`);
 };
 
 export const deleteLegal = async (req, res) => {
+  const current = await query('SELECT id, title, category, review_status FROM legal_content WHERE id = $1', [req.params.id]);
+  if (!current.rows[0]) return fail(res, 'Not found', 404);
+  const t = current.rows[0];
   await query('DELETE FROM legal_content WHERE id = $1', [req.params.id]);
+  // Audit: legal content deletion (spec §9 + business rule §14.3 / §14.11).
+  await writeAudit({
+    userId: req.user.id,
+    action: 'delete_legal',
+    entity: 'legal_content',
+    entityId: t.id,
+    detail: { title: t.title, category: t.category, review_status: t.review_status, deleted_by: req.user.role },
+    req,
+  });
   mirrorDelete('legal_content', req.params.id).catch(() => {});
   ok(res, null, 'Deleted');
 };

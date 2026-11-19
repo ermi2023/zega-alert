@@ -99,7 +99,7 @@
   "thanksFeedback": "Waad ku mahadsan tahay faallo celintaada!",
   "rateThisResponse": "Qiimee jawaabtan",
   "reportSubmitted": "Warbixin la gudbiyay. Mahadsanid",
-  "uploadFailed": "Soo dejintu waa fashilantay: { khalad} {error}",
+  "uploadFailed": "Soo dejintu waa fashilantay: {error}",
   "addType": "Ku dar {type}",
   "url": "URL",
   "filePathNote": "Jidka faylka / note",

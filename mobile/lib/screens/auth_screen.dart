@@ -13,6 +13,13 @@ const Color _deepGreen = Color(0xFF0C2D48);
 const Color _ink = Color(0xFF0A1929);
 const Color _brandNavy = Color(0xFF183C59);
 const Color _policeGold = Color(0xFFF59E0B);
+// Pre-blended constants (equivalent to withValues(alpha: 0.55)) so they can be
+// used inside a const widget tree — withValues() is a runtime method.
+// alpha 0.55 = 0x8C; alpha 0.78 = 0xC7; alpha 0.92 = 0xEB.
+const Color _brandNavyAlpha55 = Color(0x8C183C59);
+const Color _policeGoldAlpha55 = Color(0x8CF59E0B);
+const Color _brandNavyAlpha78 = Color(0xC7183C59);
+const Color _brandNavyAlpha92 = Color(0xEB183C59);
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -379,15 +386,15 @@ class _AuthScreenState extends State<AuthScreen> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          const Image(image: AssetImage('assets/images/logo.png'), fit: BoxFit.none, scale: 3.2, alignment: Alignment.center),
+          const Image.asset('assets/images/logo.png', fit: BoxFit.none, scale: 3.2, alignment: Alignment.center),
           DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  _brandNavy.withValues(alpha: 0.78),
-                  _brandNavy.withValues(alpha: 0.92),
+                  _brandNavyAlpha78,
+                  _brandNavyAlpha92,
                   _ink,
                 ],
                 stops: const [0.0, 0.58, 1.0],
@@ -404,9 +411,9 @@ class _AuthScreenState extends State<AuthScreen> {
                 height: 310,
                 child: Column(
                   children: [
-                    Expanded(child: ColoredBox(color: _brandNavy.withValues(alpha: 0.55))),
-                    Expanded(child: ColoredBox(color: _policeGold.withValues(alpha: 0.55))),
-                    Expanded(child: ColoredBox(color: _brandNavy.withValues(alpha: 0.55))),
+                    Expanded(child: ColoredBox(color: _brandNavyAlpha55)),
+                    Expanded(child: ColoredBox(color: _policeGoldAlpha55)),
+                    Expanded(child: ColoredBox(color: _brandNavyAlpha55)),
                   ],
                 ),
               ),

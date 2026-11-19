@@ -317,7 +317,7 @@ class AppLocalizationsSo extends AppLocalizations {
 
   @override
   String uploadFailed(Object error) {
-    return 'Soo dejintu waa fashilantay: { khalad} $error';
+    return 'Soo dejintu waa fashilantay: $error';
   }
 
   @override

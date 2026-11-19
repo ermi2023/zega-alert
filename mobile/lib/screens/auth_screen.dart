@@ -386,7 +386,7 @@ class _AuthScreenState extends State<AuthScreen> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          const Image.asset('assets/images/logo.png', fit: BoxFit.none, scale: 3.2, alignment: Alignment.center),
+          Image.asset('assets/images/logo.png', fit: BoxFit.none, scale: 3.2, alignment: Alignment.center),
           DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(

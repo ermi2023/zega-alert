@@ -8,6 +8,7 @@ import '../services/database_service.dart';
 import '../services/socket_service.dart';
 import '../widgets/auth_gate.dart';
 import '../widgets/fullscreen_image_viewer.dart';
+import '../widgets/translatable_text.dart';
 import 'missing_report_screen.dart';
 import 'person_detail_screen.dart';
 
@@ -507,14 +508,13 @@ Widget _buildFilterTabs(AppLocalizations loc) {
                   AnimatedCrossFade(
                     duration: const Duration(milliseconds: 200),
                     crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-                    firstChild: Text(
-                      fullDescription,
+                    firstChild: TranslatableText(
+                      text: fullDescription,
                       maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontSize: 14, color: Colors.grey.shade800, height: 1.4),
                     ),
-                    secondChild: Text(
-                      fullDescription,
+                    secondChild: TranslatableText(
+                      text: fullDescription,
                       style: TextStyle(fontSize: 14, color: Colors.grey.shade800, height: 1.4),
                     ),
                   ),

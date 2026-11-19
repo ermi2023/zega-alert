@@ -321,6 +321,12 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String get translate => 'ተርጉም';
+
+  @override
+  String get showOriginal => 'ዋናውን አሳይ';
+
+  @override
   String addType(Object type) {
     return '$type አክል';
   }

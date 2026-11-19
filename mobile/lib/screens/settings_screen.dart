@@ -12,11 +12,11 @@ import 'callbacks_screen.dart';
 import '../config/constants.dart';
 
 const _languages = [
-  (code: 'en', label: 'English'),
-  (code: 'am', label: 'አማርኛ (Amharic)'),
-  (code: 'om', label: 'Afaan Oromoo (Oromifa)'),
-  (code: 'ti', label: 'ትግርኛ (Tigrinya)'),
-  (code: 'so', label: 'Soomaali (Ethio Somali)'),
+  (code: 'en', label: 'EN'),
+  (code: 'am', label: 'AMH'),
+  (code: 'om', label: 'ORM'),
+  (code: 'ti', label: 'TIGIR'),
+  (code: 'so', label: 'SOM'),
 ];
 
 class SettingsScreen extends StatefulWidget {

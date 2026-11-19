@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api.dart';
 import '../widgets/auth_gate.dart';
+import '../widgets/translatable_text.dart';
 import 'missing_report_screen.dart';
 
 /// Full bulletin for a missing or wanted person, matching the requirement that
@@ -173,7 +174,10 @@ class PersonDetailScreen extends StatelessWidget {
                   ),
                 if (_isWanted && person['crime_description'] != null) ...[
                   _label('Crime / charges'),
-                  Text(person['crime_description'].toString(), style: const TextStyle(height: 1.4)),
+                  TranslatableText(
+                    text: person['crime_description'].toString(),
+                    style: const TextStyle(height: 1.4),
+                  ),
                   const SizedBox(height: 16),
                 ],
                 if (!_isWanted) ...[
@@ -193,7 +197,10 @@ class PersonDetailScreen extends StatelessWidget {
                 ],
                 if (person['description'] != null && person['description'].toString().isNotEmpty) ...[
                   _label('Description'),
-                  Text(person['description'].toString(), style: const TextStyle(height: 1.4)),
+                  TranslatableText(
+                    text: person['description'].toString(),
+                    style: const TextStyle(height: 1.4),
+                  ),
                   const SizedBox(height: 16),
                 ],
                 if (person['created_at'] != null)

@@ -100,6 +100,8 @@
   "rateThisResponse": "Rate this response",
   "reportSubmitted": "Report submitted. Thank you.",
   "uploadFailed": "Upload failed: {error}",
+  "translate": "Translate",
+  "showOriginal": "Show original",
   "addType": "Add {type}",
   "url": "URL",
   "filePathNote": "File path / note",

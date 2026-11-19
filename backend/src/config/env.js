@@ -34,6 +34,9 @@ export const env = {
   // 32-byte key (hex or base64) for AES-256-GCM encryption at rest.
   encryptionKey: process.env.ENCRYPTION_KEY || '',
   // Automatic translation engine (doc 4.3.3 / SD-8). LibreTranslate-compatible.
+  // Provider auto-detected: 'google' if TRANSLATE_PROVIDER=google or key-only,
+  // 'libre' if TRANSLATE_API_URL set, 'placeholder' otherwise.
+  translateProvider: (process.env.TRANSLATE_PROVIDER || '').toLowerCase(),
   translateApiUrl: process.env.TRANSLATE_API_URL || '',
   translateApiKey: process.env.TRANSLATE_API_KEY || '',
   // Fayda National ID verification (spec §4.4). Blank = dev auto-approve.

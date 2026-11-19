@@ -100,6 +100,8 @@
   "rateThisResponse": "Qiimee jawaabtan",
   "reportSubmitted": "Warbixin la gudbiyay. Mahadsanid",
   "uploadFailed": "Soo dejintu waa fashilantay: {error}",
+  "translate": "Tarjun",
+  "showOriginal": "Asalka muuji",
   "addType": "Ku dar {type}",
   "url": "URL",
   "filePathNote": "Jidka faylka / note",

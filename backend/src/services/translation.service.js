@@ -1,28 +1,120 @@
 import { env } from '../config/env.js';
 
-// Supported languages (doc 4.3.3): English, Amharic, Oromifa, Tigrigna.
-export const LANGUAGES = ['en', 'am', 'om', 'ti'];
-export const LABELS = { en: 'English', am: 'Amharic', om: 'Oromifa', ti: 'Tigrigna' };
+// Supported languages (doc 4.3.3): English, Amharic, Oromifa, Tigrigna, Somali.
+export const LANGUAGES = ['en', 'am', 'om', 'ti', 'so'];
+export const LABELS = {
+  en: 'English',
+  am: 'Amharic',
+  om: 'Oromifa',
+  ti: 'Tigrigna',
+  so: 'Somali',
+};
+
+// Display short codes used by the mobile app language picker.
+export const SHORT_CODES = {
+  en: 'en',
+  am: 'amh',
+  om: 'orm',
+  ti: 'tigir',
+  so: 'som',
+};
 
 // LibreTranslate and most self-hosted engines map Oromifa/Tigrigna differently;
 // allow an alias map so the same endpoints can be reused.
-const ENGINE_CODE = { en: 'en', am: 'am', om: 'om', ti: 'ti' };
+const ENGINE_CODE = { en: 'en', am: 'am', om: 'om', ti: 'ti', so: 'so' };
+
+// ---------------------------------------------------------------------------
+// In-memory LRU cache. Keyed by `${target}::${sha-ish(text)}`. Capped at 500
+// entries so the process stays bounded; oldest entries are evicted first.
+// ---------------------------------------------------------------------------
+const CACHE_MAX = 500;
+const _cache = new Map(); // Map preserves insertion order in JS
+function cacheGet(key) {
+  if (!_cache.has(key)) return undefined;
+  const value = _cache.get(key);
+  // Refresh recency: delete + re-insert moves it to the end.
+  _cache.delete(key);
+  _cache.set(key, value);
+  return value;
+}
+function cacheSet(key, value) {
+  if (_cache.has(key)) _cache.delete(key);
+  _cache.set(key, value);
+  while (_cache.size > CACHE_MAX) {
+    const oldest = _cache.keys().next().value;
+    _cache.delete(oldest);
+  }
+}
+function cacheKey(target, text) {
+  // Use a simple length+hash to keep the key short. Collisions are rare for
+  // natural-language strings of similar length and the worst case is a cache
+  // miss (re-fetch from the engine).
+  let h = 0;
+  for (let i = 0; i < text.length; i++) {
+    h = ((h << 5) - h + text.charCodeAt(i)) | 0;
+  }
+  return `${target}::${text.length}::${h}`;
+}
 
 /**
- * Translate a single string into `target`. When a translation API is
- * configured (TRANSLATE_API_URL) it is used; otherwise a clearly-marked
- * placeholder is returned so downstream flows never break offline.
- * @returns {Promise<{text: string, source: 'auto'|'placeholder'}>}
+ * Detect which translation backend to use based on env configuration.
+ *  - TRANSLATE_PROVIDER=google  -> Google Cloud Translation API v2 (key-based)
+ *  - TRANSLATE_PROVIDER=libre    -> LibreTranslate-style POST (default if URL set)
+ *  - otherwise                    -> placeholder mode
  */
-export const translateText = async (text, target, source = 'en') => {
-  if (!text) return { text, source: 'auto' };
-  if (target === source) return { text, source: 'auto' };
-  if (!env.translateApiUrl) {
-    return { text: `[${LABELS[target] || target}] ${text}`, source: 'placeholder' };
+function detectProvider() {
+  const provider = (process.env.TRANSLATE_PROVIDER || '').toLowerCase();
+  if (provider === 'google' || env.translateApiKey && !env.translateApiUrl) {
+    return 'google';
   }
+  if (env.translateApiUrl) return 'libre';
+  return 'placeholder';
+}
+
+/**
+ * Call Google Cloud Translation API v2 (Basic).
+ * Endpoint: https://translation.googleapis.com/language/translate/v2?key=API_KEY
+ * Body: { q, source, target, format }
+ */
+async function callGoogle(text, source, target) {
+  const key = env.translateApiKey;
+  if (!key) throw new Error('google_translate_no_api_key');
+  const url = 'https://translation.googleapis.com/language/translate/v2';
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
+    const resp = await fetch(`${url}?key=${encodeURIComponent(key)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        q: text,
+        source: ENGINE_CODE[source] || source,
+        target: ENGINE_CODE[target] || target,
+        format: 'text',
+      }),
+      signal: controller.signal,
+    });
+    if (!resp.ok) {
+      const detail = await resp.text().catch(() => '');
+      throw new Error(`google_translate_http_${resp.status}: ${detail.slice(0, 200)}`);
+    }
+    const data = await resp.json();
+    // Google v2 returns { data: { translations: [{ translatedText, detectedSourceLanguage }] } }
+    const translated = data?.data?.translations?.[0]?.translatedText;
+    if (!translated) throw new Error('google_translate_empty_response');
+    return decodeEntities(translated);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * Call a LibreTranslate-compatible endpoint.
+ */
+async function callLibre(text, source, target) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
     const resp = await fetch(env.translateApiUrl, {
       method: 'POST',
       headers: {
@@ -37,15 +129,69 @@ export const translateText = async (text, target, source = 'en') => {
         ...(env.translateApiKey ? { api_key: env.translateApiKey } : {}),
       }),
       signal: controller.signal,
-    }).finally(() => clearTimeout(timer));
-    if (!resp.ok) throw new Error(`translate HTTP ${resp.status}`);
+    });
+    if (!resp.ok) throw new Error(`libre_http_${resp.status}`);
     const data = await resp.json();
     const translated = data.translatedText || data.translation || data.text;
-    if (!translated) throw new Error('empty translation');
-    return { text: translated, source: 'auto' };
+    if (!translated) throw new Error('libre_empty_response');
+    return translated;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Google escapes some HTML entities in translatedText; decode the common ones.
+function decodeEntities(s) {
+  return s
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#x27;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
+}
+
+/**
+ * Translate a single string into `target`. When a translation API is
+ * configured (TRANSLATE_API_URL or Google Cloud credentials) it is used;
+ * otherwise a clearly-marked placeholder is returned so downstream flows
+ * never break offline.
+ *
+ * @param {string} text     Source text to translate.
+ * @param {string} target   Target language code (en/am/om/ti/so).
+ * @param {string} [source] Source language code (default 'en').
+ * @param {object} [opts]   { useCache: true (default) }
+ * @returns {Promise<{text: string, source: 'auto'|'placeholder', cached?: boolean, target: string}>}
+ */
+export const translateText = async (text, target, source = 'en', opts = {}) => {
+  const useCache = opts.useCache !== false;
+  if (!text) return { text, source: 'auto', target };
+  if (target === source) return { text, source: 'auto', target };
+
+  const key = cacheKey(target, text);
+  if (useCache) {
+    const cached = cacheGet(key);
+    if (cached) return { text: cached, source: 'auto', cached: true, target };
+  }
+
+  const provider = detectProvider();
+  if (provider === 'placeholder') {
+    const placeholder = `[${LABELS[target] || target}] ${text}`;
+    return { text: placeholder, source: 'placeholder', target };
+  }
+
+  try {
+    const translated =
+      provider === 'google'
+        ? await callGoogle(text, source, target)
+        : await callLibre(text, source, target);
+    if (useCache) cacheSet(key, translated);
+    return { text: translated, source: 'auto', target };
   } catch (err) {
-    console.warn('[translation] engine failed, using placeholder:', err.message);
-    return { text: `[${LABELS[target] || target}] ${text}`, source: 'placeholder' };
+    console.warn(`[translation] ${provider} engine failed, using placeholder:`, err.message);
+    const placeholder = `[${LABELS[target] || target}] ${text}`;
+    return { text: placeholder, source: 'placeholder', target };
   }
 };
 
@@ -73,4 +219,15 @@ export const translateAnnouncement = async ({ title, body, source = 'en' }) => {
     });
   }
   return out;
+};
+
+/**
+ * Translate multiple strings in one call (used by the on-demand
+ * /api/translate endpoint when the caller passes an array). Reuses the cache
+ * per-string and runs independent strings concurrently.
+ * @returns {Promise<Array<{text, source, target, cached?}>>}
+ */
+export const translateBatch = async (texts, target, source = 'en') => {
+  if (!Array.isArray(texts) || texts.length === 0) return [];
+  return Promise.all(texts.map((t) => translateText(t, target, source)));
 };

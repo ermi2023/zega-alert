@@ -326,6 +326,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get translate => 'Translate';
+
+  @override
+  String get showOriginal => 'Show original';
+
+  @override
   String addType(Object type) {
     return 'Add $type';
   }

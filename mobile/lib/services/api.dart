@@ -338,6 +338,18 @@ class Api {
   static Future<dynamic> addPhotos(String entityType, String entityId, List<String> photos) =>
       _send('POST', '/social/$entityType/$entityId/photos', {'photos': photos});
 
+  // On-demand translation (news + missing/wanted descriptions).
+  // Returns { text, source, target, cached? } on success.
+  static Future<Map<String, dynamic>> translate(String text, String targetLanguage,
+      {String sourceLanguage = 'en'}) async {
+    final data = await _send('POST', '/translate', {
+      'text': text,
+      'target': targetLanguage,
+      'source': sourceLanguage,
+    });
+    return (data is Map) ? Map<String, dynamic>.from(data) : <String, dynamic>{};
+  }
+
   static Future<dynamic> upload(String path, List<MapEntry<String, String>> files,
       {Map<String, String>? fields}) async {
     final uri = Uri.parse('$baseUrl/api$path');

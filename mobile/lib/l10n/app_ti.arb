@@ -100,6 +100,8 @@
   "rateThisResponse": "ነዚ መልሲ ደረጃ ሃብ",
   "reportSubmitted": "ሪፖርት ተቐሪቡ። ኣመስግነካ።",
   "uploadFailed": "ምጽዓን ኣይተዓወተን: {error}",
+  "translate": "ተርጕም",
+  "showOriginal": "ነቲ ቀዳማይ ኣርእዩ",
   "addType": "{type} ወስኽ",
   "url": "URL",
   "filePathNote": "መንገዲ ፋይል / መዝገብ",

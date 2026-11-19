@@ -323,6 +323,12 @@ class AppLocalizationsOm extends AppLocalizations {
   }
 
   @override
+  String get translate => 'Hiiki';
+
+  @override
+  String get showOriginal => 'Aslii agarsiisi';
+
+  @override
   String addType(Object type) {
     return '$type dabali';
   }

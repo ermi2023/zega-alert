@@ -321,6 +321,12 @@ class AppLocalizationsSo extends AppLocalizations {
   }
 
   @override
+  String get translate => 'Tarjun';
+
+  @override
+  String get showOriginal => 'Asalka muuji';
+
+  @override
   String addType(Object type) {
     return 'Ku dar $type';
   }

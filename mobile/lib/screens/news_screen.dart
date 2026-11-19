@@ -6,6 +6,7 @@ import '../services/api.dart';
 import '../widgets/auth_gate.dart';
 import '../widgets/fullscreen_image_viewer.dart';
 import '../widgets/road_closure_map_widget.dart';
+import '../widgets/translatable_text.dart';
 
 class NewsScreen extends StatefulWidget {
   const NewsScreen({super.key});
@@ -465,9 +466,9 @@ class _NewsScreenState extends State<NewsScreen> {
                 ),
                 const SizedBox(height: 8),
 
-                // Description
-                Text(
-                  body,
+                // Description (translatable on demand)
+                TranslatableText(
+                  text: body,
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey.shade700,

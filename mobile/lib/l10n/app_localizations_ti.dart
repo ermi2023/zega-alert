@@ -321,6 +321,12 @@ class AppLocalizationsTi extends AppLocalizations {
   }
 
   @override
+  String get translate => 'ተርጕም';
+
+  @override
+  String get showOriginal => 'ነቲ ቀዳማይ ኣርእዩ';
+
+  @override
   String addType(Object type) {
     return '$type ወስኽ';
   }

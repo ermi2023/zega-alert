@@ -704,6 +704,18 @@ abstract class AppLocalizations {
   /// **'Upload failed: {error}'**
   String uploadFailed(Object error);
 
+  /// Translate button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate'**
+  String get translate;
+
+  /// Show original (untranslated) text button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Show original'**
+  String get showOriginal;
+
   /// No description provided for @addType.
   ///
   /// In en, this message translates to:

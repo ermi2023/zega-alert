@@ -191,6 +191,11 @@ export default function MissingWanted() {
   const [search, setSearch] = useState('');
   const [selectedCase, setSelectedCase] = useState(null);
   const [activeTab, setActiveTab] = useState('missing');
+  // Collapsible "Unpublished cases" panel + sub-tabs to switch between
+  // missing / wanted drafts so admins don't have to scroll past them to
+  // reach the main tabs below.
+  const [draftsExpanded, setDraftsExpanded] = useState(true);
+  const [draftsTab, setDraftsTab] = useState('all'); // 'all' | 'missing' | 'wanted'
 
   const load = () => {
     api.get('/persons/missing/stats').then(setMissingStats).catch(() => {});
@@ -337,32 +342,83 @@ export default function MissingWanted() {
         </div>
       </div>
 
-      {/* Unpublished / draft cases — now shows BOTH missing and wanted drafts */}
+      {/* Unpublished / draft cases — collapsible, with All / Missing / Wanted
+          sub-tabs so admins can switch between draft kinds instead of
+          scrolling past a long list to reach the main tabs below. */}
       {allPending.length > 0 && (
         <div className="panel" style={{ borderColor: 'var(--amber, #f59e0b)', marginBottom: 16 }}>
-          <div className="section-head">
-            <h2>{t('persons.drafts')} ({allPending.length})</h2>
+          <div
+            className="section-head"
+            style={{ cursor: 'pointer', userSelect: 'none' }}
+            onClick={() => setDraftsExpanded((v) => !v)}
+            title={draftsExpanded ? 'Collapse' : 'Expand'}
+            role="button"
+            aria-expanded={draftsExpanded}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {/* Rotating chevron — pure text so no icon dependency. */}
+              <span
+                style={{
+                  display: 'inline-block',
+                  transition: 'transform 0.18s ease',
+                  transform: draftsExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                  fontSize: 14,
+                  color: 'var(--muted)',
+                  lineHeight: 1,
+                }}
+                aria-hidden="true"
+              >▶</span>
+              <h2 style={{ margin: 0 }}>{t('persons.drafts')} ({allPending.length})</h2>
+            </div>
             <span className="badge amber">Not visible in the app</span>
           </div>
-          <p style={{ color: 'var(--muted)', fontSize: 13, margin: '0 0 12px' }}>{t('persons.draftsHint')}</p>
-          <table>
-            <thead><tr><th>{t('persons.name')}</th><th>{t('persons.age')}</th><th>Type</th><th>{t('persons.lastSeen')}</th><th>{t('persons.contact')}</th><th>{t('persons.action')}</th></tr></thead>
-            <tbody>
-              {allPending.map((m) => {
-                const kind = m._kind || 'missing';
-                return (
-                  <tr key={kind + m.id}>
-                    <td><b>{m.name}</b><br /><small>{m.case_code || `${kind === 'wanted' ? 'WP-' : 'MP-'}${m.id.slice(0, 4).toUpperCase()}`}</small></td>
-                    <td>{m.age ?? '—'}</td>
-                    <td><span className={`badge ${kind === 'wanted' ? 'red' : 'amber'}`}>{kind}</span></td>
-                    <td>{kind === 'missing' ? (m.last_seen_address || '—') : (m.crime_description || '—')}</td>
-                    <td>{m.contact_phone || '—'}</td>
-                    <td><ActionButtons kind={kind} row={m} /></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+
+          {draftsExpanded && (
+            <>
+              <p style={{ color: 'var(--muted)', fontSize: 13, margin: '0 0 12px' }}>{t('persons.draftsHint')}</p>
+
+              {/* Sub-tabs: All / Missing / Wanted */}
+              <div className="tabs" style={{ margin: '0 0 12px' }}>
+                <button
+                  className={`tab ${draftsTab === 'all' ? 'active' : ''}`}
+                  onClick={() => setDraftsTab('all')}
+                >All ({allPending.length})</button>
+                <button
+                  className={`tab ${draftsTab === 'missing' ? 'active' : ''}`}
+                  onClick={() => setDraftsTab('missing')}
+                >{t('persons.missingPersons')} ({missingPending.length})</button>
+                <button
+                  className={`tab ${draftsTab === 'wanted' ? 'active' : ''}`}
+                  onClick={() => setDraftsTab('wanted')}
+                >{t('persons.wantedPersons')} ({wantedPending.length})</button>
+              </div>
+
+              <table>
+                <thead><tr><th>{t('persons.name')}</th><th>{t('persons.age')}</th><th>Type</th><th>{t('persons.lastSeen')}</th><th>{t('persons.contact')}</th><th>{t('persons.action')}</th></tr></thead>
+                <tbody>
+                  {allPending
+                    .filter((m) => {
+                      if (draftsTab === 'all') return true;
+                      const kind = m._kind || 'missing';
+                      return kind === draftsTab;
+                    })
+                    .map((m) => {
+                      const kind = m._kind || 'missing';
+                      return (
+                        <tr key={kind + m.id}>
+                          <td><b>{m.name}</b><br /><small>{m.case_code || `${kind === 'wanted' ? 'WP-' : 'MP-'}${m.id.slice(0, 4).toUpperCase()}`}</small></td>
+                          <td>{m.age ?? '—'}</td>
+                          <td><span className={`badge ${kind === 'wanted' ? 'red' : 'amber'}`}>{kind}</span></td>
+                          <td>{kind === 'missing' ? (m.last_seen_address || '—') : (m.crime_description || '—')}</td>
+                          <td>{m.contact_phone || '—'}</td>
+                          <td><ActionButtons kind={kind} row={m} /></td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </>
+          )}
         </div>
       )}
 

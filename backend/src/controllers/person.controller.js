@@ -14,6 +14,16 @@ const decryptRow = (row) => {
   };
 };
 
+// Editable fields for a missing person (used by PATCH /persons/missing/:id).
+const MISSING_EDIT_FIELDS = [
+  'name', 'age', 'gender', 'photo_url', 'description',
+  'last_seen_address', 'last_seen_at', 'last_seen_lat', 'last_seen_lng',
+];
+// Editable fields for a wanted person (used by PATCH /persons/wanted/:id).
+const WANTED_EDIT_FIELDS = [
+  'name', 'age', 'gender', 'photo_url', 'crime_description', 'danger_level',
+];
+
 export const getMissingStats = async (req, res) => {
   const { rows } = await query(`
     SELECT
@@ -183,14 +193,88 @@ export const unpublishMissing = async (req, res) => {
 };
 
 export const updateMissing = async (req, res) => {
-  const { status, found_at } = req.body;
-  if (!['missing', 'found'].includes(status)) return fail(res, 'status must be missing|found');
+  const body = req.body || {};
+
+  // Status-only update (mark found/missing) — kept for backward compat with
+  // the mobile app and any caller that just sends {status}.
+  if (body.status && Object.keys(body).length === 1) {
+    if (!['missing', 'found'].includes(body.status)) return fail(res, 'status must be missing|found');
+    const { rows } = await query(
+      `UPDATE missing_persons SET status = $1::person_status, found_at = CASE WHEN $1='found' THEN COALESCE($2, now()) ELSE NULL END WHERE id = $3 RETURNING *`,
+      [body.status, body.found_at || null, req.params.id],
+    );
+    if (!rows[0]) return fail(res, 'Not found', 404);
+    ok(res, decryptRow(rows[0]), 'Updated');
+    return;
+  }
+
+  // Full-field edit. Build a dynamic UPDATE so admins can fix any column
+  // (name, age, description, photo, last-seen address, contact phone, …).
+  const sets = [];
+  const params = [];
+  for (const f of MISSING_EDIT_FIELDS) {
+    if (body[f] !== undefined) {
+      params.push(body[f] === '' ? null : body[f]);
+      sets.push(`${f} = $${params.length}`);
+    }
+  }
+  // Contact phone is encrypted at rest; only update when explicitly provided.
+  if (body.contact_phone !== undefined) {
+    params.push(encrypt(body.contact_phone || ''));
+    sets.push(`contact_phone = $${params.length}`);
+  }
+  // Photo list: when photos[] is provided, replace person_photos rows + refresh photo_url.
+  if (Array.isArray(body.photos)) {
+    const photoList = body.photos.filter(Boolean);
+    if (photoList.length > 0 && body.photo_url === undefined) {
+      params.push(photoList[0]);
+      sets.push(`photo_url = $${params.length}`);
+    }
+  }
+  if (body.status) {
+    if (!['missing', 'found'].includes(body.status)) return fail(res, 'status must be missing|found');
+    sets.push(`status = '${body.status}'`);
+    sets.push(`found_at = ${body.status === 'found' ? 'COALESCE(found_at, now())' : 'NULL'}`);
+  }
+
+  if (sets.length === 0) return fail(res, 'No editable fields provided');
+  params.push(req.params.id);
   const { rows } = await query(
-    `UPDATE missing_persons SET status = $1, found_at = CASE WHEN $1='found' THEN COALESCE($2, now()) ELSE NULL END WHERE id = $3 RETURNING *`,
-    [status, found_at || null, req.params.id],
+    `UPDATE missing_persons SET ${sets.join(', ')} WHERE id = $${params.length} RETURNING *`,
+    params,
   );
   if (!rows[0]) return fail(res, 'Not found', 404);
-  ok(res, decryptRow(rows[0]), 'Updated');
+
+  // Replace photos list if provided.
+  if (Array.isArray(body.photos)) {
+    const photoList = body.photos.filter(Boolean);
+    await query(`DELETE FROM person_photos WHERE entity_type = 'missing_person' AND entity_id = $1`, [req.params.id]);
+    for (let i = 0; i < photoList.length; i++) {
+      await query(
+        `INSERT INTO person_photos (entity_type, entity_id, photo_url, sort_order) VALUES ('missing_person', $1, $2, $3)`,
+        [req.params.id, photoList[i], i],
+      );
+    }
+  }
+
+  await query(
+    `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'update_missing_person','missing_persons',$2)`,
+    [req.user.id, rows[0].id],
+  );
+  ok(res, decryptRow(rows[0]), 'Missing person updated');
+};
+
+export const deleteMissing = async (req, res) => {
+  const { rows } = await query(
+    `DELETE FROM missing_persons WHERE id = $1 RETURNING id, name`,
+    [req.params.id],
+  );
+  if (!rows[0]) return fail(res, 'Not found', 404);
+  await query(
+    `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'delete_missing_person','missing_persons',$2)`,
+    [req.user.id, rows[0].id],
+  );
+  ok(res, rows[0], 'Missing person deleted');
 };
 
 export const createSighting = async (req, res) => {
@@ -222,9 +306,11 @@ export const createWanted = async (req, res) => {
   const photoList = Array.isArray(photos) ? photos.filter(Boolean) : (photo_url ? [photo_url] : []);
   const primaryPhoto = photoList.length > 0 ? photoList[0] : (photo_url || null);
 
+  // Same draft-by-default model as missing_persons: new wanted cases start
+  // hidden from the mobile app until an admin publishes them.
   const { rows } = await query(
-    `INSERT INTO wanted_persons (name, age, gender, photo_url, crime_description, danger_level)
-     VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+    `INSERT INTO wanted_persons (name, age, gender, photo_url, crime_description, danger_level, is_approved, approved_by, approved_at)
+     VALUES ($1,$2,$3,$4,$5,$6,false,NULL,NULL) RETURNING *`,
     [name, age || null, gender || null, primaryPhoto, crime_description || null, danger_level || 'low'],
   );
 
@@ -240,13 +326,33 @@ export const createWanted = async (req, res) => {
     }
   }
 
-  ok(res, rows[0], 'Wanted person registered', 201);
+  await query(
+    `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'create_wanted_person','wanted_persons',$2)`,
+    [req.user.id, wantedId],
+  );
+  ok(res, rows[0], 'Wanted person saved as a draft. Publish it to make it visible in the mobile app.', 201);
 };
 
 export const listWanted = async (req, res) => {
-  const { status } = req.query;
-  const whereSql = status ? 'WHERE w.status = $1' : '';
-  const params = status ? [status] : [];
+  const { status, approval, q } = req.query;
+  const where = [];
+  const params = [];
+  if (status) { params.push(status); where.push(`w.status = $${params.length}`); }
+  const isStaff = req.user && req.user.role !== 'citizen';
+  if (!isStaff) {
+    where.push(`w.is_approved = true`);
+  } else if (approval === 'pending') {
+    where.push(`w.is_approved = false AND w.rejection_reason IS NULL`);
+  } else if (approval === 'approved') {
+    where.push(`w.is_approved = true`);
+  } else if (approval === 'rejected') {
+    where.push(`w.rejection_reason IS NOT NULL`);
+  }
+  if (q) {
+    params.push(`%${q}%`);
+    where.push(`(w.name ILIKE $${params.length} OR w.crime_description ILIKE $${params.length} OR w.case_code ILIKE $${params.length})`);
+  }
+  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
   const { rows } = await query(`
     SELECT w.*,
       COALESCE((SELECT COUNT(*)::int FROM post_likes l WHERE l.entity_type = 'wanted_person' AND l.entity_id = w.id), 0) AS like_count,
@@ -256,16 +362,138 @@ export const listWanted = async (req, res) => {
     ${whereSql}
     ORDER BY w.created_at DESC
   `, params);
-  ok(res, rows);
+  ok(res, rows.map(decryptRow));
 };
 
 export const updateWanted = async (req, res) => {
-  const { status } = req.body;
-  if (!['wanted', 'captured'].includes(status)) return fail(res, 'status must be wanted|captured');
+  const body = req.body || {};
+
+  // Status-only update (mark captured/wanted) — kept for backward compat.
+  if (body.status && Object.keys(body).length === 1) {
+    if (!['wanted', 'captured'].includes(body.status)) return fail(res, 'status must be wanted|captured');
+    const { rows } = await query(
+      `UPDATE wanted_persons SET status = $1::person_status, captured_at = CASE WHEN $1='captured' THEN now() ELSE NULL END WHERE id = $2 RETURNING *`,
+      [body.status, req.params.id],
+    );
+    if (!rows[0]) return fail(res, 'Not found', 404);
+    ok(res, decryptRow(rows[0]), 'Updated');
+    return;
+  }
+
+  // Full-field edit.
+  const sets = [];
+  const params = [];
+  for (const f of WANTED_EDIT_FIELDS) {
+    if (body[f] !== undefined) {
+      params.push(body[f] === '' ? null : body[f]);
+      sets.push(`${f} = $${params.length}`);
+    }
+  }
+  if (Array.isArray(body.photos)) {
+    const photoList = body.photos.filter(Boolean);
+    if (photoList.length > 0 && body.photo_url === undefined) {
+      params.push(photoList[0]);
+      sets.push(`photo_url = $${params.length}`);
+    }
+  }
+  if (body.status) {
+    if (!['wanted', 'captured'].includes(body.status)) return fail(res, 'status must be wanted|captured');
+    sets.push(`status = '${body.status}'`);
+    sets.push(`captured_at = ${body.status === 'captured' ? 'COALESCE(captured_at, now())' : 'NULL'}`);
+  }
+  if (sets.length === 0) return fail(res, 'No editable fields provided');
+  params.push(req.params.id);
   const { rows } = await query(
-    `UPDATE wanted_persons SET status = $1, captured_at = CASE WHEN $1='captured' THEN now() ELSE NULL END WHERE id = $2 RETURNING *`,
-    [status, req.params.id],
+    `UPDATE wanted_persons SET ${sets.join(', ')} WHERE id = $${params.length} RETURNING *`,
+    params,
   );
   if (!rows[0]) return fail(res, 'Not found', 404);
-  ok(res, rows[0], 'Updated');
+
+  if (Array.isArray(body.photos)) {
+    const photoList = body.photos.filter(Boolean);
+    await query(`DELETE FROM person_photos WHERE entity_type = 'wanted_person' AND entity_id = $1`, [req.params.id]);
+    for (let i = 0; i < photoList.length; i++) {
+      await query(
+        `INSERT INTO person_photos (entity_type, entity_id, photo_url, sort_order) VALUES ('wanted_person', $1, $2, $3)`,
+        [req.params.id, photoList[i], i],
+      );
+    }
+  }
+
+  await query(
+    `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'update_wanted_person','wanted_persons',$2)`,
+    [req.user.id, rows[0].id],
+  );
+  ok(res, decryptRow(rows[0]), 'Wanted person updated');
+};
+
+export const deleteWanted = async (req, res) => {
+  const { rows } = await query(
+    `DELETE FROM wanted_persons WHERE id = $1 RETURNING id, name`,
+    [req.params.id],
+  );
+  if (!rows[0]) return fail(res, 'Not found', 404);
+  await query(
+    `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'delete_wanted_person','wanted_persons',$2)`,
+    [req.user.id, rows[0].id],
+  );
+  ok(res, rows[0], 'Wanted person deleted');
+};
+
+// Approval / publish endpoints for wanted persons (mirror missing_persons).
+export const approveWanted = async (req, res) => {
+  const { rows } = await query(
+    `UPDATE wanted_persons SET is_approved = true, approved_by = $1, approved_at = now(), rejection_reason = NULL
+     WHERE id = $2 RETURNING *`,
+    [req.user.id, req.params.id],
+  );
+  if (!rows[0]) return fail(res, 'Not found', 404);
+  await query(
+    `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'approve_wanted_person','wanted_persons',$2)`,
+    [req.user.id, rows[0].id],
+  );
+  ok(res, decryptRow(rows[0]), 'Wanted person approved and published');
+};
+
+export const rejectWanted = async (req, res) => {
+  const { reason } = req.body;
+  const { rows } = await query(
+    `UPDATE wanted_persons SET is_approved = false, approved_by = $1, approved_at = now(), rejection_reason = $2
+     WHERE id = $3 RETURNING *`,
+    [req.user.id, reason || 'Rejected by regional administrator', req.params.id],
+  );
+  if (!rows[0]) return fail(res, 'Not found', 404);
+  await query(
+    `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'reject_wanted_person','wanted_persons',$2)`,
+    [req.user.id, rows[0].id],
+  );
+  ok(res, decryptRow(rows[0]), 'Wanted person rejected');
+};
+
+export const publishWanted = async (req, res) => {
+  const { rows } = await query(
+    `UPDATE wanted_persons SET is_approved = true, approved_by = $1, approved_at = now(), rejection_reason = NULL
+     WHERE id = $2 RETURNING *`,
+    [req.user.id, req.params.id],
+  );
+  if (!rows[0]) return fail(res, 'Not found', 404);
+  await query(
+    `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'publish_wanted_person','wanted_persons',$2)`,
+    [req.user.id, rows[0].id],
+  );
+  ok(res, decryptRow(rows[0]), 'Published. This wanted-person case is now visible in the mobile app.');
+};
+
+export const unpublishWanted = async (req, res) => {
+  const { rows } = await query(
+    `UPDATE wanted_persons SET is_approved = false, approved_by = NULL, approved_at = NULL
+     WHERE id = $1 RETURNING *`,
+    [req.params.id],
+  );
+  if (!rows[0]) return fail(res, 'Not found', 404);
+  await query(
+    `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'unpublish_wanted_person','wanted_persons',$2)`,
+    [req.user.id, rows[0].id],
+  );
+  ok(res, decryptRow(rows[0]), 'Unpublished. This wanted-person case is hidden from the mobile app.');
 };

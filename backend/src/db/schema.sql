@@ -225,9 +225,16 @@ CREATE TABLE IF NOT EXISTS wanted_persons (
   crime_description TEXT,
   danger_level    VARCHAR(20) DEFAULT 'low',
   status          person_status NOT NULL DEFAULT 'wanted',
+  is_approved     BOOLEAN DEFAULT TRUE,
+  approved_by     UUID REFERENCES users(id) ON DELETE SET NULL,
+  approved_at     TIMESTAMPTZ,
+  rejection_reason TEXT,
   created_at      TIMESTAMPTZ DEFAULT now(),
   captured_at     TIMESTAMPTZ
 );
+CREATE INDEX IF NOT EXISTS idx_wanted_approved ON wanted_persons(is_approved);
+CREATE INDEX IF NOT EXISTS idx_wanted_case_code ON wanted_persons(case_code);
+CREATE INDEX IF NOT EXISTS idx_missing_case_code ON missing_persons(case_code);
 
 -- ------------------------------------------------------------------
 -- SIGHTINGS (of missing / wanted persons)

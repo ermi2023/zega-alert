@@ -59,7 +59,8 @@ class AppLocalizationsSo extends AppLocalizations {
   String get reportACrime => 'Ka warbixi dambi';
 
   @override
-  String get yourReportGoesTo => 'Warbixintaadu waxay aadaysaa booliiska gobolka.';
+  String get yourReportGoesTo =>
+      'Warbixintaadu waxay aadaysaa booliiska gobolka.';
 
   @override
   String get newCrimeReport => 'New crime report';
@@ -116,7 +117,8 @@ class AppLocalizationsSo extends AppLocalizations {
   String get settingsTitle => 'Dejinta';
 
   @override
-  String get settingsSubtitle => 'Maamul akoonkaaga, luqadaada, aagaggaaga iyo gelitaankaaga';
+  String get settingsSubtitle =>
+      'Maamul akoonkaaga, luqadaada, aagaggaaga iyo gelitaankaaga';
 
   @override
   String get account => 'Xisaab';
@@ -161,19 +163,22 @@ class AppLocalizationsSo extends AppLocalizations {
   String get accessibilityTitle => 'Accessibility (People of Determination)';
 
   @override
-  String get accessibilitySubtitle => 'Qoraal ka weyn, ka duwanaansho sare, ficilada codka lagu caawiyo';
+  String get accessibilitySubtitle =>
+      'Qoraal ka weyn, ka duwanaansho sare, ficilada codka lagu caawiyo';
 
   @override
   String get darkMode => 'Qaab mugdi ah';
 
   @override
-  String get darkModeSubtitle => 'Isticmaal mawduuca mugdiga ah ee guud ahaan abka';
+  String get darkModeSubtitle =>
+      'Isticmaal mawduuca mugdiga ah ee guud ahaan abka';
 
   @override
   String get callbackRequests => 'Codsiyada soo celinta';
 
   @override
-  String get callbackSubtitle => 'Respond to police follow-up calls on your reports';
+  String get callbackSubtitle =>
+      'Respond to police follow-up calls on your reports';
 
   @override
   String get requestDirectCall => 'Codso wicitaan toos ah';
@@ -197,7 +202,8 @@ class AppLocalizationsSo extends AppLocalizations {
   String get createAccount => 'Akoon samee';
 
   @override
-  String get emergencyAndCrime => 'ZEGA-ALERT · Warbixinta degdega ah & dembiyada';
+  String get emergencyAndCrime =>
+      'ZEGA-ALERT · Warbixinta degdega ah & dembiyada';
 
   @override
   String get phone => 'Phone';
@@ -218,7 +224,8 @@ class AppLocalizationsSo extends AppLocalizations {
   String get callbackTitle => 'Codsiyada soo celinta';
 
   @override
-  String get callbackDescription => 'Booliisku waxay codsadaan in dib loo soo waco si ay ula socdaan warbixinahaaga.';
+  String get callbackDescription =>
+      'Booliisku waxay codsadaan in dib loo soo waco si ay ula socdaan warbixinahaaga.';
 
   @override
   String get noCallbacksYet => 'Weli ma jiraan codsiyo dib u soo yeedhis ah';
@@ -230,13 +237,15 @@ class AppLocalizationsSo extends AppLocalizations {
   String get decline => 'Diid';
 
   @override
-  String get offlineMode => 'Qaabka khadka tooska ah - oo muujinaya xogta kaydsan';
+  String get offlineMode =>
+      'Qaabka khadka tooska ah - oo muujinaya xogta kaydsan';
 
   @override
   String get ok => 'OK';
 
   @override
-  String get sosSent => 'SOS soo dirtay. Cutubyo la diray. Joog meeshaad joogto.';
+  String get sosSent =>
+      'SOS soo dirtay. Cutubyo la diray. Joog meeshaad joogto.';
 
   @override
   String get share => 'La wadaag';
@@ -274,7 +283,8 @@ class AppLocalizationsSo extends AppLocalizations {
   String get nothingHereYet => 'Weli waxba halkan ma jiraan.';
 
   @override
-  String get citizenSightingsInfo => 'Citizen sightings are shown to police in real time.';
+  String get citizenSightingsInfo =>
+      'Citizen sightings are shown to police in real time.';
 
   @override
   String get unknownLocation => 'Meel aan la garanayn';
@@ -371,7 +381,8 @@ class AppLocalizationsSo extends AppLocalizations {
   String get send => 'Dir';
 
   @override
-  String get missingPersonReportSubmitted => 'Warbixinta qofka maqan ayaa la gudbiyay.';
+  String get missingPersonReportSubmitted =>
+      'Warbixinta qofka maqan ayaa la gudbiyay.';
 
   @override
   String get fullNameMissingPerson => 'Magaca buuxa ee qofka maqan';
@@ -392,10 +403,12 @@ class AppLocalizationsSo extends AppLocalizations {
   String get unknown => 'Lama garanayo';
 
   @override
-  String get lastSeenLocation => 'Goobtii ugu dambaysay ee la arkay (cinwaanka)';
+  String get lastSeenLocation =>
+      'Goobtii ugu dambaysay ee la arkay (cinwaanka)';
 
   @override
-  String get lastSeenDateTime => 'Taariikhda iyo wakhtiga la arkay ee u dambeeyay (ikhtiyaar)';
+  String get lastSeenDateTime =>
+      'Taariikhda iyo wakhtiga la arkay ee u dambeeyay (ikhtiyaar)';
 
   @override
   String lastSeenPrefix(Object datetime) {
@@ -406,7 +419,8 @@ class AppLocalizationsSo extends AppLocalizations {
   String get descriptionIdentifying => 'Description / identifying details';
 
   @override
-  String get sightingReported => 'Aragtida ayaa la sheegay. Waad ku mahadsan tahay caawinta.';
+  String get sightingReported =>
+      'Aragtida ayaa la sheegay. Waad ku mahadsan tahay caawinta.';
 
   @override
   String get whereSeen => 'Xageed ku aragtay?';
@@ -432,7 +446,8 @@ class AppLocalizationsSo extends AppLocalizations {
   String get chooseFromGallery => 'Ka dooro gallery';
 
   @override
-  String get idNumberPhotoRequired => 'Fadlan geli lambarkaaga aqoonsiga oo sawir ka qaad kaadhkaaga aqoonsiga.';
+  String get idNumberPhotoRequired =>
+      'Fadlan geli lambarkaaga aqoonsiga oo sawir ka qaad kaadhkaaga aqoonsiga.';
 
   @override
   String get verificationSubmitted => 'Xaqiijinta waa la gudbiyay';
@@ -447,16 +462,19 @@ class AppLocalizationsSo extends AppLocalizations {
   String get notVerified => 'Lama Xaqiijin';
 
   @override
-  String get identityVerifiedDesc => 'Aqoonsigaaga waxa lagu xaqiijiyay Fayda ID National.';
+  String get identityVerifiedDesc =>
+      'Aqoonsigaaga waxa lagu xaqiijiyay Fayda ID National.';
 
   @override
-  String get verifyIdentityDesc => 'Xaqiiji aqoonsigaaga si aad u dhisto kalsooni oo aad awood u siiso dhammaan sifooyinka';
+  String get verifyIdentityDesc =>
+      'Xaqiiji aqoonsigaaga si aad u dhisto kalsooni oo aad awood u siiso dhammaan sifooyinka';
 
   @override
   String get scanFaydaId => 'Baadh kaadhka aqoonsiga qaranka ee Fayda';
 
   @override
-  String get scanIdInstruction => 'Sawir cad ka qaad xagga hore ee kaadhkaaga aqoonsiga. Macluumaadkaaga waxaa lagu xaqiijin doonaa si ka dhanka ah xogta Fayda.';
+  String get scanIdInstruction =>
+      'Sawir cad ka qaad xagga hore ee kaadhkaaga aqoonsiga. Macluumaadkaaga waxaa lagu xaqiijin doonaa si ka dhanka ah xogta Fayda.';
 
   @override
   String get tapToScanId => 'Taabo si aad u sawirto kaadhka aqoonsiga';
@@ -519,7 +537,8 @@ class AppLocalizationsSo extends AppLocalizations {
   String get identityVerification => 'Identity Verification';
 
   @override
-  String get faydaVerificationSubtitle => 'Ku cadee aqoonsigaaga kaarka aqoonsiga qaranka';
+  String get faydaVerificationSubtitle =>
+      'Ku cadee aqoonsigaaga kaarka aqoonsiga qaranka';
 
   @override
   String get accessibilityModePoD => 'Habka gelitaanka (PoD)';
@@ -543,7 +562,8 @@ class AppLocalizationsSo extends AppLocalizations {
   }
 
   @override
-  String get signLanguageRecorded => 'Fiidiyowga luqadda dhegoolaha waa la duubay oo la soo galiyay.';
+  String get signLanguageRecorded =>
+      'Fiidiyowga luqadda dhegoolaha waa la duubay oo la soo galiyay.';
 
   @override
   String couldNotRecordVideo(Object error) {
@@ -576,5 +596,4 @@ class AppLocalizationsSo extends AppLocalizations {
   String sosUpdated(Object status) {
     return 'SOS kaaga hadda waa $status';
   }
-
 }

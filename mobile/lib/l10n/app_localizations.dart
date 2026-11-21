@@ -96,7 +96,7 @@ abstract class AppLocalizations {
   ];
 
   /// A list of this localizations delegate's supported locales.
-  static const List<Locale> supportedLocales = <Locale> [
+  static const List<Locale> supportedLocales = <Locale>[
     Locale('am'),
     Locale('en'),
     Locale('om'),
@@ -704,13 +704,13 @@ abstract class AppLocalizations {
   /// **'Upload failed: {error}'**
   String uploadFailed(Object error);
 
-  /// Translate button label.
+  /// No description provided for @translate.
   ///
   /// In en, this message translates to:
   /// **'Translate'**
   String get translate;
 
-  /// Show original (untranslated) text button label.
+  /// No description provided for @showOriginal.
   ///
   /// In en, this message translates to:
   /// **'Show original'**

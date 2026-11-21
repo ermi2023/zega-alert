@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { api, API_BASE, assetUrl } from '../api/client';
+import { api, API_BASE, assetUrl, IMAGE_PLACEHOLDER } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { io } from 'socket.io-client';
 import LiveMap from '../components/LiveMap';
@@ -535,7 +535,7 @@ export function RegionalAdminDashboard() {
             <div key={person.id} className="person-card">
               <div className="person-card-header">
                 {person.photo_url ? (
-                  <img src={assetUrl(person.photo_url)} alt={person.name} className="person-card-img" />
+                  <img src={assetUrl(person.photo_url)} alt={person.name} className="person-card-img" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = IMAGE_PLACEHOLDER; }} />
                 ) : (
                   <div className="person-card-placeholder">{person.name.slice(0, 1)}</div>
                 )}
@@ -595,7 +595,7 @@ export function RegionalAdminDashboard() {
             </div>
             <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
               {selectedCase.photo_url && (
-                <img src={assetUrl(selectedCase.photo_url)} alt="" style={{ width: 100, height: 100, borderRadius: 8, objectFit: 'cover' }} />
+                <img src={assetUrl(selectedCase.photo_url)} alt="" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = IMAGE_PLACEHOLDER; }} style={{ width: 100, height: 100, borderRadius: 8, objectFit: 'cover' }} />
               )}
               <div>
                 <p><b>Name:</b> {selectedCase.name}</p>

@@ -188,6 +188,41 @@ class DatabaseService {
     return rows.map((r) => jsonDecode(r['data'] as String) as dynamic).toList();
   }
 
+  static Future<void> cacheValue(String key, dynamic value) async {
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('cache_value_$key', jsonEncode(value));
+      return;
+    }
+    final db = await database;
+    await db?.insert('cache', {
+      'key': key,
+      'value': jsonEncode(value),
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  static Future<dynamic> getCachedValue(String key) async {
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('cache_value_$key');
+      if (raw == null) return null;
+      try {
+        return jsonDecode(raw);
+      } catch (_) {
+        return null;
+      }
+    }
+    final db = await database;
+    final rows = await db?.query('cache', where: 'key = ?', whereArgs: [key], limit: 1);
+    if (rows == null || rows.isEmpty) return null;
+    try {
+      return jsonDecode(rows.first['value'] as String);
+    } catch (_) {
+      return null;
+    }
+  }
+
   static Future<void> clearCache() async {
     if (kIsWeb) {
       final prefs = await SharedPreferences.getInstance();

@@ -20,7 +20,7 @@ router.get('/wanted', optionalAuth, listWanted);
 router.get('/sightings', listSightings);
 
 // Writes and staff-only views require an authenticated account.
-router.post('/missing', authenticate, createMissing);
+router.post('/missing', authenticate, requireRole('police', 'dispatcher', 'regional_admin', 'system_admin'), createMissing);
 router.patch('/missing/:id', authenticate, requireRole('police', 'dispatcher', 'regional_admin', 'system_admin'), updateMissing);
 router.delete('/missing/:id', authenticate, requireRole('regional_admin', 'system_admin'), deleteMissing);
 router.patch('/missing/:id/approve', authenticate, requireRole('regional_admin', 'system_admin'), approveMissing);

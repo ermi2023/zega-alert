@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../services/api.dart';
+import '../services/database_service.dart';
 
 /// A small inline widget that wraps a piece of translatable text and shows
 /// a "Translate" button next to it.
@@ -76,10 +77,35 @@ class _TranslatableTextState extends State<TranslatableText> {
   /// Resolve the target language to translate to.
   /// - App is English -> user-selected from dropdown.
   /// - App is a local language -> translate to English.
-  String get _effectiveTarget =>
-      _showDropdown ? _selectedTarget : 'en';
+  String get _effectiveTarget => _showDropdown ? _selectedTarget : 'en';
 
   String _cacheKey(String target) => '$target::${widget.text}';
+
+  String get _persistentCacheKey =>
+      'translation::$_effectiveTarget::${widget.text}';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPersistentCache();
+  }
+
+  Future<void> _loadPersistentCache() async {
+    final target = _effectiveTarget;
+    final key = _cacheKey(target);
+    if (_cache.containsKey(key)) return;
+    final value = await DatabaseService.getCachedValue(
+      'translation::$target::${widget.text}',
+    );
+    if (!mounted || value is! String || value.isEmpty) return;
+    _cache[key] = value;
+    if (_appLanguage == 'en' ? target == _selectedTarget : target == 'en') {
+      setState(() {
+        _translated = value;
+        _translatedTo = target;
+      });
+    }
+  }
 
   Future<void> _toggle() async {
     if (_loading) return;
@@ -120,6 +146,7 @@ class _TranslatableTextState extends State<TranslatableText> {
       );
       final translated = (result['text'] as String?) ?? widget.text;
       _cache[key] = translated;
+      await DatabaseService.cacheValue(_persistentCacheKey, translated);
       if (mounted) {
         setState(() {
           _translated = translated;
@@ -155,7 +182,8 @@ class _TranslatableTextState extends State<TranslatableText> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final isTranslated = _translated != null && _translatedTo == _effectiveTarget;
+    final isTranslated =
+        _translated != null && _translatedTo == _effectiveTarget;
 
     final textWidget = Text(
       isTranslated ? _translated! : widget.text,
@@ -231,7 +259,8 @@ class _TranslatableTextState extends State<TranslatableText> {
                         height: 10,
                         child: CircularProgressIndicator(
                           strokeWidth: 1.5,
-                          valueColor: AlwaysStoppedAnimation(theme.colorScheme.primary),
+                          valueColor:
+                              AlwaysStoppedAnimation(theme.colorScheme.primary),
                         ),
                       )
                     else

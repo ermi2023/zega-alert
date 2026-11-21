@@ -7,6 +7,7 @@ import '../widgets/auth_gate.dart';
 import '../widgets/fullscreen_image_viewer.dart';
 import '../widgets/road_closure_map_widget.dart';
 import '../widgets/translatable_text.dart';
+import '../services/database_service.dart';
 
 class NewsScreen extends StatefulWidget {
   const NewsScreen({super.key});
@@ -19,6 +20,7 @@ class _NewsScreenState extends State<NewsScreen> {
   List<dynamic> _items = [];
   bool _loading = true;
   String? _loadError;
+  bool _offline = false;
   String _selectedTab = 'all'; // 'all' or 'road_closures'
 
   // Social interactions state: entityKey -> reaction ('like' / 'dislike' / null)
@@ -58,11 +60,13 @@ class _NewsScreenState extends State<NewsScreen> {
     setState(() {
       _loading = true;
       _loadError = null;
+      _offline = false;
     });
     try {
       final data = await Api.get('/announcements');
       if (mounted) {
         final list = data is List ? data : [];
+        await DatabaseService.cacheList('announcements', list);
         for (final item in list) {
           final id = item['id'] as String;
           final key = 'announcement_$id';
@@ -76,11 +80,29 @@ class _NewsScreenState extends State<NewsScreen> {
         });
       }
     } catch (e) {
+      final cached = await DatabaseService.getCachedList('announcements');
       if (mounted) {
-        setState(() {
-          _loadError = 'Failed to load updates: $e';
-          _loading = false;
-        });
+        if (cached.isNotEmpty) {
+          setState(() {
+            _items = cached;
+            _offline = true;
+            _loading = false;
+            _loadError = null;
+          });
+          for (final item in cached) {
+            final id = item['id'] as String?;
+            if (id == null) continue;
+            final key = 'announcement_$id';
+            _likeCounts[key] = (item['like_count'] as num?)?.toInt() ?? 0;
+            _dislikeCounts[key] = (item['dislike_count'] as num?)?.toInt() ?? 0;
+            _commentCounts[key] = (item['comment_count'] as num?)?.toInt() ?? 0;
+          }
+        } else {
+          setState(() {
+            _loadError = 'Failed to load updates: $e';
+            _loading = false;
+          });
+        }
       }
     }
   }
@@ -96,12 +118,16 @@ class _NewsScreenState extends State<NewsScreen> {
       if (currentReaction == reaction) {
         // Toggle off
         _userReactions[key] = null;
-        if (reaction == 'like') _likeCounts[key] = (currentLikes - 1).clamp(0, 999999);
-        if (reaction == 'dislike') _dislikeCounts[key] = (currentDislikes - 1).clamp(0, 999999);
+        if (reaction == 'like')
+          _likeCounts[key] = (currentLikes - 1).clamp(0, 999999);
+        if (reaction == 'dislike')
+          _dislikeCounts[key] = (currentDislikes - 1).clamp(0, 999999);
       } else {
         // Switching or new
-        if (currentReaction == 'like') _likeCounts[key] = (currentLikes - 1).clamp(0, 999999);
-        if (currentReaction == 'dislike') _dislikeCounts[key] = (currentDislikes - 1).clamp(0, 999999);
+        if (currentReaction == 'like')
+          _likeCounts[key] = (currentLikes - 1).clamp(0, 999999);
+        if (currentReaction == 'dislike')
+          _dislikeCounts[key] = (currentDislikes - 1).clamp(0, 999999);
 
         _userReactions[key] = reaction;
         if (reaction == 'like') _likeCounts[key] = currentLikes + 1;
@@ -114,8 +140,10 @@ class _NewsScreenState extends State<NewsScreen> {
       if (res is Map && mounted) {
         setState(() {
           _userReactions[key] = res['user_reaction'] as String?;
-          _likeCounts[key] = (res['like_count'] as num?)?.toInt() ?? _likeCounts[key]!;
-          _dislikeCounts[key] = (res['dislike_count'] as num?)?.toInt() ?? _dislikeCounts[key]!;
+          _likeCounts[key] =
+              (res['like_count'] as num?)?.toInt() ?? _likeCounts[key]!;
+          _dislikeCounts[key] =
+              (res['dislike_count'] as num?)?.toInt() ?? _dislikeCounts[key]!;
         });
       }
     } catch (e) {
@@ -172,7 +200,8 @@ class _NewsScreenState extends State<NewsScreen> {
     final text = controller.text.trim();
     if (text.isEmpty) return;
 
-    if (!await ensureAuthed(context, reason: 'Sign in to write a comment.')) return;
+    if (!await ensureAuthed(context, reason: 'Sign in to write a comment.'))
+      return;
     if (!mounted) return;
 
     controller.clear();
@@ -183,7 +212,8 @@ class _NewsScreenState extends State<NewsScreen> {
           final list = _commentsData[key] ?? [];
           list.add(res['comment']);
           _commentsData[key] = list;
-          _commentCounts[key] = (res['comment_count'] as num?)?.toInt() ?? list.length;
+          _commentCounts[key] =
+              (res['comment_count'] as num?)?.toInt() ?? list.length;
         });
       }
     } catch (e) {
@@ -210,6 +240,16 @@ class _NewsScreenState extends State<NewsScreen> {
       backgroundColor: const Color(0xFFF8FAFC),
       body: Column(
         children: [
+          if (_offline)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: const Color(0xFFFFF7ED),
+              child: Text(
+                AppLocalizations.of(context).offlineMode,
+                style: const TextStyle(color: Color(0xFF9A3412), fontSize: 12),
+              ),
+            ),
           // Filter Tabs (All Updates / Road Closures)
           _buildFilterTabs(),
 
@@ -225,11 +265,14 @@ class _NewsScreenState extends State<NewsScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                              const Icon(Icons.error_outline,
+                                  size: 48, color: Colors.red),
                               const SizedBox(height: 12),
                               Text(_loadError!),
                               const SizedBox(height: 12),
-                              ElevatedButton(onPressed: _loadNews, child: const Text('Retry')),
+                              ElevatedButton(
+                                  onPressed: _loadNews,
+                                  child: const Text('Retry')),
                             ],
                           ),
                         )
@@ -239,15 +282,19 @@ class _NewsScreenState extends State<NewsScreen> {
                                 _selectedTab == 'road_closures'
                                     ? 'No active road closures.'
                                     : 'No updates at the moment.',
-                                style: TextStyle(color: Colors.grey.shade600, fontSize: 15),
+                                style: TextStyle(
+                                    color: Colors.grey.shade600, fontSize: 15),
                               ),
                             )
                           : ListView.separated(
-                              padding: const EdgeInsets.only(top: 8, bottom: 24),
+                              padding:
+                                  const EdgeInsets.only(top: 8, bottom: 24),
                               itemCount: filtered.length,
-                              separatorBuilder: (_, __) => const SizedBox(height: 12),
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 12),
                               itemBuilder: (context, index) {
-                                final item = filtered[index] as Map<String, dynamic>;
+                                final item =
+                                    filtered[index] as Map<String, dynamic>;
                                 return _buildNewsCard(context, item);
                               },
                             ),
@@ -271,10 +318,14 @@ class _NewsScreenState extends State<NewsScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: _selectedTab == 'all' ? const Color(0xFF00338D) : Colors.transparent,
+                color: _selectedTab == 'all'
+                    ? const Color(0xFF00338D)
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: _selectedTab == 'all' ? const Color(0xFF00338D) : Colors.grey.shade300,
+                  color: _selectedTab == 'all'
+                      ? const Color(0xFF00338D)
+                      : Colors.grey.shade300,
                 ),
               ),
               child: Row(
@@ -282,7 +333,9 @@ class _NewsScreenState extends State<NewsScreen> {
                   Icon(
                     Icons.newspaper,
                     size: 16,
-                    color: _selectedTab == 'all' ? Colors.white : const Color(0xFF334155),
+                    color: _selectedTab == 'all'
+                        ? Colors.white
+                        : const Color(0xFF334155),
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -290,7 +343,9 @@ class _NewsScreenState extends State<NewsScreen> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: _selectedTab == 'all' ? Colors.white : const Color(0xFF334155),
+                      color: _selectedTab == 'all'
+                          ? Colors.white
+                          : const Color(0xFF334155),
                     ),
                   ),
                 ],
@@ -306,10 +361,14 @@ class _NewsScreenState extends State<NewsScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: _selectedTab == 'road_closures' ? const Color(0xFF00338D) : Colors.transparent,
+                color: _selectedTab == 'road_closures'
+                    ? const Color(0xFF00338D)
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: _selectedTab == 'road_closures' ? const Color(0xFF00338D) : Colors.grey.shade300,
+                  color: _selectedTab == 'road_closures'
+                      ? const Color(0xFF00338D)
+                      : Colors.grey.shade300,
                 ),
               ),
               child: Row(
@@ -317,7 +376,9 @@ class _NewsScreenState extends State<NewsScreen> {
                   Icon(
                     Icons.traffic,
                     size: 16,
-                    color: _selectedTab == 'road_closures' ? Colors.white : const Color(0xFFDC2626),
+                    color: _selectedTab == 'road_closures'
+                        ? Colors.white
+                        : const Color(0xFFDC2626),
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -325,7 +386,9 @@ class _NewsScreenState extends State<NewsScreen> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: _selectedTab == 'road_closures' ? Colors.white : const Color(0xFF334155),
+                      color: _selectedTab == 'road_closures'
+                          ? Colors.white
+                          : const Color(0xFF334155),
                     ),
                   ),
                 ],
@@ -345,10 +408,13 @@ class _NewsScreenState extends State<NewsScreen> {
 
     final title = item['title'] as String? ?? 'Announcement';
     final body = item['body'] as String? ?? '';
+    final sourceLanguage = (item['language'] as String?) ?? 'en';
     final imageUrl = item['image_url'] as String?;
     final sourceLabel = item['source_label'] as String? ?? 'EFP Media Desk';
     final badgeLabel = item['badge_label'] as String? ??
-        (isRoadClosure ? 'TRAFFIC ALERT' : (category == 'warning' ? 'ADVISORY' : 'PRESS RELEASE'));
+        (isRoadClosure
+            ? 'TRAFFIC ALERT'
+            : (category == 'warning' ? 'ADVISORY' : 'PRESS RELEASE'));
     final startTime = item['start_time_label'] as String?;
     final detourInfo = item['detour_info'] as String?;
 
@@ -404,7 +470,8 @@ class _NewsScreenState extends State<NewsScreen> {
                   top: 12,
                   left: 12,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: const Color(0xFF0F172A).withOpacity(0.85),
                       borderRadius: BorderRadius.circular(6),
@@ -436,15 +503,21 @@ class _NewsScreenState extends State<NewsScreen> {
                     child: Row(
                       children: [
                         Icon(
-                          isRoadClosure ? Icons.warning_rounded : Icons.info_rounded,
+                          isRoadClosure
+                              ? Icons.warning_rounded
+                              : Icons.info_rounded,
                           size: 16,
-                          color: isRoadClosure ? const Color(0xFFF59E0B) : const Color(0xFF1E3A8A),
+                          color: isRoadClosure
+                              ? const Color(0xFFF59E0B)
+                              : const Color(0xFF1E3A8A),
                         ),
                         const SizedBox(width: 6),
                         Text(
                           badgeLabel,
                           style: TextStyle(
-                            color: isRoadClosure ? const Color(0xFFF59E0B) : const Color(0xFF1E3A8A),
+                            color: isRoadClosure
+                                ? const Color(0xFFF59E0B)
+                                : const Color(0xFF1E3A8A),
                             fontWeight: FontWeight.bold,
                             fontSize: 11,
                             letterSpacing: 0.8,
@@ -455,8 +528,9 @@ class _NewsScreenState extends State<NewsScreen> {
                   ),
 
                 // Title
-                Text(
-                  title,
+                TranslatableText(
+                  text: title,
+                  sourceLanguage: sourceLanguage,
                   style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
@@ -469,6 +543,7 @@ class _NewsScreenState extends State<NewsScreen> {
                 // Description (translatable on demand)
                 TranslatableText(
                   text: body,
+                  sourceLanguage: sourceLanguage,
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey.shade700,
@@ -477,25 +552,30 @@ class _NewsScreenState extends State<NewsScreen> {
                 ),
 
                 // Traffic details (Starts in 2 hrs | Detour active)
-                if (isRoadClosure && (startTime != null || detourInfo != null)) ...[
+                if (isRoadClosure &&
+                    (startTime != null || detourInfo != null)) ...[
                   const SizedBox(height: 12),
                   Row(
                     children: [
                       if (startTime != null) ...[
-                        const Icon(Icons.access_time, size: 14, color: Color(0xFF64748B)),
+                        const Icon(Icons.access_time,
+                            size: 14, color: Color(0xFF64748B)),
                         const SizedBox(width: 4),
                         Text(
                           startTime,
-                          style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                          style: const TextStyle(
+                              fontSize: 12, color: Color(0xFF64748B)),
                         ),
                         const SizedBox(width: 14),
                       ],
                       if (detourInfo != null) ...[
-                        const Icon(Icons.map_outlined, size: 14, color: Color(0xFF64748B)),
+                        const Icon(Icons.map_outlined,
+                            size: 14, color: Color(0xFF64748B)),
                         const SizedBox(width: 4),
                         Text(
                           detourInfo,
-                          style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                          style: const TextStyle(
+                              fontSize: 12, color: Color(0xFF64748B)),
                         ),
                       ],
                     ],
@@ -525,13 +605,15 @@ class _NewsScreenState extends State<NewsScreen> {
                       height: 24,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFF00338D).withOpacity(0.2)),
+                        border: Border.all(
+                            color: const Color(0xFF00338D).withOpacity(0.2)),
                       ),
                       child: ClipOval(
                         child: Image.asset(
                           'assets/images/logo.png',
                           fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => const Icon(Icons.shield, size: 14, color: Color(0xFF00338D)),
+                          errorBuilder: (_, __, ___) => const Icon(Icons.shield,
+                              size: 14, color: Color(0xFF00338D)),
                         ),
                       ),
                     ),
@@ -539,7 +621,8 @@ class _NewsScreenState extends State<NewsScreen> {
                     Expanded(
                       child: Text(
                         '$sourceLabel • Just now',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        style: TextStyle(
+                            fontSize: 12, color: Colors.grey.shade600),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -550,13 +633,18 @@ class _NewsScreenState extends State<NewsScreen> {
                       onTap: () => _handleReaction(id, 'like'),
                       borderRadius: BorderRadius.circular(16),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 4),
                         child: Row(
                           children: [
                             Icon(
-                              isLiked ? Icons.thumb_up : Icons.thumb_up_alt_outlined,
+                              isLiked
+                                  ? Icons.thumb_up
+                                  : Icons.thumb_up_alt_outlined,
                               size: 18,
-                              color: isLiked ? const Color(0xFF1E40AF) : const Color(0xFF475569),
+                              color: isLiked
+                                  ? const Color(0xFF1E40AF)
+                                  : const Color(0xFF475569),
                             ),
                             if (likeCount > 0) ...[
                               const SizedBox(width: 4),
@@ -565,7 +653,9 @@ class _NewsScreenState extends State<NewsScreen> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  color: isLiked ? const Color(0xFF1E40AF) : const Color(0xFF475569),
+                                  color: isLiked
+                                      ? const Color(0xFF1E40AF)
+                                      : const Color(0xFF475569),
                                 ),
                               ),
                             ],
@@ -580,13 +670,18 @@ class _NewsScreenState extends State<NewsScreen> {
                       onTap: () => _handleReaction(id, 'dislike'),
                       borderRadius: BorderRadius.circular(16),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 4),
                         child: Row(
                           children: [
                             Icon(
-                              isDisliked ? Icons.thumb_down : Icons.thumb_down_alt_outlined,
+                              isDisliked
+                                  ? Icons.thumb_down
+                                  : Icons.thumb_down_alt_outlined,
                               size: 18,
-                              color: isDisliked ? const Color(0xFFDC2626) : const Color(0xFF475569),
+                              color: isDisliked
+                                  ? const Color(0xFFDC2626)
+                                  : const Color(0xFF475569),
                             ),
                             if (dislikeCount > 0) ...[
                               const SizedBox(width: 4),
@@ -595,7 +690,9 @@ class _NewsScreenState extends State<NewsScreen> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  color: isDisliked ? const Color(0xFFDC2626) : const Color(0xFF475569),
+                                  color: isDisliked
+                                      ? const Color(0xFFDC2626)
+                                      : const Color(0xFF475569),
                                 ),
                               ),
                             ],
@@ -610,13 +707,18 @@ class _NewsScreenState extends State<NewsScreen> {
                       onTap: () => _toggleComments(id),
                       borderRadius: BorderRadius.circular(16),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 4),
                         child: Row(
                           children: [
                             Icon(
-                              isCommentsExpanded ? Icons.chat_bubble : Icons.chat_bubble_outline,
+                              isCommentsExpanded
+                                  ? Icons.chat_bubble
+                                  : Icons.chat_bubble_outline,
                               size: 18,
-                              color: isCommentsExpanded ? const Color(0xFF1E40AF) : const Color(0xFF475569),
+                              color: isCommentsExpanded
+                                  ? const Color(0xFF1E40AF)
+                                  : const Color(0xFF475569),
                             ),
                             if (commentCount > 0) ...[
                               const SizedBox(width: 4),
@@ -625,7 +727,9 @@ class _NewsScreenState extends State<NewsScreen> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  color: isCommentsExpanded ? const Color(0xFF1E40AF) : const Color(0xFF475569),
+                                  color: isCommentsExpanded
+                                      ? const Color(0xFF1E40AF)
+                                      : const Color(0xFF475569),
                                 ),
                               ),
                             ],
@@ -638,13 +742,17 @@ class _NewsScreenState extends State<NewsScreen> {
                     // Share Button
                     InkWell(
                       onTap: () async {
-                        final r = await Share.share('$title\n\n$body\n\nShared via EthioShield');
-                        await Api.recordShare('announcement', id, platform: Api.platformFromRaw(r.raw));
+                        final r = await Share.share(
+                            '$title\n\n$body\n\nShared via EthioShield');
+                        await Api.recordShare('announcement', id,
+                            platform: Api.platformFromRaw(r.raw));
                       },
                       borderRadius: BorderRadius.circular(16),
                       child: const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                        child: Icon(Icons.share_outlined, size: 18, color: Color(0xFF475569)),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        child: Icon(Icons.share_outlined,
+                            size: 18, color: Color(0xFF475569)),
                       ),
                     ),
                   ],
@@ -654,8 +762,7 @@ class _NewsScreenState extends State<NewsScreen> {
           ),
 
           // 5. Expandable Comments Section
-          if (isCommentsExpanded)
-            _buildCommentSection(id),
+          if (isCommentsExpanded) _buildCommentSection(id),
         ],
       ),
     );
@@ -700,7 +807,8 @@ class _NewsScreenState extends State<NewsScreen> {
                 final c = comments[idx];
                 final author = (c['user_name'] as String?) ?? 'Citizen';
                 final text = (c['body'] as String?) ?? '';
-                final isStaff = c['user_role'] != null && c['user_role'] != 'citizen';
+                final isStaff =
+                    c['user_role'] != null && c['user_role'] != 'citizen';
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 10),
@@ -709,16 +817,22 @@ class _NewsScreenState extends State<NewsScreen> {
                     children: [
                       CircleAvatar(
                         radius: 14,
-                        backgroundColor: isStaff ? const Color(0xFF1E3A8A) : Colors.grey.shade400,
+                        backgroundColor: isStaff
+                            ? const Color(0xFF1E3A8A)
+                            : Colors.grey.shade400,
                         child: Text(
                           author.isNotEmpty ? author[0].toUpperCase() : '?',
-                          style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
@@ -729,12 +843,14 @@ class _NewsScreenState extends State<NewsScreen> {
                             children: [
                               Text(
                                 author,
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontSize: 12, fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 text,
-                                style: TextStyle(fontSize: 13, color: Colors.grey.shade800),
+                                style: TextStyle(
+                                    fontSize: 13, color: Colors.grey.shade800),
                               ),
                             ],
                           ),
@@ -760,8 +876,10 @@ class _NewsScreenState extends State<NewsScreen> {
                     controller: controller,
                     decoration: InputDecoration(
                       hintText: 'Write a comment...',
-                      hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      hintStyle:
+                          TextStyle(fontSize: 13, color: Colors.grey.shade400),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
                       filled: true,
                       fillColor: const Color(0xFFF1F5F9),
                       border: OutlineInputBorder(
@@ -777,7 +895,8 @@ class _NewsScreenState extends State<NewsScreen> {
                 const SizedBox(width: 4),
                 IconButton(
                   onPressed: () => _postComment(id),
-                  icon: const Icon(Icons.send_rounded, color: Color(0xFF1E40AF), size: 20),
+                  icon: const Icon(Icons.send_rounded,
+                      color: Color(0xFF1E40AF), size: 20),
                 ),
               ],
             ),

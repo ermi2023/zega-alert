@@ -207,6 +207,7 @@ CREATE TABLE IF NOT EXISTS missing_persons (
   approved_at      TIMESTAMPTZ,
   rejection_reason TEXT,
   created_at       TIMESTAMPTZ DEFAULT now(),
+  updated_at       TIMESTAMPTZ DEFAULT now(),
   found_at         TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS idx_missing_status ON missing_persons(status);
@@ -230,11 +231,23 @@ CREATE TABLE IF NOT EXISTS wanted_persons (
   approved_at     TIMESTAMPTZ,
   rejection_reason TEXT,
   created_at      TIMESTAMPTZ DEFAULT now(),
+  updated_at       TIMESTAMPTZ DEFAULT now(),
   captured_at     TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS idx_wanted_approved ON wanted_persons(is_approved);
 CREATE INDEX IF NOT EXISTS idx_wanted_case_code ON wanted_persons(case_code);
 CREATE INDEX IF NOT EXISTS idx_missing_case_code ON missing_persons(case_code);
+
+CREATE TABLE IF NOT EXISTS person_photos (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  entity_type VARCHAR(30) NOT NULL,
+  entity_id UUID NOT NULL,
+  photo_url TEXT NOT NULL,
+  sort_order INT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_person_photos_entity ON person_photos(entity_type, entity_id);
 
 -- ------------------------------------------------------------------
 -- SIGHTINGS (of missing / wanted persons)

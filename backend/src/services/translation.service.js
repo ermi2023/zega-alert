@@ -64,7 +64,7 @@ function cacheKey(target, text) {
  */
 function detectProvider() {
   const provider = (process.env.TRANSLATE_PROVIDER || '').toLowerCase();
-  if (provider === 'google' || env.translateApiKey && !env.translateApiUrl) {
+  if (provider === 'google' || (env.googleTranslateApiKey && !env.translateApiUrl)) {
     return 'google';
   }
   if (env.translateApiUrl) return 'libre';
@@ -77,7 +77,7 @@ function detectProvider() {
  * Body: { q, source, target, format }
  */
 async function callGoogle(text, source, target) {
-  const key = env.translateApiKey;
+  const key = env.googleTranslateApiKey || env.translateApiKey;
   if (!key) throw new Error('google_translate_no_api_key');
   const url = 'https://translation.googleapis.com/language/translate/v2';
   const controller = new AbortController();
@@ -138,6 +138,41 @@ async function callLibre(text, source, target) {
   } finally {
     clearTimeout(timer);
   }
+
+  /**
+   * No-key fallback for deployments that have not configured Google credentials.
+   * Uses Google's public translation web endpoint. It is rate-limited and is only
+   * a fallback; Google Cloud credentials are preferred by callGoogle().
+   */
+  async function callGooglePublic(text, source, target) {
+    const params = new URLSearchParams({
+      client: 'gtx',
+      sl: ENGINE_CODE[source] || source,
+      tl: ENGINE_CODE[target] || target,
+      dt: 't',
+      q: text,
+    });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    try {
+      const resp = await fetch(`https://translate.googleapis.com/translate_a/single?${params}`, {
+        headers: { 'User-Agent': 'ZEGA-ALERT/1.0' },
+        signal: controller.signal,
+      });
+      if (!resp.ok) throw new Error(`google_public_http_${resp.status}`);
+      const data = await resp.json();
+      if (!Array.isArray(data) || !Array.isArray(data[0])) {
+        throw new Error('google_public_empty_response');
+      }
+      const translated = data[0]
+        .map((part) => (Array.isArray(part) ? part[0] : ''))
+        .join('');
+      if (!translated.trim()) throw new Error('google_public_empty_response');
+      return decodeEntities(translated);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
 }
 
 // Google escapes some HTML entities in translatedText; decode the common ones.
@@ -177,8 +212,15 @@ export const translateText = async (text, target, source = 'en', opts = {}) => {
 
   const provider = detectProvider();
   if (provider === 'placeholder') {
-    const placeholder = `[${LABELS[target] || target}] ${text}`;
-    return { text: placeholder, source: 'placeholder', target };
+    try {
+      const translated = await callGooglePublic(text, source, target);
+      if (useCache) cacheSet(key, translated);
+      return { text: translated, source: 'google-public', target };
+    } catch (err) {
+      console.warn(`[translation] public Google fallback failed: ${err.message}`);
+      const placeholder = text;
+      return { text: placeholder, source: 'original', target };
+    }
   }
 
   try {

@@ -7,10 +7,22 @@ const decryptRow = (row) => {
   if (!row) return row;
   const codePrefix = row.crime_description !== undefined ? 'WP-' : 'MP-';
   const autoCode = row.case_code || `${codePrefix}${row.id ? row.id.replace(/-/g, '').slice(0, 4).toUpperCase() : '0000'}`;
+  const normalizePhoto = (value) => {
+    if (typeof value !== 'string') return value;
+    try {
+      const url = new URL(value);
+      if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+        return `${url.pathname}${url.search}`;
+      }
+    } catch {}
+    return value;
+  };
   return {
     ...row,
     case_code: autoCode,
     contact_phone: decrypt(row.contact_phone),
+    photo_url: normalizePhoto(row.photo_url),
+    photos: Array.isArray(row.photos) ? row.photos.map(normalizePhoto) : row.photos,
   };
 };
 
@@ -200,7 +212,7 @@ export const updateMissing = async (req, res) => {
   if (body.status && Object.keys(body).length === 1) {
     if (!['missing', 'found'].includes(body.status)) return fail(res, 'status must be missing|found');
     const { rows } = await query(
-      `UPDATE missing_persons SET status = $1::person_status, found_at = CASE WHEN $1='found' THEN COALESCE($2, now()) ELSE NULL END WHERE id = $3 RETURNING *`,
+      `UPDATE missing_persons SET status = $1::person_status, found_at = CASE WHEN $1='found' THEN COALESCE($2, now()) ELSE NULL END, updated_at = now() WHERE id = $3 RETURNING *`,
       [body.status, body.found_at || null, req.params.id],
     );
     if (!rows[0]) return fail(res, 'Not found', 404);
@@ -235,8 +247,9 @@ export const updateMissing = async (req, res) => {
     if (!['missing', 'found'].includes(body.status)) return fail(res, 'status must be missing|found');
     sets.push(`status = '${body.status}'`);
     sets.push(`found_at = ${body.status === 'found' ? 'COALESCE(found_at, now())' : 'NULL'}`);
+    sets.push(`updated_at = now()`);
   }
-
+  sets.push(`updated_at = now()`);
   if (sets.length === 0) return fail(res, 'No editable fields provided');
   params.push(req.params.id);
   const { rows } = await query(
@@ -372,7 +385,7 @@ export const updateWanted = async (req, res) => {
   if (body.status && Object.keys(body).length === 1) {
     if (!['wanted', 'captured'].includes(body.status)) return fail(res, 'status must be wanted|captured');
     const { rows } = await query(
-      `UPDATE wanted_persons SET status = $1::person_status, captured_at = CASE WHEN $1='captured' THEN now() ELSE NULL END WHERE id = $2 RETURNING *`,
+      `UPDATE wanted_persons SET status = $1::person_status, captured_at = CASE WHEN $1='captured' THEN now() ELSE NULL END, updated_at = now() WHERE id = $2 RETURNING *`,
       [body.status, req.params.id],
     );
     if (!rows[0]) return fail(res, 'Not found', 404);
@@ -400,7 +413,9 @@ export const updateWanted = async (req, res) => {
     if (!['wanted', 'captured'].includes(body.status)) return fail(res, 'status must be wanted|captured');
     sets.push(`status = '${body.status}'`);
     sets.push(`captured_at = ${body.status === 'captured' ? 'COALESCE(captured_at, now())' : 'NULL'}`);
+    sets.push(`updated_at = now()`);
   }
+  sets.push(`updated_at = now()`);
   if (sets.length === 0) return fail(res, 'No editable fields provided');
   params.push(req.params.id);
   const { rows } = await query(

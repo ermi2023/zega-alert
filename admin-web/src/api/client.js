@@ -15,10 +15,36 @@ export const API_BASE = (
 // relative paths (`/uploads/...`) or absolute Firebase URLs.
 export const assetUrl = (url) => {
   if (!url) return url;
-  if (/^(https?:|data:|blob:)/.test(url)) return url;
+  if (/^https?:\/\//i.test(url)) {
+    try {
+      const parsed = new URL(url);
+      if (parsed.hostname === 'www.google.com' || parsed.hostname === 'google.com') {
+        const directImage = parsed.searchParams.get('imgurl');
+        if (directImage) return directImage;
+      }
+      if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
+        const prodBase = import.meta.env.PROD ? PROD_API_BASE : API_BASE;
+        return `${prodBase}${parsed.pathname}${parsed.search}`;
+      }
+      return url;
+    } catch {
+      return url;
+    }
+  }
+  if (/^(data:|blob:)/.test(url)) return url;
   const base = API_BASE || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : '');
   return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
 };
+
+export const IMAGE_PLACEHOLDER =
+  'data:image/svg+xml;charset=UTF-8,' +
+  encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+      <rect width="240" height="240" fill="#1f2937"/>
+      <circle cx="120" cy="82" r="42" fill="#64748b"/>
+      <path d="M48 210c8-52 38-78 72-78s64 26 72 78" fill="#64748b"/>
+    </svg>`
+  );
 
 const request = async (path, options = {}) => {
   const token = localStorage.getItem(TOKEN_KEY);

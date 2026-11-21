@@ -44,6 +44,10 @@ services:
         sync: false
       - key: FIREBASE_STORAGE_BUCKET
         value: zega-alert.firebasestorage.app
+      # Google Cloud Translation API v2 key. Set this in the Render dashboard
+      # so on-demand missing/wanted/news translation works in production.
+      - key: GOOGLE_TRANSLATE_API_KEY
+        sync: false
       # --- Fayda National ID (blank = dev auto-approve) ---
       - key: FAYDA_API_URL
         sync: false

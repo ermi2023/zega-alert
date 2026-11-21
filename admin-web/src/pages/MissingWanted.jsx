@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { api, API_BASE, assetUrl } from '../api/client';
+import { api, API_BASE, assetUrl, IMAGE_PLACEHOLDER } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import Icon from '../components/Icon';
 
@@ -13,18 +13,35 @@ const emptyForm = (kind) => ({
   kind,
 });
 
+const normalizePersonForm = (kind, initial) => ({
+  ...emptyForm(kind),
+  ...(initial || {}),
+  id: initial?.id || null,
+  kind: initial?.kind || kind,
+  name: initial?.name ?? '',
+  age: initial?.age ?? '',
+  gender: typeof initial?.gender === 'string' ? initial.gender.toLowerCase() : '',
+  photo_url: initial?.photo_url ?? '',
+  photos: Array.isArray(initial?.photos) ? initial.photos.filter(Boolean) : (initial?.photo_url ? [initial.photo_url] : []),
+  description: initial?.description ?? '',
+  last_seen_address: initial?.last_seen_address ?? '',
+  crime_description: initial?.crime_description ?? '',
+  danger_level: initial?.danger_level || 'low',
+  contact_phone: initial?.contact_phone ?? '',
+});
+
 // Single combined edit + create dialog. When `editing` is non-null we PATCH,
 // otherwise we POST a new record.
 function PersonFormDialog({ open, initial, onClose, onSaved }) {
   const { t } = useTranslation();
-  const [form, setForm] = useState(() => initial || emptyForm('missing'));
+  const [form, setForm] = useState(() => normalizePersonForm(initial?.kind || 'missing', initial));
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState('');
   const isEdit = Boolean(form.id);
 
   useEffect(() => {
-    setForm(initial ? { ...initial } : emptyForm('missing'));
+    setForm(normalizePersonForm(initial?.kind || 'missing', initial));
     setErr('');
   }, [initial, open]);
 
@@ -35,6 +52,7 @@ function PersonFormDialog({ open, initial, onClose, onSaved }) {
   const uploadFiles = async (files) => {
     if (!files.length) return;
     setUploading(true);
+    setErr('');
     try {
       const token = localStorage.getItem('zega_admin_token');
       const baseUrl = API_BASE || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : '');
@@ -48,13 +66,14 @@ function PersonFormDialog({ open, initial, onClose, onSaved }) {
           body: fd,
         });
         const data = await res.json();
-        const url = data?.data?.url;
-        if (url) newUrls.push(assetUrl(url));
+        if (!res.ok) throw new Error(data?.message || `Image upload failed (${res.status})`);
+        const url = data?.data?.url || data?.url;
+        if (url) newUrls.push(url);
       }
       if (newUrls.length > 0) {
-        set((f) => {
+        setForm((f) => {
           const updated = [...(f.photos || []), ...newUrls];
-          return { photos: updated, photo_url: updated[0] || '' };
+          return { ...f, photos: updated, photo_url: updated[0] || '' };
         });
       }
     } catch (e) { setErr('Upload failed: ' + e.message); }
@@ -63,24 +82,34 @@ function PersonFormDialog({ open, initial, onClose, onSaved }) {
 
   const submit = async (e) => {
     e.preventDefault();
+    if (uploading) {
+      setErr('Please wait until the image upload finishes.');
+      return;
+    }
     setSaving(true); setErr('');
     const kind = form.kind;
     const allPhotos = Array.isArray(form.photos) && form.photos.length > 0
       ? form.photos
-      : (form.photo_url?.trim() ? [form.photo_url.trim()] : []);
+      : ((form.photo_url || '').trim() ? [(form.photo_url || '').trim()] : []);
+    const name = (form.name || '').trim();
+    if (!name) {
+      setErr('Full name is required.');
+      setSaving(false);
+      return;
+    }
     const payload = {
-      name: form.name.trim(),
+      name,
       age: form.age ? parseInt(form.age, 10) : null,
       gender: form.gender || null,
       photo_url: allPhotos[0] || null,
       photos: allPhotos,
-      contact_phone: form.contact_phone.trim() || null,
+      contact_phone: (form.contact_phone || '').trim() || null,
     };
-    if (kind === 'missing') payload.last_seen_address = form.last_seen_address.trim() || null;
-    if (kind === 'missing') payload.description = form.description.trim() || null;
+    if (kind === 'missing') payload.last_seen_address = (form.last_seen_address || '').trim() || null;
+    if (kind === 'missing') payload.description = (form.description || '').trim() || null;
     if (kind === 'wanted') {
-      payload.crime_description = form.crime_description.trim() || null;
-      payload.danger_level = form.danger_level;
+      payload.crime_description = (form.crime_description || '').trim() || null;
+      payload.danger_level = form.danger_level || 'low';
     }
     try {
       if (isEdit) {
@@ -117,8 +146,10 @@ function PersonFormDialog({ open, initial, onClose, onSaved }) {
             <label>{t('persons.fullName')}<input value={form.name} onChange={(e) => set({ name: e.target.value })} required /></label>
             <label>{t('persons.age')}<input value={form.age} type="number" min="0" onChange={(e) => set({ age: e.target.value })} /></label>
             <label>{t('persons.gender')}
-              <select value={form.gender} onChange={(e) => set({ gender: e.target.value })}>
-                <option value="">{t('persons.unknown')}</option><option>{t('persons.male')}</option><option>{t('persons.female')}</option>
+              <select value={form.gender || ''} onChange={(e) => set({ gender: e.target.value })}>
+                <option value="">{t('persons.unknown')}</option>
+                <option value="male">{t('persons.male')}</option>
+                <option value="female">{t('persons.female')}</option>
               </select>
             </label>
             <label>{t('persons.contactPhone')}<input value={form.contact_phone} onChange={(e) => set({ contact_phone: e.target.value })} /></label>
@@ -135,16 +166,27 @@ function PersonFormDialog({ open, initial, onClose, onSaved }) {
                 <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
                   {form.photos.map((pUrl, idx) => (
                     <div key={idx} style={{ position: 'relative', display: 'inline-block' }}>
-                      <img src={assetUrl(pUrl)} alt={`Uploaded ${idx + 1}`} style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--line)' }} />
+                      <img
+                        src={assetUrl(pUrl)}
+                        alt=""
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = IMAGE_PLACEHOLDER;
+                        }}
+                        style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--line)' }}
+                      />
+                      <div style={{ display: 'none', width: 56, height: 56, alignItems: 'center', justifyContent: 'center', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--panel2)', color: 'var(--muted)', fontSize: 9, textAlign: 'center', padding: 2 }}>
+                        Image unavailable
+                      </div>
                       <button type="button" title="Remove photo"
-                        onClick={() => set((f) => { const updated = f.photos.filter((_, i) => i !== idx); return { photos: updated, photo_url: updated[0] || '' }; })}
+                        onClick={() => setForm((f) => { const updated = (f.photos || []).filter((_, i) => i !== idx); return { ...f, photos: updated, photo_url: updated[0] || '' }; })}
                         style={{ position: 'absolute', top: -4, right: -4, background: '#ef4444', color: '#fff', border: 'none', borderRadius: '50%', width: 18, height: 18, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
                     </div>
                   ))}
                 </div>
               )}
               <input type="text" value={form.photo_url || ''} placeholder={t('persons.photoHint')}
-                onChange={(e) => { const val = e.target.value; set((f) => ({ photo_url: val, photos: val ? (f.photos?.length ? [val, ...f.photos.slice(1)] : [val]) : (f.photos || []) })); }}
+                onChange={(e) => { const val = e.target.value; setForm((f) => ({ ...f, photo_url: val, photos: val ? (f.photos?.length ? [val, ...f.photos.slice(1)] : [val]) : (f.photos || []) })); }}
                 style={{ marginTop: 6, width: '100%', fontSize: 12 }} />
             </div>
             {form.kind === 'missing'
@@ -164,7 +206,9 @@ function PersonFormDialog({ open, initial, onClose, onSaved }) {
               onChange={(e) => set(form.kind === 'missing' ? { description: e.target.value } : { crime_description: e.target.value })} />
           </label>
           <div className="form-actions" style={{ marginTop: 12 }}>
-            <button className="btn" disabled={saving}>{saving ? '…' : (isEdit ? t('persons.save') : t('persons.register'))}</button>
+            <button type="submit" className="btn" disabled={saving || uploading}>
+              {saving ? 'Saving…' : uploading ? 'Uploading…' : (isEdit ? t('persons.save') : t('persons.register'))}
+            </button>
             <button type="button" className="btn ghost" onClick={onClose}>{t('persons.cancel')}</button>
           </div>
         </form>
@@ -178,6 +222,10 @@ export default function MissingWanted() {
   const { user } = useAuth();
   const canPublish = ['regional_admin', 'system_admin'].includes(user?.role);
   const canDelete = canPublish; // same role set for delete actions
+  const canCreateMissing = ['police', 'dispatcher', 'regional_admin', 'system_admin'].includes(user?.role);
+  const canCreateWanted = ['police', 'regional_admin', 'system_admin'].includes(user?.role);
+  const canEditMissing = ['police', 'dispatcher', 'regional_admin', 'system_admin'].includes(user?.role);
+  const canEditWanted = ['police', 'regional_admin', 'system_admin'].includes(user?.role);
   const [missing, setMissing] = useState([]);
   const [missingStats, setMissingStats] = useState(null);
   const [missingPending, setMissingPending] = useState([]);
@@ -295,7 +343,8 @@ export default function MissingWanted() {
       {kind === 'wanted' && row.status === 'wanted' && (
         <button className="btn small danger" onClick={() => patchStatus('wanted', row.id, 'captured')}>{t('persons.markCaptured')}</button>
       )}
-      {canPublish && <button className="btn small ghost" onClick={() => editCase(kind, row)}>✎ {t('persons.edit')}</button>}
+      {((kind === 'missing' && canEditMissing) || (kind === 'wanted' && canEditWanted)) &&
+        <button className="btn small ghost" onClick={() => editCase(kind, row)}>✎ {t('persons.edit')}</button>}
       {canDelete && <button className="btn small danger" onClick={() => deleteCase(kind, row.id)}>🗑 {t('persons.delete')}</button>}
       <button className="btn small ghost" onClick={() => setSelectedCase({ ...row, _kind: kind })}>{t('persons.viewCase')}</button>
     </div>
@@ -312,8 +361,8 @@ export default function MissingWanted() {
           <p>{t('persons.subtitle')}</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn" style={{ background: '#dc2626', borderColor: '#dc2626' }} onClick={() => newCase('missing')}>+ {t('persons.missingPerson')}</button>
-          <button className="btn" style={{ background: '#b45309', borderColor: '#b45309' }} onClick={() => newCase('wanted')}>+ {t('persons.wantedPerson')}</button>
+          {canCreateMissing && <button className="btn" style={{ background: '#dc2626', borderColor: '#dc2626' }} onClick={() => newCase('missing')}>+ {t('persons.missingPerson')}</button>}
+          {canCreateWanted && <button className="btn" style={{ background: '#b45309', borderColor: '#b45309' }} onClick={() => newCase('wanted')}>+ {t('persons.wantedPerson')}</button>}
         </div>
       </div>
       {msg.text && <div className={`msg ${msg.type}`}>{msg.text}</div>}
@@ -457,7 +506,9 @@ export default function MissingWanted() {
               {filteredMissing.map((m) => (
                 <div key={m.id} className="person-card" style={m.is_approved ? undefined : { borderColor: 'rgba(245, 158, 11, 0.45)' }}>
                   <div className="person-card-header">
-                    {m.photo_url ? <img src={assetUrl(m.photo_url)} alt={m.name} className="person-card-img" /> : <div className="person-card-placeholder">{m.name.slice(0, 1)}</div>}
+                    {m.photo_url
+                      ? <img src={assetUrl(m.photo_url)} alt={m.name} className="person-card-img" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = IMAGE_PLACEHOLDER; }} />
+                      : <div className="person-card-placeholder">{m.name.slice(0, 1)}</div>}
                     <span className={`person-card-tag ${m.status === 'found' ? 'found' : 'active'}`}>{m.status === 'found' ? 'FOUND' : 'ACTIVE'}</span>
                     <span className="person-card-id">{m.case_code || `MP-${m.id.slice(0, 4).toUpperCase()}`}</span>
                   </div>
@@ -504,7 +555,9 @@ export default function MissingWanted() {
               {filteredWanted.map((w) => (
                 <div key={w.id} className="person-card" style={{ borderColor: w.is_approved ? 'rgba(239, 68, 68, 0.3)' : 'rgba(245, 158, 11, 0.45)' }}>
                   <div className="person-card-header">
-                    {w.photo_url ? <img src={assetUrl(w.photo_url)} alt={w.name} className="person-card-img" /> : <div className="person-card-placeholder" style={{ color: '#ef4444' }}>{w.name.slice(0, 1)}</div>}
+                    {w.photo_url
+                      ? <img src={assetUrl(w.photo_url)} alt={w.name} className="person-card-img" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = IMAGE_PLACEHOLDER; }} />
+                      : <div className="person-card-placeholder" style={{ color: '#ef4444' }}>{w.name.slice(0, 1)}</div>}
                     <span className={`person-card-tag ${w.status === 'captured' ? 'found' : 'wanted'}`}>{w.status === 'captured' ? 'CAPTURED' : 'WANTED'}</span>
                     <span className="person-card-id">{w.case_code || `WP-${w.id.slice(0, 4).toUpperCase()}`}</span>
                   </div>
@@ -579,7 +632,7 @@ export default function MissingWanted() {
             </div>
             <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
               {selectedCase.photo_url ? (
-                <img src={assetUrl(selectedCase.photo_url)} alt="" style={{ width: 120, height: 120, borderRadius: 8, objectFit: 'cover' }} />
+                <img src={assetUrl(selectedCase.photo_url)} alt="" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = IMAGE_PLACEHOLDER; }} style={{ width: 120, height: 120, borderRadius: 8, objectFit: 'cover' }} />
               ) : (
                 <div style={{ width: 120, height: 120, borderRadius: 8, background: 'var(--panel2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36 }}>?</div>
               )}

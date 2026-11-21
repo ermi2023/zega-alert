@@ -117,14 +117,32 @@ export const getAnnouncement = async (req, res) => {
 };
 
 export const updateAnnouncement = async (req, res) => {
-  const { title, body, category, is_published } = req.body;
+  const { title, body, category, is_published, language } = req.body;
   const { rows } = await query(
     `UPDATE announcements SET title = COALESCE($1, title), body = COALESCE($2, body),
-       category = COALESCE($3, category), is_published = COALESCE($4, is_published)
-     WHERE id = $5 RETURNING *`,
-    [title || null, body || null, category || null, is_published ?? null, req.params.id],
+       category = COALESCE($3, category), is_published = COALESCE($4, is_published),
+       language = COALESCE($5, language)
+     WHERE id = $6 RETURNING *`,
+    [title || null, body || null, category || null, is_published ?? null, language || null, req.params.id],
   );
   if (!rows[0]) return fail(res, 'Not found', 404);
+  if (title || body || language) {
+    const source = language || rows[0].language || 'en';
+    const translations = await translateAnnouncement({
+      title: rows[0].title,
+      body: rows[0].body,
+      source,
+    });
+    for (const t of translations) {
+      await query(
+        `INSERT INTO announcement_translations (announcement_id, language, title, body, source)
+         VALUES ($1,$2,$3,$4,$5)
+         ON CONFLICT (announcement_id, language)
+         DO UPDATE SET title = EXCLUDED.title, body = EXCLUDED.body, source = EXCLUDED.source`,
+        [rows[0].id, t.language, t.title, t.body, t.source],
+      );
+    }
+  }
   mirrorSet('announcements', rows[0].id, rows[0]).catch(() => {});
   ok(res, rows[0], 'Updated');
 };

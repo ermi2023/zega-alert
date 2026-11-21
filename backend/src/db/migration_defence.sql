@@ -13,6 +13,8 @@ ALTER TABLE missing_persons ADD COLUMN IF NOT EXISTS is_approved BOOLEAN DEFAULT
 ALTER TABLE missing_persons ADD COLUMN IF NOT EXISTS approved_by UUID REFERENCES users(id) ON DELETE SET NULL;
 ALTER TABLE missing_persons ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ;
 ALTER TABLE missing_persons ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
+ALTER TABLE missing_persons ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+ALTER TABLE wanted_persons ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
 CREATE INDEX IF NOT EXISTS idx_missing_approved ON missing_persons(is_approved);
 
 -- Geofence sensitivity / pause / owner + max-10 per citizen (doc 4.3.4)

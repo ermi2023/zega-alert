@@ -39,6 +39,11 @@ export const env = {
   translateProvider: (process.env.TRANSLATE_PROVIDER || '').toLowerCase(),
   translateApiUrl: process.env.TRANSLATE_API_URL || '',
   translateApiKey: process.env.TRANSLATE_API_KEY || '',
+  googleTranslateApiKey:
+    process.env.GOOGLE_TRANSLATE_API_KEY ||
+    process.env.GOOGLE_CLOUD_TRANSLATION_API_KEY ||
+    process.env.TRANSLATE_API_KEY ||
+    '',
   // Fayda National ID verification (spec §4.4). Blank = dev auto-approve.
   faydaApiUrl: process.env.FAYDA_API_URL || '',
   faydaApiKey: process.env.FAYDA_API_KEY || '',

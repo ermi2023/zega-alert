@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode, TargetPlatform, defaultTargetPlatform;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, kDebugMode, TargetPlatform, defaultTargetPlatform;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'database_service.dart';
@@ -24,8 +25,8 @@ class Api {
   /// Well-known backend hosts probed before scanning the local subnet.
   static const List<String> _candidateHosts = [
     '192.168.137.1', // Windows Mobile Hotspot gateway
-    '10.0.2.2',      // Android emulator host loopback
-    '192.168.56.1',  // VirtualBox host-only network
+    '10.0.2.2', // Android emulator host loopback
+    '192.168.56.1', // VirtualBox host-only network
   ];
 
   /// Last discovered LAN backend host (null until a probe/scan succeeds).
@@ -58,7 +59,8 @@ class Api {
       if (saved != null && saved.isNotEmpty) _overrideBase = saved;
     } catch (_) {}
 
-    if (_overrideBase != null || _envBase.isNotEmpty) return; // explicit URL wins
+    if (_overrideBase != null || _envBase.isNotEmpty)
+      return; // explicit URL wins
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
     // Auto-discovery only matters during development; release builds go straight
     // to the cloud API (avoiding a slow subnet scan at launch).
@@ -116,7 +118,8 @@ class Api {
       final end = start + batchSize - 1 > 254 ? 254 : start + batchSize - 1;
       final futures = <Future<String?>>[
         for (var h = start; h <= end; h++)
-          _hostAlive('$subnet.$h', ms: 900).then((ok) => ok ? '$subnet.$h' : null),
+          _hostAlive('$subnet.$h', ms: 900)
+              .then((ok) => ok ? '$subnet.$h' : null),
       ];
       final results = await Future.wait(futures);
       for (final r in results) {
@@ -140,12 +143,14 @@ class Api {
   static const String _defaultCloudBase = 'https://zega-alert-api.onrender.com';
 
   static String get baseUrl {
-    if (_overrideBase != null && _overrideBase!.isNotEmpty) return _overrideBase!;
+    if (_overrideBase != null && _overrideBase!.isNotEmpty)
+      return _overrideBase!;
     if (_envBase.isNotEmpty) return _envBase;
     if (kIsWeb) return 'http://localhost:$port';
     // Prefer a backend discovered on the local network, otherwise fall back to
     // the production Render cloud API.
-    if (_lanHost != null && _lanHost!.isNotEmpty) return 'http://$_lanHost:$port';
+    if (_lanHost != null && _lanHost!.isNotEmpty)
+      return 'http://$_lanHost:$port';
     return _defaultCloudBase;
   }
 
@@ -157,7 +162,9 @@ class Api {
   static String? assetUrl(String? url) {
     if (url == null || url.trim().isEmpty) return null;
     final u = url.trim();
-    if (u.startsWith('http://') || u.startsWith('https://') || u.startsWith('data:')) return u;
+    if (u.startsWith('http://') ||
+        u.startsWith('https://') ||
+        u.startsWith('data:')) return u;
     return '$baseUrl${u.startsWith('/') ? '' : '/'}$u';
   }
 
@@ -222,9 +229,11 @@ class Api {
   static Future<bool> refreshSession() async {
     if (_refreshToken == null) return false;
     try {
-      final data = await _send('POST', '/auth/refresh', {'refreshToken': _refreshToken});
+      final data =
+          await _send('POST', '/auth/refresh', {'refreshToken': _refreshToken});
       await setToken(data['accessToken'], userId: _userId);
-      if (data['refreshToken'] != null) await setRefreshToken(data['refreshToken']);
+      if (data['refreshToken'] != null)
+        await setRefreshToken(data['refreshToken']);
       return true;
     } catch (_) {
       return false;
@@ -245,14 +254,16 @@ class Api {
     await prefs.remove('sub_city');
   }
 
-  static Future<dynamic> _send(String method, String path, [Map<String, dynamic>? body]) async {
+  static Future<dynamic> _send(String method, String path,
+      [Map<String, dynamic>? body]) async {
     final uri = Uri.parse('$baseUrl/api$path');
     final headers = <String, String>{'Content-Type': 'application/json'};
     if (_token != null) headers['Authorization'] = 'Bearer $_token';
     final req = http.Request(method, uri)..headers.addAll(headers);
     if (body != null) req.body = jsonEncode(body);
     final streamed = await req.send().timeout(const Duration(seconds: 45));
-    final res = await http.Response.fromStream(streamed).timeout(const Duration(seconds: 45));
+    final res = await http.Response.fromStream(streamed)
+        .timeout(const Duration(seconds: 45));
     dynamic data;
     try {
       data = res.body.isEmpty ? null : jsonDecode(res.body);
@@ -261,22 +272,26 @@ class Api {
     }
     if (res.statusCode >= 400) {
       final message = data is Map ? data['message'] : null;
-      throw ApiException(message?.toString() ?? 'Request failed (${res.statusCode})');
+      throw ApiException(
+          message?.toString() ?? 'Request failed (${res.statusCode})');
     }
     return data is Map ? data['data'] : null;
   }
 
   static Future<dynamic> get(String path) => _send('GET', path);
-  static Future<dynamic> post(String path, [Map<String, dynamic>? body]) => _send('POST', path, body);
+  static Future<dynamic> post(String path, [Map<String, dynamic>? body]) =>
+      _send('POST', path, body);
 
   /// Public raw request used by the offline sync service.
-  static Future<dynamic> request(String method, String path, [Map<String, dynamic>? body]) =>
+  static Future<dynamic> request(String method, String path,
+          [Map<String, dynamic>? body]) =>
       _send(method, path, body);
 
   /// Try to POST immediately; if the device is offline (network error rather
   /// than a rejected request) queue it in the local outbox for later sync.
   /// Returns {'queued': true} when queued, otherwise {'queued': false, 'data': ...}.
-  static Future<Map<String, dynamic>> postOrQueue(String path, Map<String, dynamic> body) async {
+  static Future<Map<String, dynamic>> postOrQueue(
+      String path, Map<String, dynamic> body) async {
     try {
       final data = await _send('POST', path, body);
       return {'queued': false, 'data': data};
@@ -290,8 +305,10 @@ class Api {
       rethrow;
     }
   }
+
   /// UC-11: record a social-share analytics event. Best-effort (never throws).
-  static Future<void> recordShare(String contentType, String? contentId, {String platform = 'other'}) async {
+  static Future<void> recordShare(String contentType, String? contentId,
+      {String platform = 'other'}) async {
     try {
       await _send('POST', '/share', {
         'content_type': contentType,
@@ -313,15 +330,19 @@ class Api {
     return 'other';
   }
 
-  static Future<dynamic> patch(String path, [Map<String, dynamic>? body]) => _send('PATCH', path, body);
-  static Future<dynamic> put(String path, [Map<String, dynamic>? body]) => _send('PUT', path, body);
+  static Future<dynamic> patch(String path, [Map<String, dynamic>? body]) =>
+      _send('PATCH', path, body);
+  static Future<dynamic> put(String path, [Map<String, dynamic>? body]) =>
+      _send('PUT', path, body);
   static Future<dynamic> delete(String path) => _send('DELETE', path);
 
   static Future<dynamic> getReport(String id) => _send('GET', '/reports/$id');
 
   // Social endpoints
-  static Future<dynamic> toggleLike(String entityType, String entityId, {String reaction = 'like'}) =>
-      _send('POST', '/social/$entityType/$entityId/like', {'reaction': reaction});
+  static Future<dynamic> toggleLike(String entityType, String entityId,
+          {String reaction = 'like'}) =>
+      _send(
+          'POST', '/social/$entityType/$entityId/like', {'reaction': reaction});
 
   static Future<dynamic> getSocialCounts(String entityType, String entityId) =>
       _send('GET', '/social/$entityType/$entityId/counts');
@@ -329,28 +350,81 @@ class Api {
   static Future<dynamic> getComments(String entityType, String entityId) =>
       _send('GET', '/social/$entityType/$entityId/comments');
 
-  static Future<dynamic> addComment(String entityType, String entityId, String body) =>
+  static Future<dynamic> addComment(
+          String entityType, String entityId, String body) =>
       _send('POST', '/social/$entityType/$entityId/comments', {'body': body});
 
   static Future<dynamic> getPhotos(String entityType, String entityId) =>
       _send('GET', '/social/$entityType/$entityId/photos');
 
-  static Future<dynamic> addPhotos(String entityType, String entityId, List<String> photos) =>
+  static Future<dynamic> addPhotos(
+          String entityType, String entityId, List<String> photos) =>
       _send('POST', '/social/$entityType/$entityId/photos', {'photos': photos});
 
   // On-demand translation (news + missing/wanted descriptions).
   // Returns { text, source, target, cached? } on success.
-  static Future<Map<String, dynamic>> translate(String text, String targetLanguage,
+  static Future<Map<String, dynamic>> translate(
+      String text, String targetLanguage,
       {String sourceLanguage = 'en'}) async {
-    final data = await _send('POST', '/translate', {
-      'text': text,
+    try {
+      final data = await _send('POST', '/translate', {
+        'text': text,
+        'target': targetLanguage,
+        'source': sourceLanguage,
+      });
+      final result =
+          (data is Map) ? Map<String, dynamic>.from(data) : <String, dynamic>{};
+      final translated = result['text']?.toString() ?? '';
+      final source = result['source']?.toString() ?? '';
+      final placeholder = source == 'placeholder' ||
+          translated.startsWith('[Amharic]') ||
+          translated.startsWith('[Oromifa]') ||
+          translated.startsWith('[Tigrigna]') ||
+          translated.startsWith('[Somali]');
+      if (!placeholder && translated.isNotEmpty) return result;
+    } catch (_) {
+      // Old deployed servers may not have the /translate route yet.
+    }
+
+    final uri = Uri.https(
+      'translate.googleapis.com',
+      '/translate_a/single',
+      {
+        'client': 'gtx',
+        'sl': sourceLanguage,
+        'tl': targetLanguage,
+        'dt': 't',
+        'q': text,
+      },
+    );
+    final response = await http.get(uri).timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200) {
+      throw ApiException('Translation unavailable (${response.statusCode})');
+    }
+    final decoded = jsonDecode(response.body);
+    if (decoded is! List ||
+        decoded.isEmpty ||
+        decoded.first is! List ||
+        (decoded.first as List).isEmpty) {
+      throw ApiException('Translation service returned no result');
+    }
+    final translated = (decoded.first as List)
+        .whereType<List>()
+        .map((part) => part.isNotEmpty ? part.first.toString() : '')
+        .join();
+    if (translated.trim().isEmpty) {
+      throw ApiException('Translation service returned no result');
+    }
+    return {
+      'text': translated,
+      'source': 'google-public',
       'target': targetLanguage,
-      'source': sourceLanguage,
-    });
-    return (data is Map) ? Map<String, dynamic>.from(data) : <String, dynamic>{};
+      'cached': false,
+    };
   }
 
-  static Future<dynamic> upload(String path, List<MapEntry<String, String>> files,
+  static Future<dynamic> upload(
+      String path, List<MapEntry<String, String>> files,
       {Map<String, String>? fields}) async {
     final uri = Uri.parse('$baseUrl/api$path');
     final req = http.MultipartRequest('POST', uri);
@@ -360,7 +434,8 @@ class Api {
       req.files.add(await http.MultipartFile.fromPath(f.key, f.value));
     }
     final streamed = await req.send().timeout(const Duration(seconds: 120));
-    final res = await http.Response.fromStream(streamed).timeout(const Duration(seconds: 120));
+    final res = await http.Response.fromStream(streamed)
+        .timeout(const Duration(seconds: 120));
     dynamic data;
     try {
       data = res.body.isEmpty ? null : jsonDecode(res.body);
@@ -369,7 +444,8 @@ class Api {
     }
     if (res.statusCode >= 400) {
       final message = data is Map ? data['message'] : null;
-      throw ApiException(message?.toString() ?? 'Upload failed (${res.statusCode})');
+      throw ApiException(
+          message?.toString() ?? 'Upload failed (${res.statusCode})');
     }
     return data is Map ? data['data'] : null;
   }

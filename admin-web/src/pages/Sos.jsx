@@ -15,6 +15,17 @@ const timeAgo = (d) => {
 
 const badge = (v) => ({ triggered: 'red', acknowledged: 'amber', dispatched: 'blue', resolved: 'green', cancelled: 'gray', pending: 'amber', under_review: 'blue', verified: 'green', rejected: 'red', closed: 'gray' }[v] || 'gray');
 
+const distanceMeters = (a, b) => {
+  if (!a || !b) return null;
+  const R = 6371000;
+  const lat1 = (a.latitude * Math.PI) / 180;
+  const lat2 = (b.latitude * Math.PI) / 180;
+  const dLat = lat2 - lat1;
+  const dLng = ((b.longitude - a.longitude) * Math.PI) / 180;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+};
+
 const unitStatusStyle = (status) => ({
   completed: { background: '#d4edda', color: '#155724' },
   on_scene: { background: '#cce5ff', color: '#004085' },
@@ -185,6 +196,13 @@ export default function Sos() {
   const activeRows = rows.filter((s) => s.latitude && s.longitude && ['triggered', 'acknowledged', 'dispatched'].includes(s.status));
   const officerPts = Object.values(officers).filter((p) => p.latitude && p.longitude);
 
+  const liveEta = (s, u) => {
+    const pos = officers[u.assigned_to];
+    const distance = pos && s.latitude != null && s.longitude != null ? distanceMeters(pos, s) : u.distance_m;
+    if (distance == null) return { distance: null, eta: u.eta_seconds };
+    return { distance, eta: Math.round(distance / 11.1) };
+  };
+
   const filteredRows = rows.filter(s =>
     (!regionFilter || (s.region || '').toLowerCase().includes(regionFilter.toLowerCase())) &&
     (!subCityFilter || (s.sub_city || '').toLowerCase().includes(subCityFilter.toLowerCase()))
@@ -275,11 +293,15 @@ export default function Sos() {
                           }}>
                             {u.officer_name} ({u.officer_role})
                             <span style={{ fontSize: 10, color: 'var(--muted)' }}>[{u.status}]</span>
-                            {u.eta_seconds != null && u.status !== 'completed' && (
-                              <span style={{ fontSize: 10, color: '#856404' }}>
-                                ETA ~{Math.max(1, Math.round(u.eta_seconds / 60))}m{u.distance_m != null ? ` (${(u.distance_m / 1000).toFixed(1)}km)` : ''}
-                              </span>
-                            )}
+                            {(() => {
+                              const { distance, eta } = liveEta(s, u);
+                              if (eta == null || u.status === 'completed' || u.status === 'on_scene') return null;
+                              return (
+                                <span style={{ fontSize: 10, color: '#856404' }}>
+                                  ETA ~{Math.max(1, Math.round(eta / 60))}m{distance != null ? ` (${(distance / 1000).toFixed(1)}km)` : ''}
+                                </span>
+                              );
+                            })()}
                             {u.status !== 'completed' && (
                               <select
                                 value={u.status}

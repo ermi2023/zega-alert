@@ -22,7 +22,6 @@ export default function Dashboard() {
     case 'police':
       return <PoliceDashboard />;
     default:
-      // Citizen or unknown — also send to /admin (will bounce via RequireRole).
-      return <Navigate to="/admin" replace />;
+      return <Navigate to="/reports" replace />;
   }
 }

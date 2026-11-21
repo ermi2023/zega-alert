@@ -1,26 +1,28 @@
 import { query } from '../config/db.js';
-import { ok } from '../utils/response.js';
+import { ok, fail } from '../utils/response.js';
 import { writeAudit } from '../utils/audit.js';
+import { DEFAULT_POLICY, getSecurityPolicy } from '../services/security-policy.service.js';
 
-// Default security policy (spec §4.3.7 / SD-7). Used when no policy has ever
-// been persisted, and as the merge base for partial updates.
-const DEFAULT_POLICY = {
-  password_min_length: 8,
-  password_require_uppercase: true,
-  password_require_numbers: true,
-  password_require_special: true,
-  session_timeout_minutes: 60,
-  max_login_attempts: 5,
-  lockout_duration_minutes: 30,
-  mfa_enabled: false,
-  data_retention_days: 365,
-  audit_log_retention_days: 730,
-  tls_enforced: true,
-  encryption_at_rest: true,
-  rate_limit_per_minute: 100,
-  api_key_rotation_days: 90,
-  allowed_carriers: ['Ethio Telecom', 'Safaricom Ethiopia'],
-  custom_rules: [],
+const NUMBER_FIELDS = {
+  password_min_length: [4, 64],
+  session_timeout_minutes: [5, 1440],
+  max_login_attempts: [3, 20],
+  lockout_duration_minutes: [1, 1440],
+  data_retention_days: [1, 3650],
+  audit_log_retention_days: [1, 3650],
+  rate_limit_per_minute: [10, 10000],
+  api_key_rotation_days: [1, 365],
+};
+
+const readPolicy = async () => {
+  const { rows } = await query(
+    `SELECT detail FROM audit_log WHERE action = 'set_security_policy' ORDER BY created_at DESC LIMIT 1`,
+  );
+  const detail = rows[0]?.detail;
+  if (detail && typeof detail === 'object' && detail.next && typeof detail.next === 'object') {
+    return { ...DEFAULT_POLICY, ...detail.next };
+  }
+  return getSecurityPolicy();
 };
 
 /**
@@ -29,13 +31,7 @@ const DEFAULT_POLICY = {
  * Read: any authenticated user (the policy affects everyone).
  */
 export const getPolicy = async (req, res) => {
-  const { rows } = await query(
-    `SELECT detail FROM audit_log WHERE action = 'set_security_policy' ORDER BY created_at DESC LIMIT 1`,
-  );
-  if (rows.length > 0) {
-    return ok(res, { ...DEFAULT_POLICY, ...(rows[0].detail || {}) });
-  }
-  ok(res, DEFAULT_POLICY);
+  ok(res, await readPolicy());
 };
 
 /**
@@ -45,22 +41,25 @@ export const getPolicy = async (req, res) => {
  * the System Admin can review changes from the Audit Log page.
  */
 export const updatePolicy = async (req, res) => {
-  // Get the previous effective policy.
-  const prevRows = await query(
-    `SELECT detail FROM audit_log WHERE action = 'set_security_policy' ORDER BY created_at DESC LIMIT 1`,
-  );
-  const previous = prevRows.rows.length
-    ? { ...DEFAULT_POLICY, ...(prevRows.rows[0].detail || {}) }
-    : { ...DEFAULT_POLICY };
+  const previous = await readPolicy();
 
-  // Shallow-merge with the new body. Don't accept unknown keys.
   const incoming = {};
   for (const k of Object.keys(DEFAULT_POLICY)) {
     if (req.body[k] !== undefined) incoming[k] = req.body[k];
   }
   const next = { ...previous, ...incoming };
 
-  // Compute a tiny diff so audit_log can show what actually changed.
+  for (const [key, [min, max]] of Object.entries(NUMBER_FIELDS)) {
+    const n = Number(next[key]);
+    if (!Number.isFinite(n) || n < min || n > max) {
+      return fail(res, `${key} must be between ${min} and ${max}`);
+    }
+    next[key] = Math.round(n);
+  }
+  if (!Array.isArray(next.allowed_carriers)) {
+    return fail(res, 'allowed_carriers must be an array');
+  }
+
   const diff = {};
   for (const k of Object.keys(incoming)) {
     if (JSON.stringify(previous[k]) !== JSON.stringify(next[k])) {
@@ -68,19 +67,24 @@ export const updatePolicy = async (req, res) => {
     }
   }
 
-  await writeAudit({
-    userId: req.user.id,
-    action: 'set_security_policy',
-    entity: 'system',
-    entityId: null, // no row in a table — entity_id UUID, kept NULL on purpose
-    detail: {
-      previous,
-      next,
-      diff,
-      actor_role: req.user.role,
-    },
-    req,
-  });
+  try {
+    await writeAudit({
+      userId: req.user.id,
+      action: 'set_security_policy',
+      entity: 'system',
+      entityId: null,
+      detail: {
+        ...next,
+        previous,
+        next,
+        diff,
+        actor_role: req.user.role,
+      },
+      req,
+    });
+  } catch (err) {
+    console.error('[policy] audit write failed:', err.message);
+  }
 
   ok(res, next, 'Security policy updated');
 };

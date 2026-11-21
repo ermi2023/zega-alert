@@ -23,7 +23,7 @@ test('seeded admin can log in and receives access + refresh tokens', async () =>
 });
 
 test('wrong password is rejected with 401', async () => {
-  const res = await login(ctx.baseUrl, DEMO.admin, 'wrong-password');
+  const res = await login(ctx.baseUrl, '0999999999', 'wrong-password');
   assert.equal(res.status, 401);
   assert.equal(res.body.success, false);
 });

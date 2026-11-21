@@ -28,6 +28,13 @@ export function ensureUploadDir() {
   if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
 
+async function removeLocalFile(file) {
+  if (!file?.path) return;
+  try {
+    await fs.promises.unlink(file.path);
+  } catch {}
+}
+
 // When Firebase Storage is configured, mirror the file there and return its
 // public URL; otherwise fall back to the local /uploads static path.
 async function storageUrl(file) {
@@ -99,6 +106,7 @@ export const uploadSingle = async (req, res) => {
   if (!req.file) return fail(res, 'No file uploaded');
   const remote = await storageUrl(req.file);
   if (env.nodeEnv === 'production' && !remote) {
+    await removeLocalFile(req.file);
     return fail(res, 'Persistent image storage is not configured', 503);
   }
   ok(res, fileMeta(req.file, remote), 'Uploaded', 201);
@@ -108,6 +116,7 @@ export const uploadMulti = async (req, res) => {
   if (!req.files || !req.files.length) return fail(res, 'No files uploaded');
   const items = await Promise.all(req.files.map(async (f) => fileMeta(f, await storageUrl(f))));
   if (env.nodeEnv === 'production' && items.some((item) => item.storage === 'local')) {
+    await Promise.all(items.map((item, i) => (item.storage === 'local' ? removeLocalFile(req.files[i]) : null)));
     return fail(res, 'Persistent image storage is not configured', 503);
   }
   ok(res, items, 'Uploaded', 201);

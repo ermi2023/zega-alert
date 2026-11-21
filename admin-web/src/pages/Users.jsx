@@ -21,7 +21,7 @@ export default function Users() {
     e.preventDefault();
     try {
       await api.post('/admin/users', form);
-      setMsg({ type: 'ok', text: 'User created (password: ' + form.password + ')' });
+      setMsg({ type: 'ok', text: 'User created. Share the temporary password securely; it is not shown again.' });
       setForm({ full_name: '', phone: '', password: '', role: 'police', region: '' });
       load();
     } catch (ex) { setMsg({ type: 'err', text: ex.message }); }
@@ -82,7 +82,7 @@ export default function Users() {
           <div className="form-row">
             <label>{t('users.fullName')}<input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required /></label>
             <label>{t('users.phone')}<input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required /></label>
-            <label>{t('users.tempPassword')}<input value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required /></label>
+            <label>{t('users.tempPassword')}<input type="password" autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required /></label>
             <label>{t('users.role')}
               <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
                 {ROLES.map((r) => <option key={r}>{r}</option>)}

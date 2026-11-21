@@ -48,9 +48,7 @@ const RequireRole = (...roles) => ({ children }) => {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   if (!roles.includes(user.role)) {
-    // Send the user back to their own dashboard if they try a route that
-    // doesn't belong to their role.
-    return <Navigate to="/" replace />;
+    return <Navigate to="/reports" replace />;
   }
   return <Layout>{children}</Layout>;
 };

@@ -28,6 +28,7 @@ export default function Chat() {
   useEffect(() => {
     if (!active) return;
     api.get(`/chat/conversations/${active}/messages`).then(setMessages);
+    api.patch(`/chat/conversations/${active}/read`, {}).catch(() => {});
     setRating(0);
   }, [active]);
 
@@ -65,11 +66,14 @@ export default function Chat() {
       const data = await res.json();
       const url = data?.data?.url;
       if (!url) throw new Error(data?.message || 'Upload failed');
-      const isImage = file.type.startsWith('image/');
+      const type = file.type.startsWith('image/') ? 'image'
+        : file.type.startsWith('video/') ? 'video'
+          : file.type.startsWith('audio/') ? 'audio' : 'file';
       const msg = await api.post(`/chat/conversations/${active}/messages`, {
         body: file.name,
-        message_type: isImage ? 'image' : 'text',
+        message_type: type,
         attachment_url: url,
+        attachment_type: type,
       });
       setMessages((prev) => [...prev, msg]);
     } catch (ex) { alert(ex.message); }

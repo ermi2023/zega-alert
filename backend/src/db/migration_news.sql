@@ -1,6 +1,6 @@
 -- News & Road Closures enhancements
 ALTER TABLE announcements ADD COLUMN IF NOT EXISTS image_url TEXT;
-ALTER TABLE announcements ADD COLUMN IF NOT EXISTS source_label VARCHAR(100) DEFAULT 'EthioShield News';
+ALTER TABLE announcements ADD COLUMN IF NOT EXISTS source_label VARCHAR(100) DEFAULT 'ZEGA-ALERT News';
 ALTER TABLE announcements ADD COLUMN IF NOT EXISTS badge_label VARCHAR(50);
 ALTER TABLE announcements ADD COLUMN IF NOT EXISTS badge_color VARCHAR(30);
 

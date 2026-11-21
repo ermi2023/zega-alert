@@ -40,6 +40,8 @@ try {
   await applyFile('migration_consent.sql', { tolerant: false });
   await applyFile('migration_person_approval.sql', { tolerant: false });
   await applyFile('migration_social.sql', { tolerant: false });
+  await applyFile('migration_news.sql', { tolerant: true });
+  await applyFile('migration_audit_indexes.sql', { tolerant: true });
   await applyFile('seed.sql', { tolerant: true });
   console.log('[DB] Migrations complete');
 } catch (e) {

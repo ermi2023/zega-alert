@@ -10,19 +10,22 @@ import { haversine } from './dispatch.service.js';
 export async function notifyGeofenceCitizens(sosAlert, geofenceContext) {
   if (!sosAlert.latitude || !sosAlert.longitude) return;
 
-  // Find all geofences that contain this SOS location
+  // Find all active geofences that contain this SOS location.
   const { rows: zones } = await query(
-    `SELECT id, name, type, center_lat, center_lng, radius_m FROM geofences
-     WHERE center_lat IS NOT NULL AND center_lng IS NOT NULL`,
+    `SELECT id, name, label, type, center_lat, center_lng, radius_m, polygon, sensitivity
+     FROM geofences WHERE is_active = true`,
   );
 
   const affectedZones = [];
   for (const zone of zones) {
-    const dist = haversine(sosAlert.latitude, sosAlert.longitude, zone.center_lat, zone.center_lng);
-    const radius = zone.radius_m || 500;
-    if (dist <= radius) {
-      affectedZones.push(zone);
-    }
+    const insidePolygon = pointInPolygon(sosAlert.latitude, sosAlert.longitude, zone.polygon);
+    const dist = zone.center_lat != null && zone.center_lng != null
+      ? haversine(sosAlert.latitude, sosAlert.longitude, zone.center_lat, zone.center_lng)
+      : Infinity;
+    // Sensitivity scales the trigger radius: high = wider net, low = tighter.
+    const multiplier = { high: 1.25, medium: 1, low: 0.75 }[zone.sensitivity] || 1;
+    const radius = (zone.radius_m || 500) * multiplier;
+    if (insidePolygon || dist <= radius) affectedZones.push(zone);
   }
 
   if (!affectedZones.length) return;
@@ -46,8 +49,9 @@ export async function notifyGeofenceCitizens(sosAlert, geofenceContext) {
 
   if (!citizens.length) return;
 
-  const zoneNames = affectedZones.map(z => z.name).join(', ');
-  const title = 'Safety Alert';
+  const zoneNames = affectedZones.map(z => z.label || z.name).join(', ');
+  const highSensitivity = affectedZones.some(z => z.sensitivity === 'high');
+  const title = highSensitivity ? 'High-sensitivity Safety Alert' : 'Safety Alert';
   const body = `An emergency incident has been reported near ${zoneNames}. Stay alert and avoid the area if possible.`;
 
   const results = [];
@@ -59,9 +63,31 @@ export async function notifyGeofenceCitizens(sosAlert, geofenceContext) {
       type: 'geofence_alert',
       sosId: String(sosAlert.id || ''),
       zones: zoneNames,
+      sensitivity: highSensitivity ? 'high' : undefined,
     });
-    results.push({ userId: citizen.id, push: pushResult });
+    let smsResult = null;
+    if (highSensitivity && citizen.phone) {
+      smsResult = await sendNotificationSms(citizen.phone, `${title}: ${body}`).catch(() => null);
+    }
+    results.push({ userId: citizen.id, push: pushResult, sms: smsResult });
   }
 
-  return { notifiedCount: results.length, zones: affectedZones.map(z => z.name) };
+  return { notifiedCount: results.length, zones: affectedZones.map(z => z.label || z.name) };
+}
+
+// Ray-casting point-in-polygon; accepts [[lat,lng], ...] or [{lat,lng}, ...].
+function pointInPolygon(lat, lng, polygon) {
+  if (!Array.isArray(polygon) || polygon.length < 3) return false;
+  const pts = polygon.map((p) => Array.isArray(p)
+    ? { lat: Number(p[0]), lng: Number(p[1]) }
+    : { lat: Number(p.lat ?? p.latitude), lng: Number(p.lng ?? p.longitude) });
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const xi = pts[i].lng; const yi = pts[i].lat;
+    const xj = pts[j].lng; const yj = pts[j].lat;
+    const intersect = ((yi > lat) !== (yj > lat))
+      && (lng < ((xj - xi) * (lat - yi)) / ((yj - yi) || 1e-12) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
 }

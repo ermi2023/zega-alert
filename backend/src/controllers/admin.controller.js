@@ -2,6 +2,8 @@ import { query } from '../config/db.js';
 import { ok, fail } from '../utils/response.js';
 import { hashPassword } from '../utils/password.js';
 import { writeAudit } from '../utils/audit.js';
+import { io } from '../socket/socket.js';
+import { getSecurityPolicy, validatePassword } from '../services/security-policy.service.js';
 
 /**
  * GET /api/admin/stats
@@ -25,6 +27,8 @@ export const stats = async (req, res) => {
     legalOverview,
     auditCount,
     notificationCount,
+    regions,
+    geofences,
   ] = await Promise.all([
     query(`SELECT COUNT(*)::int AS total,
       COUNT(*) FILTER (WHERE role='citizen')::int AS citizens,
@@ -66,7 +70,15 @@ export const stats = async (req, res) => {
     query(`SELECT COUNT(*)::int AS total,
         COUNT(*) FILTER (WHERE is_read=false)::int AS unread
       FROM notifications`),
+    query(`SELECT COALESCE(region, 'Unassigned') AS region, COUNT(*)::int AS n
+      FROM users GROUP BY region ORDER BY n DESC`),
+    query(`SELECT COUNT(*)::int AS total,
+      COUNT(*) FILTER (WHERE is_active = true)::int AS active FROM geofences`),
   ]);
+
+  const dbStarted = Date.now();
+  await query('SELECT 1');
+  const dbLatency = Date.now() - dbStarted;
 
   // Map role rows into an object keyed by role, including active/suspended counts.
   const roleBreakdown = {};
@@ -98,10 +110,7 @@ export const stats = async (req, res) => {
     totalReports,
     openCases,
     sosToday,
-    monthlyTrend: monthlyTrend.rows.length ? monthlyTrend.rows : [
-      { label: 'Jan', value: 12 }, { label: 'Feb', value: 19 }, { label: 'Mar', value: 15 },
-      { label: 'Apr', value: 24 }, { label: 'May', value: 18 }, { label: 'Jun', value: 22 },
-    ],
+    monthlyTrend: monthlyTrend.rows,
     sos: sos.rows,
     missingPersons: missing.rows[0],
     wantedPersons: wanted.rows[0],
@@ -112,6 +121,14 @@ export const stats = async (req, res) => {
     audit: auditCount.rows[0],
     notifications: notificationCount.rows[0],
     recentActivity: recentActivity.rows,
+    regions: regions.rows,
+    geofences: geofences.rows[0],
+    system: {
+      db_latency_ms: dbLatency,
+      websocket_clients: io.engine?.clientsCount ?? 0,
+      uptime_seconds: Math.round(process.uptime()),
+      node_version: process.version,
+    },
   });
 };
 
@@ -135,6 +152,8 @@ export const listUsers = async (req, res) => {
 export const createUser = async (req, res) => {
   const { full_name, phone, email, password, role, region, sub_city, woreda } = req.body;
   if (!full_name || !phone || !password || !role) return fail(res, 'full_name, phone, password, role required');
+  const passwordError = validatePassword(password, await getSecurityPolicy());
+  if (passwordError) return fail(res, passwordError);
   const password_hash = await hashPassword(password);
   const { rows } = await query(
     `INSERT INTO users (full_name, phone, email, password_hash, role, region, sub_city, woreda, is_verified)

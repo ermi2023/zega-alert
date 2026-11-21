@@ -8,9 +8,13 @@ import '../services/database_service.dart';
 import '../services/socket_service.dart';
 import '../widgets/auth_gate.dart';
 import '../widgets/fullscreen_image_viewer.dart';
+import '../widgets/pod_actions.dart';
+import '../widgets/sos_dialog.dart';
 import '../widgets/translatable_text.dart';
+import 'announcement_detail_screen.dart';
 import 'missing_report_screen.dart';
 import 'person_detail_screen.dart';
+import 'report_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,6 +24,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  List<dynamic> _announcements = [];
   List<dynamic> _missing = [];
   List<dynamic> _wanted = [];
   String? _loadError;
@@ -73,8 +78,10 @@ class _HomeScreenState extends State<HomeScreen> {
       _offline = false;
     });
     try {
+      final ann = await Api.get('/announcements');
       final missing = await Api.get('/persons/missing');
       final wanted = await Api.get('/persons/wanted');
+      await DatabaseService.cacheList('announcements', ann);
       await DatabaseService.cacheList('missing_persons', missing);
       await DatabaseService.cacheList('wanted_persons', wanted);
 
@@ -91,14 +98,17 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       setState(() {
+        _announcements = ann is List ? ann : [];
         _missing = missing is List ? missing : [];
         _wanted = wanted is List ? wanted : [];
       });
     } catch (e) {
+      final ann = await DatabaseService.getCachedList('announcements');
       final missing = await DatabaseService.getCachedList('missing_persons');
       final wanted = await DatabaseService.getCachedList('wanted_persons');
-      if (missing.isNotEmpty || wanted.isNotEmpty) {
+      if (ann.isNotEmpty || missing.isNotEmpty || wanted.isNotEmpty) {
         setState(() {
+          _announcements = ann;
           _missing = missing;
           _wanted = wanted;
           _offline = true;
@@ -109,6 +119,13 @@ class _HomeScreenState extends State<HomeScreen> {
     } finally {
       setState(() => _loading = false);
     }
+  }
+
+  Future<void> _callHotline(String number) async {
+    final uri = Uri.parse('tel:$number');
+    try {
+      if (await canLaunchUrl(uri)) await launchUrl(uri);
+    } catch (_) {}
   }
 
   Future<void> _toggleLike(String entityType, String entityId) async {
@@ -248,11 +265,12 @@ class _HomeScreenState extends State<HomeScreen> {
     if (person['photos'] != null && person['photos'] is List) {
       for (final p in person['photos']) {
         if (p != null && p.toString().isNotEmpty) {
-          list.add(p.toString());
+          final url = Api.assetUrl(p.toString());
+          if (url != null && url.isNotEmpty) list.add(url);
         }
       }
     }
-    final primaryPhoto = person['photo_url'] as String?;
+    final primaryPhoto = Api.assetUrl(person['photo_url']?.toString());
     if (primaryPhoto != null && primaryPhoto.isNotEmpty && !list.contains(primaryPhoto)) {
       list.insert(0, primaryPhoto);
     }
@@ -263,6 +281,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final items = _filteredList();
+    final sectionWidgets = _buildHomeSectionWidgets(loc);
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -288,45 +307,211 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           Expanded(
-            child: _loading && items.isEmpty
-                ? const Center(child: CircularProgressIndicator())
-                : _loadError != null && items.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                            const SizedBox(height: 12),
-                            Text(_loadError!, textAlign: TextAlign.center),
-                            const SizedBox(height: 12),
-                            ElevatedButton(onPressed: _load, child: const Text('Retry')),
-                          ],
-                        ),
-                      )
-                    : items.isEmpty
-                        ? Center(
-                            child: Text(
-                              'No records found',
-                              style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
-                            ),
-                          )
-                        : ListView.separated(
-                            padding: const EdgeInsets.only(top: 8, bottom: 24),
-                            itemCount: items.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 12),
-                            itemBuilder: (context, index) {
-                              final itemData = items[index];
-                              return _buildPersonCard(
-                                context,
-                                itemData['item'] as Map<String, dynamic>,
-                                isWanted: itemData['kind'] == 'wanted',
-                              );
-                            },
-                          ),
+            child: ListView.separated(
+              padding: const EdgeInsets.only(top: 8, bottom: 24),
+              itemCount: sectionWidgets.length + items.length + 1,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                if (index < sectionWidgets.length) return sectionWidgets[index];
+                final itemIndex = index - sectionWidgets.length;
+                if (itemIndex < items.length) {
+                  final itemData = items[itemIndex];
+                  return _buildPersonCard(
+                    context,
+                    itemData['item'] as Map<String, dynamic>,
+                    isWanted: itemData['kind'] == 'wanted',
+                  );
+                }
+                if (_loading) {
+                  return const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                if (_loadError != null) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                        const SizedBox(height: 12),
+                        Text(_loadError!, textAlign: TextAlign.center),
+                        const SizedBox(height: 12),
+                        ElevatedButton(onPressed: _load, child: const Text('Retry')),
+                      ],
+                    ),
+                  );
+                }
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                    child: Text(
+                      'No records found',
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),
     );
+  }
+
+  List<Widget> _buildHomeSectionWidgets(AppLocalizations loc) {
+    return [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(loc.appTitle, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            Text(loc.appSubtitle, style: const TextStyle(color: Colors.grey)),
+          ],
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Semantics(
+          button: true,
+          label: 'SOS Emergency button. Double tap to send emergency alert with your GPS location.',
+          child: SizedBox(
+            height: 96,
+            child: FilledButton(
+              onPressed: () => triggerEmergencySos(context),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red.shade600,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.sos, size: 32, color: Colors.white),
+                  const SizedBox(height: 4),
+                  Text(loc.sosEmergency, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _callHotline('991'),
+                icon: const Icon(Icons.phone, color: Color(0xFF1E40AF), size: 18),
+                label: const Text('Police 991', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _callHotline('907'),
+                icon: const Icon(Icons.emergency, color: Color(0xFFDC2626), size: 18),
+                label: const Text('Rescue 907', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16),
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(14),
+            child: PodActions(),
+          ),
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Card(
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+              child: Icon(Icons.edit_note, color: Theme.of(context).colorScheme.primary),
+            ),
+            title: const Text('Report a crime', style: TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: const Text('Attach photos, video, audio, a web link or a file'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () async {
+              if (!await ensureAuthed(context, reason: 'Sign in to file a crime report.')) return;
+              if (!mounted) return;
+              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CrimeReportScreen()));
+            },
+          ),
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Text(loc.announcements, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      ),
+      if (_announcements.isEmpty)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(loc.nothingHereYet, style: const TextStyle(color: Colors.grey)),
+        )
+      else
+        ..._announcements.take(3).map((a) => Semantics(
+          label: 'Announcement: ${a['title']}. ${a['body']}',
+          child: Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            child: ListTile(
+              leading: Icon(a['category'] == 'warning' ? Icons.warning_amber : Icons.campaign, color: a['category'] == 'warning' ? Colors.amber : Colors.green),
+              title: Text(a['title']),
+              subtitle: Text(a['body'], maxLines: 2, overflow: TextOverflow.ellipsis),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => AnnouncementDetailScreen(item: Map<String, dynamic>.from(a as Map)),
+              )),
+              trailing: Semantics(
+                button: true,
+                label: loc.shareAnnouncement(a['title']),
+                child: IconButton(
+                  icon: const Icon(Icons.share, size: 20),
+                  tooltip: loc.share,
+                  onPressed: () async {
+                    final r = await Share.share('${a['title']}\n\n${a['body']}\n\nShared via ZEGA-ALERT');
+                    await Api.recordShare('announcement', a['id']?.toString(), platform: Api.platformFromRaw(r.raw));
+                  },
+                ),
+              ),
+            ),
+          ),
+        )),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Semantics(
+              button: true,
+              label: loc.reportAMissingPerson,
+              child: TextButton.icon(
+                onPressed: () async {
+                  if (!await ensureAuthed(context, reason: 'Sign in to report a missing person.')) return;
+                  if (!mounted) return;
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => MissingReportScreen(onDone: _load)));
+                },
+                icon: const Icon(Icons.person_add_alt_1, size: 16),
+                label: Text(loc.reportMissing),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ];
   }
 
 Widget _buildFilterTabs(AppLocalizations loc) {
@@ -442,15 +627,24 @@ Widget _buildFilterTabs(AppLocalizations loc) {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        name,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF0F172A),
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => PersonDetailScreen(
+                            person: Map<String, dynamic>.from(person),
+                            kind: isWanted ? 'wanted' : 'missing',
+                            onChanged: _load,
+                          ),
+                        )),
+                        child: Text(
+                          name,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF0F172A),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       Row(
@@ -654,8 +848,8 @@ Widget _buildFilterTabs(AppLocalizations loc) {
                   InkWell(
                     onTap: () async {
                       final r = await Share.share(isWanted
-                          ? 'WANTED PERSON: $name\nCrime: ${person['crime_description'] ?? "unknown"}\n\nShared via EthioShield'
-                          : 'MISSING PERSON: $name\nLast seen: $location\n\nShared via EthioShield');
+                          ? 'WANTED PERSON: $name\nCrime: ${person['crime_description'] ?? "unknown"}\n\nShared via ZEGA-ALERT'
+                          : 'MISSING PERSON: $name\nLast seen: $location\n\nShared via ZEGA-ALERT');
                       await Api.recordShare(entityType, id, platform: Api.platformFromRaw(r.raw));
                     },
                     borderRadius: BorderRadius.circular(8),
@@ -668,6 +862,31 @@ Widget _buildFilterTabs(AppLocalizations loc) {
                           SizedBox(width: 4),
                           Text(
                             'Share',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF475569)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  InkWell(
+                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => PersonDetailScreen(
+                        person: Map<String, dynamic>.from(person),
+                        kind: isWanted ? 'wanted' : 'missing',
+                        onChanged: _load,
+                      ),
+                    )),
+                    borderRadius: BorderRadius.circular(8),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.info_outline, size: 17, color: Color(0xFF475569)),
+                          SizedBox(width: 4),
+                          Text(
+                            'Details',
                             style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF475569)),
                           ),
                         ],

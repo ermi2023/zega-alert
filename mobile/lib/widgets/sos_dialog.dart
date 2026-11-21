@@ -9,14 +9,12 @@ import '../services/location_service.dart';
 import '../services/socket_service.dart';
 import 'auth_gate.dart';
 
-/**
- * Implements Figure 17 (AD-3: Emergency SOS Response Workflow) & Table 9 (UC-18):
- * 1. 3-second visual countdown and vibration
- * 2. Cancel within 3s aborts SOS
- * 3. Immediate GPS acquisition and backend transmission
- * 4. Real-time ETA updates and live officer tracking map
- * 5. Continuous background location streaming until deactivated
- */
+/// Implements Figure 17 (AD-3: Emergency SOS Response Workflow) & Table 9 (UC-18):
+/// 1. 3-second visual countdown and vibration
+/// 2. Cancel within 3s aborts SOS
+/// 3. Immediate GPS acquisition and backend transmission
+/// 4. Real-time ETA updates and live officer tracking map
+/// 5. Continuous background location streaming until deactivated
 Future<void> triggerEmergencySos(BuildContext context) async {
   if (!await ensureAuthed(context, reason: 'Sign in to send an SOS alert with your live location.')) {
     return;
@@ -217,7 +215,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog> with SingleTickerProvide
               height: 100,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.red.shade900.withOpacity(0.4),
+                color: Colors.red.shade900.withValues(alpha: 0.4),
                 border: Border.all(color: Colors.red.shade500, width: 3),
               ),
               child: Center(

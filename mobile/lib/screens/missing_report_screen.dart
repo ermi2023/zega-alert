@@ -69,9 +69,9 @@ class _MissingReportScreenState extends State<MissingReportScreen> {
 
   Future<void> _pickLastSeen() async {
     final picked = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime.now().subtract(const Duration(days: 3650)), lastDate: DateTime.now());
-    if (picked == null) return;
+    if (picked == null || !mounted) return;
     final time = await showTimePicker(context: context, initialTime: TimeOfDay.now());
-    if (time == null) return;
+    if (time == null || !mounted) return;
     setState(() => _lastSeenAt = DateTime(picked.year, picked.month, picked.day, time.hour, time.minute));
   }
 
@@ -98,7 +98,7 @@ class _MissingReportScreenState extends State<MissingReportScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: _gender,
+                        initialValue: _gender,
                         decoration: InputDecoration(labelText: loc.gender, border: const OutlineInputBorder()),
                         items: [DropdownMenuItem(value: 'Male', child: Text(loc.male)), DropdownMenuItem(value: 'Female', child: Text(loc.female)), DropdownMenuItem(value: 'Unknown', child: Text(loc.unknown))],
                         onChanged: (v) => setState(() => _gender = v!),
@@ -187,9 +187,9 @@ class _SightingReportScreenState extends State<SightingReportScreen> {
 
   Future<void> _pickSeen() async {
     final picked = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime.now().subtract(const Duration(days: 30)), lastDate: DateTime.now());
-    if (picked == null) return;
+    if (picked == null || !mounted) return;
     final time = await showTimePicker(context: context, initialTime: TimeOfDay.now());
-    if (time == null) return;
+    if (time == null || !mounted) return;
     setState(() => _seenAt = DateTime(picked.year, picked.month, picked.day, time.hour, time.minute));
   }
 
@@ -218,7 +218,7 @@ class _SightingReportScreenState extends State<SightingReportScreen> {
                 const SizedBox(height: 12),
                 TextFormField(controller: _desc, maxLines: 3, decoration: InputDecoration(labelText: loc.descriptionOptional, border: const OutlineInputBorder())),
                 const SizedBox(height: 12),
-                PhotoUploadField(label: loc.photoOfSighting, onUploaded: (url) => setState(() => _photoUrl = url)),
+                PhotoUploadField(label: loc.photoOfSighting, allowMultiple: false, onUploaded: (url) => setState(() => _photoUrl = url)),
                 const SizedBox(height: 16),
                 FilledButton(onPressed: _busy ? null : _submit, child: Text(_busy ? loc.submitting : loc.submitSighting)),
               ],

@@ -1,9 +1,58 @@
 import { query } from '../config/db.js';
 import { ok, fail } from '../utils/response.js';
 
+const ENTITY_TABLES = {
+  announcement: 'announcements',
+  missing_person: 'missing_persons',
+  wanted_person: 'wanted_persons',
+};
+const ENTITY_OWNER_COLUMNS = {
+  announcement: 'author_id',
+  missing_person: 'reporter_id',
+  wanted_person: null,
+};
+const STAFF_ROLES = new Set(['police', 'dispatcher', 'regional_admin', 'system_admin']);
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const resolveEntity = async (req, res) => {
+  const entityType = String(req.params.entityType || '');
+  const entityId = String(req.params.entityId || '');
+  if (!Object.prototype.hasOwnProperty.call(ENTITY_TABLES, entityType)) {
+    fail(res, 'Invalid entity type', 400);
+    return null;
+  }
+  if (!UUID_RE.test(entityId)) {
+    fail(res, 'Invalid entity id', 400);
+    return null;
+  }
+  const ownerColumn = ENTITY_OWNER_COLUMNS[entityType];
+  const columns = ownerColumn ? `id, ${ownerColumn} AS owner_id` : 'id';
+  const { rows } = await query(
+    `SELECT ${columns} FROM ${ENTITY_TABLES[entityType]} WHERE id = $1`,
+    [entityId],
+  );
+  if (!rows[0]) {
+    fail(res, 'Entity not found', 404);
+    return null;
+  }
+  return { entityType, entityId, ownerId: rows[0].owner_id || null };
+};
+
+const canManagePhotos = (req, ctx, res) => {
+  const isStaff = Boolean(req.user && STAFF_ROLES.has(req.user.role));
+  const isOwner = Boolean(req.user && ctx.ownerId && String(ctx.ownerId) === String(req.user.id));
+  if (!isStaff && !isOwner) {
+    fail(res, 'Forbidden: staff role or ownership required', 403);
+    return false;
+  }
+  return true;
+};
+
 // Toggle reaction: like or dislike
 export const toggleLike = async (req, res) => {
-  const { entityType, entityId } = req.params;
+  const ctx = await resolveEntity(req, res);
+  if (!ctx) return;
+  const { entityType, entityId } = ctx;
   const reactionType = req.body.reaction === 'dislike' ? 'dislike' : 'like';
   const userId = req.user.id;
 
@@ -52,7 +101,9 @@ export const toggleLike = async (req, res) => {
 
 // Get likes summary and list
 export const getLikes = async (req, res) => {
-  const { entityType, entityId } = req.params;
+  const ctx = await resolveEntity(req, res);
+  if (!ctx) return;
+  const { entityType, entityId } = ctx;
   const userId = req.user?.id || null;
 
   const counts = await query(
@@ -85,7 +136,9 @@ export const getLikes = async (req, res) => {
 
 // Add comment
 export const addComment = async (req, res) => {
-  const { entityType, entityId } = req.params;
+  const ctx = await resolveEntity(req, res);
+  if (!ctx) return;
+  const { entityType, entityId } = ctx;
   const { body } = req.body;
   const userId = req.user.id;
 
@@ -117,7 +170,9 @@ export const addComment = async (req, res) => {
 
 // Get comments for entity
 export const getComments = async (req, res) => {
-  const { entityType, entityId } = req.params;
+  const ctx = await resolveEntity(req, res);
+  if (!ctx) return;
+  const { entityType, entityId } = ctx;
 
   const { rows } = await query(
     `SELECT c.id, c.user_id, c.entity_type, c.entity_id, c.body, c.created_at,
@@ -135,7 +190,9 @@ export const getComments = async (req, res) => {
 
 // Get combined social counts (likes + comments)
 export const getSocialCounts = async (req, res) => {
-  const { entityType, entityId } = req.params;
+  const ctx = await resolveEntity(req, res);
+  if (!ctx) return;
+  const { entityType, entityId } = ctx;
   const userId = req.query.user_id || req.user?.id || null;
 
   const likeCountRes = await query(
@@ -166,8 +223,11 @@ export const getSocialCounts = async (req, res) => {
 
 // Add multiple photos
 export const addPhotos = async (req, res) => {
-  const { entityType, entityId } = req.params;
-  const { photos } = req.body; // array of photo URLs or single photo_url
+  const ctx = await resolveEntity(req, res);
+  if (!ctx) return;
+  if (!canManagePhotos(req, ctx, res)) return;
+  const { entityType, entityId } = ctx;
+  const { photos } = req.body;
 
   const photoList = Array.isArray(photos) ? photos : (req.body.photo_url ? [req.body.photo_url] : []);
   if (photoList.length === 0) {
@@ -190,7 +250,10 @@ export const addPhotos = async (req, res) => {
 
 // Get photos for entity
 export const getPhotos = async (req, res) => {
-  const { entityType, entityId } = req.params;
+  const ctx = await resolveEntity(req, res);
+  if (!ctx) return;
+  if (!canManagePhotos(req, ctx, res)) return;
+  const { entityType, entityId } = ctx;
 
   const { rows } = await query(
     `SELECT photo_url FROM person_photos
@@ -200,4 +263,17 @@ export const getPhotos = async (req, res) => {
   );
 
   ok(res, rows.map(r => r.photo_url));
+};
+
+export const deletePhotos = async (req, res) => {
+  const ctx = await resolveEntity(req, res);
+  if (!ctx) return;
+  if (!canManagePhotos(req, ctx, res)) return;
+  const { entityType, entityId } = ctx;
+
+  const { rowCount } = await query(
+    'DELETE FROM person_photos WHERE entity_type = $1 AND entity_id = $2',
+    [entityType, entityId]
+  );
+  ok(res, { deleted: rowCount }, 'Photos deleted');
 };

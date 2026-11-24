@@ -97,10 +97,24 @@ class _IdVerificationScreenState extends State<IdVerificationScreen> {
 
     setState(() { _busy = true; _message = null; });
     try {
-      final uploadResult = await Api.upload('/upload/single', [MapEntry('file', _idFile!.path)]);
+      final bytes = _idBytes ?? await _idFile!.readAsBytes();
+      String? imageUrl;
+      if (kIsWeb) {
+        final uploadResult = await Api.uploadBytes('/upload/single', [
+          MapEntry('file', bytes),
+        ], filenames: {'file': _idFile!.name});
+        imageUrl = Api.assetUrl(uploadResult['url']?.toString());
+      } else {
+        final uploadResult = await Api.upload('/upload/single', [MapEntry('file', _idFile!.path)]);
+        imageUrl = Api.assetUrl(uploadResult['url']?.toString());
+      }
+      if (imageUrl == null || imageUrl.isEmpty) {
+        throw Exception('Upload did not return a file URL');
+      }
+
       final result = await Api.post('/verification/submit', {
         'id_number': _idNumber.text.trim(),
-        'id_image_url': '${Api.baseUrl}${uploadResult['url']}',
+        'id_image_url': imageUrl,
         'full_name': _fullName.text.trim().isNotEmpty ? _fullName.text.trim() : null,
       });
 

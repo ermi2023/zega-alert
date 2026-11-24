@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart'
     show kIsWeb, kDebugMode, TargetPlatform, defaultTargetPlatform;
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'database_service.dart';
 import 'net_info_stub.dart' if (dart.library.io) 'net_info_io.dart' as netinfo;
 
@@ -173,6 +175,7 @@ class Api {
   static String? _refreshToken;
   static String? _region;
   static String? _subCity;
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   static String? get token => _token;
   static String? get userId => _userId;
   static String? get refreshToken => _refreshToken;
@@ -201,25 +204,62 @@ class Api {
     _token = t;
     _userId = userId;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('token', t);
+    if (kIsWeb) {
+      // Browser tokens stay memory-only; do not persist auth credentials in localStorage.
+      await prefs.remove('token');
+      await prefs.remove('userId');
+      return;
+    }
+    await _secureStorage.write(key: 'token', value: t);
+    await prefs.remove('token');
     if (userId != null) await prefs.setString('userId', userId);
   }
 
   static Future<void> setRefreshToken(String? t) async {
     _refreshToken = t;
     final prefs = await SharedPreferences.getInstance();
+    if (kIsWeb) {
+      await prefs.remove('refreshToken');
+      return;
+    }
     if (t == null) {
+      await _secureStorage.delete(key: 'refreshToken');
       await prefs.remove('refreshToken');
     } else {
-      await prefs.setString('refreshToken', t);
+      await _secureStorage.write(key: 'refreshToken', value: t);
+      await prefs.remove('refreshToken');
     }
   }
 
   static Future<void> loadToken() async {
     final prefs = await SharedPreferences.getInstance();
-    _token = prefs.getString('token');
+    if (kIsWeb) {
+      _token = null;
+      _userId = null;
+      _refreshToken = null;
+      await prefs.remove('token');
+      await prefs.remove('userId');
+      await prefs.remove('refreshToken');
+      _region = prefs.getString('region');
+      _subCity = prefs.getString('sub_city');
+      return;
+    }
+    _token = await _secureStorage.read(key: 'token');
+    final legacyToken = prefs.getString('token');
+    if (_token == null && legacyToken != null) {
+      _token = legacyToken;
+      await _secureStorage.write(key: 'token', value: legacyToken);
+    }
+    await prefs.remove('token');
     _userId = prefs.getString('userId');
-    _refreshToken = prefs.getString('refreshToken');
+    _refreshToken = await _secureStorage.read(key: 'refreshToken');
+    final legacyRefreshToken = prefs.getString('refreshToken');
+    if (_refreshToken == null && legacyRefreshToken != null) {
+      _refreshToken = legacyRefreshToken;
+      await _secureStorage.write(
+          key: 'refreshToken', value: legacyRefreshToken);
+    }
+    await prefs.remove('refreshToken');
     _region = prefs.getString('region');
     _subCity = prefs.getString('sub_city');
   }
@@ -247,6 +287,16 @@ class Api {
     _region = null;
     _subCity = null;
     final prefs = await SharedPreferences.getInstance();
+    if (kIsWeb) {
+      await prefs.remove('token');
+      await prefs.remove('userId');
+      await prefs.remove('refreshToken');
+      await prefs.remove('region');
+      await prefs.remove('sub_city');
+      return;
+    }
+    await _secureStorage.delete(key: 'token');
+    await _secureStorage.delete(key: 'refreshToken');
     await prefs.remove('token');
     await prefs.remove('userId');
     await prefs.remove('refreshToken');
@@ -430,8 +480,62 @@ class Api {
     final req = http.MultipartRequest('POST', uri);
     if (_token != null) req.headers['Authorization'] = 'Bearer $_token';
     fields?.forEach((k, v) => req.fields[k] = v);
+
     for (final f in files) {
-      req.files.add(await http.MultipartFile.fromPath(f.key, f.value));
+      if (kIsWeb) {
+        // On web, use XFile.readAsBytes() and MultipartFile.fromBytes()
+        // We need to import the file_picker or image_picker XFile to read bytes
+        // Since we only have the path string here, we'll use http.MultipartFile.fromBytes
+        // after reading the file. But we don't have direct XFile access here.
+        // The callers need to pass XFile or bytes instead of paths on web.
+        // For now, we'll handle it by checking if it's a web path (blob: or data:)
+        // and throw a more helpful error.
+        throw UnsupportedError(
+            'File upload on web requires passing XFile/bytes, not file paths. '
+            'Use uploadBytes() for web uploads.');
+      } else {
+        req.files.add(await http.MultipartFile.fromPath(f.key, f.value));
+      }
+    }
+    final streamed = await req.send().timeout(const Duration(seconds: 120));
+    final res = await http.Response.fromStream(streamed)
+        .timeout(const Duration(seconds: 120));
+    dynamic data;
+    try {
+      data = res.body.isEmpty ? null : jsonDecode(res.body);
+    } on FormatException {
+      data = null;
+    }
+    if (res.statusCode >= 400) {
+      final message = data is Map ? data['message'] : null;
+      throw ApiException(
+          message?.toString() ?? 'Upload failed (${res.statusCode})');
+    }
+    return data is Map ? data['data'] : null;
+  }
+
+  /// Upload files on web using bytes (XFile.readAsBytes()).
+  /// Callers should pass MapEntry<String, List<int>> for file data.
+  static Future<dynamic> uploadBytes(
+      String path, List<MapEntry<String, List<int>>> files,
+      {Map<String, String>? fields,
+      Map<String, String>? filenames,
+      Map<String, String>? contentTypes}) async {
+    final uri = Uri.parse('$baseUrl/api$path');
+    final req = http.MultipartRequest('POST', uri);
+    if (_token != null) req.headers['Authorization'] = 'Bearer $_token';
+    fields?.forEach((k, v) => req.fields[k] = v);
+
+    for (final f in files) {
+      final filename = filenames?[f.key] ?? 'file';
+      final contentType = contentTypes?[f.key] ?? 'application/octet-stream';
+      final parts = contentType.split('/');
+      req.files.add(http.MultipartFile.fromBytes(
+        f.key,
+        f.value,
+        filename: filename,
+        contentType: MediaType(parts[0], parts.length > 1 ? parts[1] : '*'),
+      ));
     }
     final streamed = await req.send().timeout(const Duration(seconds: 120));
     final res = await http.Response.fromStream(streamed)

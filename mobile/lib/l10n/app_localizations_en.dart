@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'ZEGA-ALERT';
+  String get appTitle => 'Zega-alert';
 
   @override
   String get appSubtitle => 'Your safety companion';
@@ -200,7 +200,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createAccount => 'Create account';
 
   @override
-  String get emergencyAndCrime => 'ZEGA-ALERT · Emergency & crime reporting';
+  String get emergencyAndCrime => 'Zega-alert · Emergency & crime reporting';
 
   @override
   String get phone => 'Phone';

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import '../services/api.dart';
+import '../widgets/translatable_text.dart';
 
 class AnnouncementDetailScreen extends StatelessWidget {
   const AnnouncementDetailScreen({super.key, required this.item});
@@ -102,8 +103,8 @@ class AnnouncementDetailScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 10),
-                Text(
-                  item['title'] ?? '',
+                TranslatableText(
+                  text: item['title'] ?? '',
                   style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, height: 1.25),
                 ),
                 const SizedBox(height: 8),
@@ -127,7 +128,10 @@ class AnnouncementDetailScreen extends StatelessWidget {
             ),
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Text(body, style: const TextStyle(fontSize: 16, height: 1.55)),
+            child: TranslatableText(
+              text: body,
+              style: const TextStyle(fontSize: 16, height: 1.55),
+            ),
           ),
           if (translations is List && translations.isNotEmpty)
             Padding(

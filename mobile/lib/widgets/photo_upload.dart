@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../l10n/app_localizations.dart';
@@ -59,10 +60,19 @@ class _PhotoUploadFieldState extends State<PhotoUploadField> {
           return;
         }
         for (final file in files) {
-          final res = await Api.upload('/upload/single', [
-            MapEntry('file', file.path),
-          ]);
-          final url = Api.assetUrl(res['url'] as String?);
+          String? url;
+          if (kIsWeb) {
+            final bytes = await file.readAsBytes();
+            final res = await Api.uploadBytes('/upload/single', [
+              MapEntry('file', bytes),
+            ], filenames: {'file': file.name});
+            url = Api.assetUrl(res['url'] as String?);
+          } else {
+            final res = await Api.upload('/upload/single', [
+              MapEntry('file', file.path),
+            ]);
+            url = Api.assetUrl(res['url'] as String?);
+          }
           if (url != null) _urls.add(url);
         }
       } else {
@@ -71,10 +81,19 @@ class _PhotoUploadFieldState extends State<PhotoUploadField> {
           if (mounted) setState(() => _busy = false);
           return;
         }
-        final res = await Api.upload('/upload/single', [
-          MapEntry('file', file.path),
-        ]);
-        final url = Api.assetUrl(res['url'] as String?);
+        String? url;
+        if (kIsWeb) {
+          final bytes = await file.readAsBytes();
+          final res = await Api.uploadBytes('/upload/single', [
+            MapEntry('file', bytes),
+          ], filenames: {'file': file.name});
+          url = Api.assetUrl(res['url'] as String?);
+        } else {
+          final res = await Api.upload('/upload/single', [
+            MapEntry('file', file.path),
+          ]);
+          url = Api.assetUrl(res['url'] as String?);
+        }
         if (url != null) {
           if (widget.allowMultiple) {
             _urls.add(url);

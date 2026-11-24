@@ -107,7 +107,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'ZEGA-ALERT'**
+  /// **'Zega-alert'**
   String get appTitle;
 
   /// No description provided for @appSubtitle.
@@ -479,7 +479,7 @@ abstract class AppLocalizations {
   /// No description provided for @emergencyAndCrime.
   ///
   /// In en, this message translates to:
-  /// **'ZEGA-ALERT · Emergency & crime reporting'**
+  /// **'Zega-alert · Emergency & crime reporting'**
   String get emergencyAndCrime;
 
   /// No description provided for @phone.

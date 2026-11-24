@@ -1,3 +1,5 @@
+import 'dart:io' show File;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:geolocator/geolocator.dart';
@@ -403,9 +405,18 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
       try {
         final picked = await FilePicker.platform.pickFiles(
           type: type == 'Audio' ? FileType.audio : FileType.any,
+          withData: kIsWeb, // On web, we need the bytes
         );
-        final path = picked?.files.single.path;
-        if (path != null) await _uploadEvidence(path, type.toLowerCase());
+        final file = picked?.files.single;
+        if (file != null) {
+          if (kIsWeb) {
+            // On web, file is XFile with bytes
+            await _uploadEvidence(file, type.toLowerCase());
+          } else {
+            final path = file.path;
+            if (path != null) await _uploadEvidence(path, type.toLowerCase());
+          }
+        }
       } catch (e) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(loc.uploadFailed(e))));
       }
@@ -422,7 +433,7 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
         // Multi-image selection from gallery
         final files = await ImagePicker().pickMultiImage(maxWidth: 1600, imageQuality: 80);
         for (final file in files) {
-          await _uploadEvidence(file.path, 'photo');
+          await _uploadEvidence(file, 'photo');
         }
       } else {
         final file = isVideo
@@ -436,7 +447,7 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
                 imageQuality: 80,
               );
         if (file != null) {
-          await _uploadEvidence(file.path, type == 'Sign language' ? 'sign_language_video' : type.toLowerCase());
+          await _uploadEvidence(file, type == 'Sign language' ? 'sign_language_video' : type.toLowerCase());
         }
       }
     } catch (e) {
@@ -446,15 +457,30 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
     }
   }
 
-  Future<void> _uploadEvidence(String path, String type) async {
-    final res = await Api.upload('/upload/single', [MapEntry('file', path)]);
-    final url = Api.assetUrl(res['url']?.toString());
-    if (url == null || url.isEmpty) {
-      throw Exception('Upload did not return a file URL');
-    }
-    if (mounted) setState(() => _evidence.add({'type': type, 'value': url}));
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${type.replaceAll('_', ' ')} attached.')));
+  Future<void> _uploadEvidence(dynamic file, String type) async {
+    try {
+      String? url;
+      if (kIsWeb) {
+        // On web, file is XFile - read bytes and use uploadBytes
+        final bytes = await file.readAsBytes();
+        final res = await Api.uploadBytes('/upload/single', [
+          MapEntry('file', bytes),
+        ], filenames: {'file': file.name});
+        url = Api.assetUrl(res['url']?.toString());
+      } else {
+        // On mobile/desktop, file is a path string
+        final res = await Api.upload('/upload/single', [MapEntry('file', file as String)]);
+        url = Api.assetUrl(res['url']?.toString());
+      }
+      if (url == null || url.isEmpty) {
+        throw Exception('Upload did not return a file URL');
+      }
+      if (mounted) setState(() => _evidence.add({'type': type, 'value': url!}));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${type.replaceAll('_', ' ')} attached.')));
+      }
+    } catch (e) {
+      rethrow;
     }
   }
 

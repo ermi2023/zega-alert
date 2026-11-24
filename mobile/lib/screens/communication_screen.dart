@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
@@ -59,29 +60,44 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
   }
 
   Future<void> _pickAttachment(String kind) async {
-    String? path;
     String type = kind;
+    dynamic file; // Can be String path (mobile) or XFile (web)
     try {
       if (kind == 'Photo') {
         final f = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 80);
-        path = f?.path;
+        file = f;
         type = 'image';
       } else if (kind == 'Video') {
         final f = await ImagePicker().pickVideo(source: ImageSource.gallery, maxDuration: const Duration(minutes: 2));
-        path = f?.path;
+        file = f;
         type = 'video';
       } else {
-        final r = await FilePicker.platform.pickFiles(type: FileType.any);
-        path = r?.files.single.path;
+        final r = await FilePicker.platform.pickFiles(
+          type: FileType.any,
+          withData: kIsWeb,
+        );
+        file = r?.files.single;
         type = 'file';
         if (kind == 'Audio') type = 'audio';
       }
     } catch (_) {}
-    if (path == null) return;
+    if (file == null) return;
     setState(() => _sending = true);
     try {
-      final res = await Api.upload('/upload/single', [MapEntry('file', path)]);
-      final url = res['url'] as String?;
+      String? url;
+      if (kIsWeb) {
+        final bytes = await file.readAsBytes();
+        final res = await Api.uploadBytes('/upload/single', [
+          MapEntry('file', bytes),
+        ], filenames: {'file': file.name});
+        url = res['url'] as String?;
+      } else {
+        final path = file.path;
+        if (path != null) {
+          final res = await Api.upload('/upload/single', [MapEntry('file', path)]);
+          url = res['url'] as String?;
+        }
+      }
       if (url != null) {
         setState(() {
           _pendingAttachment = Api.assetUrl(url);

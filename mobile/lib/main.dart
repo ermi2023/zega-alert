@@ -8,7 +8,8 @@ import 'firebase_options.dart';
 import 'package:geolocator/geolocator.dart';
 import 'l10n/app_localizations.dart';
 import 'l10n/fallback_localizations.dart';
-import 'screens/auth_screen.dart';
+import 'screens/login_screen.dart';
+import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/report_screen.dart';
 import 'screens/news_screen.dart';
@@ -212,7 +213,7 @@ class ZegaAlertAppState extends State<ZegaAlertApp> {
       themeMode: _darkMode ? ThemeMode.dark : ThemeMode.light,
       home: !_onboardingDone
           ? OnboardingScreen(onDone: () => setState(() => _onboardingDone = true))
-          : (Api.token == null ? const AuthScreen() : const MainShell()),
+          : (Api.token == null ? const LoginScreen() : const MainShell()),
     );
   }
 }
@@ -335,9 +336,10 @@ class _MainShellState extends State<MainShell> {
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF0F172A),
         elevation: 0,
-        centerTitle: true,
+        centerTitle: false,
+        titleSpacing: 0,
         leading: Padding(
-          padding: const EdgeInsets.only(left: 12),
+          padding: const EdgeInsets.only(left: 12, right: 8),
           child: Center(
             child: Container(
               width: 38,
@@ -357,17 +359,25 @@ class _MainShellState extends State<MainShell> {
           ),
         ),
         title: const Text(
-          'EthioShield',
+          'Zega-alert',
           style: TextStyle(
             color: Color(0xFF00338D),
             fontWeight: FontWeight.bold,
             fontSize: 20,
             letterSpacing: 0.3,
           ),
+          overflow: TextOverflow.ellipsis,
         ),
-        actions: const [
-          _NotificationBell(),
-          SizedBox(width: 4),
+        actions: [
+          IconButton(
+            tooltip: 'Profile',
+            icon: const Icon(Icons.person_outline),
+            onPressed: () {
+              setState(() => _index = 4); // Index 4 is SettingsScreen
+            },
+          ),
+          const _NotificationBell(),
+          const SizedBox(width: 4),
         ],
       ),
       body: _tabs[_index],

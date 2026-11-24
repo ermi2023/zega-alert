@@ -98,3 +98,7 @@ ALTER TYPE report_status ADD VALUE IF NOT EXISTS 'draft';
 ALTER TYPE report_status ADD VALUE IF NOT EXISTS 'submitted';
 ALTER TYPE report_status ADD VALUE IF NOT EXISTS 'assigned';
 ALTER TYPE report_status ADD VALUE IF NOT EXISTS 'in_progress';
+
+-- 9. Store keyed OTP digests instead of recoverable six-digit codes.
+ALTER TABLE otp_codes ALTER COLUMN code TYPE VARCHAR(64);
+UPDATE otp_codes SET code = '' WHERE length(code) = 6;

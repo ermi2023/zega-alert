@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS otp_codes (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   contact      VARCHAR(150) NOT NULL,
-  code         VARCHAR(6) NOT NULL,
+  code         VARCHAR(64) NOT NULL,
   purpose      otp_purpose NOT NULL DEFAULT 'login',
   expires_at   TIMESTAMPTZ NOT NULL,
   used_at      TIMESTAMPTZ,

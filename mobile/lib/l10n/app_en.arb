@@ -1,6 +1,6 @@
 {
   "@@locale": "en",
-  "appTitle": "ZEGA-ALERT",
+  "appTitle": "Zega-alert",
   "appSubtitle": "Your safety companion",
   "home": "Home",
   "report": "Report",
@@ -62,7 +62,7 @@
   "logoutLabel": "Logout",
   "signingIn": "Sign in",
   "createAccount": "Create account",
-  "emergencyAndCrime": "ZEGA-ALERT · Emergency & crime reporting",
+  "emergencyAndCrime": "Zega-alert · Emergency & crime reporting",
   "phone": "Phone",
   "password": "Password",
   "register": "Register",

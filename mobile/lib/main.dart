@@ -260,9 +260,12 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _index = 0;
   int _newsUnread = 0;
+  bool _searchExpanded = false;
+  String _homeSearchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
-  static const _tabs = [
-    HomeScreen(),
+  List<Widget> get _tabs => [
+    HomeScreen(searchQuery: _homeSearchQuery),
     ReportScreen(),
     NewsScreen(),
     CommunicationScreen(),
@@ -294,12 +297,38 @@ class _MainShellState extends State<MainShell> {
   @override
   void dispose() {
     NotificationState.changes.removeListener(_fetchNewsUnread);
+    _searchController.dispose();
     SocketService.onCallbackNew = null;
     SocketService.onSosStatus = null;
     SocketService.onIncomingCall = null;
     SocketService.disconnect();
     SyncService.stop();
     super.dispose();
+  }
+
+  void _selectTab(int index) {
+    setState(() {
+      _index = index;
+      if (index != 0) {
+        _searchExpanded = false;
+        _homeSearchQuery = '';
+        _searchController.clear();
+      }
+    });
+  }
+
+  void _toggleHomeSearch() {
+    setState(() {
+      _searchExpanded = !_searchExpanded;
+      if (!_searchExpanded) {
+        _homeSearchQuery = '';
+        _searchController.clear();
+      }
+    });
+  }
+
+  void _updateHomeSearch(String value) {
+    setState(() => _homeSearchQuery = value);
   }
 
   Future<void> _fetchNewsUnread() async {
@@ -422,9 +451,30 @@ class _MainShellState extends State<MainShell> {
             ),
           ),
         ),
-        title: _index == 0
-            ? const SizedBox.shrink()
-            : const Text(
+        title: _index == 0 && _searchExpanded
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                textInputAction: TextInputAction.search,
+                onChanged: _updateHomeSearch,
+                decoration: InputDecoration(
+                  hintText: 'Search missing or wanted people',
+                  border: InputBorder.none,
+                  suffixIcon: _homeSearchQuery.isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: 'Clear search',
+                          icon: const Icon(Icons.close),
+                          onPressed: () {
+                            _searchController.clear();
+                            _updateHomeSearch('');
+                          },
+                        ),
+                ),
+              )
+            : _index == 0
+                ? const SizedBox.shrink()
+                : const Text(
                 'ZEGA-ALERT',
                 style: TextStyle(
                   color: Color(0xFF00338D),
@@ -435,12 +485,16 @@ class _MainShellState extends State<MainShell> {
                 overflow: TextOverflow.ellipsis,
               ),
         actions: [
+                if (_index == 0)
+                  IconButton(
+                    tooltip: _searchExpanded ? 'Close search' : 'Search people',
+                    icon: Icon(_searchExpanded ? Icons.close : Icons.search),
+                    onPressed: _toggleHomeSearch,
+                  ),
           IconButton(
             tooltip: 'Profile',
             icon: const Icon(Icons.person_outline),
-            onPressed: () {
-              setState(() => _index = 4); // Index 4 is SettingsScreen
-            },
+                  onPressed: () => _selectTab(4),
           ),
           const _NotificationBell(),
           const SizedBox(width: 4),
@@ -490,7 +544,7 @@ class _MainShellState extends State<MainShell> {
       ),
     );
     return InkWell(
-      onTap: () => setState(() => _index = index),
+      onTap: () => _selectTab(index),
       borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

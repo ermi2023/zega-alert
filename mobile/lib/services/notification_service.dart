@@ -2,6 +2,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart' show MaterialPageRoute, ScaffoldMessenger, SnackBar, Text;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../screens/callbacks_screen.dart';
+import '../screens/news_screen.dart';
 import '../main.dart' show navigatorKey;
 import 'api.dart';
 
@@ -87,6 +88,19 @@ class NotificationService {
     final type = (data['type'] ?? '').toString();
     if (type == 'callback' || data.containsKey('reportId')) {
       nav.push(MaterialPageRoute(builder: (_) => const CallbacksScreen()));
+    } else if (type == 'announcement' ||
+        type == 'missing_person' ||
+        type == 'wanted_person') {
+      final initialTab = switch (type) {
+        'missing_person' => 1,
+        'wanted_person' => 2,
+        _ => 0,
+      };
+      nav.push(
+        MaterialPageRoute(
+          builder: (_) => NewsScreen(initialTab: initialTab),
+        ),
+      );
     }
     // SOS / other alerts keep the user on the home shell.
   }

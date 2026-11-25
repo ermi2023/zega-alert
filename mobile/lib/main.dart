@@ -25,6 +25,7 @@ import 'screens/onboarding_screen.dart';
 import 'services/api.dart';
 import 'services/socket_service.dart';
 import 'services/notification_service.dart';
+import 'services/notification_state.dart';
 import 'services/officer_position_service.dart';
 
 import 'package:workmanager/workmanager.dart';
@@ -258,6 +259,7 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _index = 0;
+  int _newsUnread = 0;
 
   static const _tabs = [
     HomeScreen(),
@@ -270,6 +272,8 @@ class _MainShellState extends State<MainShell> {
   @override
   void initState() {
     super.initState();
+    NotificationState.changes.addListener(_fetchNewsUnread);
+    _fetchNewsUnread();
     if (Api.isLoggedIn) {
       SocketService.connect();
       SocketService.onCallbackNew = _onCallbackNew;
@@ -289,12 +293,25 @@ class _MainShellState extends State<MainShell> {
 
   @override
   void dispose() {
+    NotificationState.changes.removeListener(_fetchNewsUnread);
     SocketService.onCallbackNew = null;
     SocketService.onSosStatus = null;
     SocketService.onIncomingCall = null;
     SocketService.disconnect();
     SyncService.stop();
     super.dispose();
+  }
+
+  Future<void> _fetchNewsUnread() async {
+    if (!Api.isLoggedIn) return;
+    try {
+      final res = await Api.get('/notifications/unread-count');
+      if (!mounted) return;
+      final contentUpdates = res is Map
+          ? (res['contentUpdates'] as num?)?.toInt() ?? 0
+          : 0;
+      setState(() => _newsUnread = contentUpdates);
+    } catch (_) {}
   }
 
   void _onCallbackNew(JsonMap cb) {
@@ -446,7 +463,7 @@ class _MainShellState extends State<MainShell> {
             _navItem(Icons.home, loc.home, 0),
             _navItem(Icons.assignment_outlined, loc.report, 1),
             _sosNavItem(context),
-            _navItem(Icons.newspaper, loc.news, 2),
+            _navItem(Icons.newspaper, loc.news, 2, badgeCount: _newsUnread),
             _navItem(Icons.settings_outlined, loc.settings, 4),
           ],
         ),
@@ -454,8 +471,22 @@ class _MainShellState extends State<MainShell> {
     );
   }
 
-  Widget _navItem(IconData icon, String label, int index) {
+  Widget _navItem(
+    IconData icon,
+    String label,
+    int index, {
+    int badgeCount = 0,
+  }) {
     final isSelected = _index == index;
+    final iconWidget = Badge(
+      isLabelVisible: badgeCount > 0,
+      label: Text('$badgeCount'),
+      child: Icon(
+        icon,
+        color: isSelected ? Colors.white : const Color(0xFF64748B),
+        size: isSelected ? 20 : 22,
+      ),
+    );
     return InkWell(
       onTap: () => setState(() => _index = index),
       borderRadius: BorderRadius.circular(12),
@@ -475,10 +506,10 @@ class _MainShellState extends State<MainShell> {
                   color: const Color(0xFF00338D),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(icon, color: Colors.white, size: 20),
+                child: iconWidget,
               )
             else
-              Icon(icon, color: const Color(0xFF64748B), size: 22),
+              iconWidget,
             const SizedBox(height: 2),
             Text(
               label,
@@ -551,23 +582,28 @@ class _NotificationBellState extends State<_NotificationBell> {
   @override
   void initState() {
     super.initState();
+    NotificationState.changes.addListener(_fetchUnread);
     _fetchUnread();
+  }
+
+  @override
+  void dispose() {
+    NotificationState.changes.removeListener(_fetchUnread);
+    super.dispose();
   }
 
   Future<void> _fetchUnread() async {
     if (!Api.isLoggedIn) return;
     try {
-      final res = await Api.get('/notifications?limit=20');
+      final res = await Api.get('/notifications/unread-count');
       if (!mounted) return;
-      final List list = res is List
-          ? res
-          : (res is Map && res['notifications'] is List
-                ? res['notifications']
-                : []);
-      final unread = list
-          .where((n) => n is Map && n['is_read'] == false)
-          .length;
-      setState(() => _unread = unread);
+      final total = res is Map ? (res['count'] as num?)?.toInt() ?? 0 : 0;
+      final contentUpdates = res is Map
+          ? (res['contentUpdates'] as num?)?.toInt() ?? 0
+          : 0;
+      setState(
+        () => _unread = (total - contentUpdates).clamp(0, total).toInt(),
+      );
     } catch (_) {}
   }
 
@@ -584,7 +620,7 @@ class _NotificationBellState extends State<_NotificationBell> {
         await Navigator.of(
           context,
         ).push(MaterialPageRoute(builder: (_) => const NotificationsScreen()));
-        _fetchUnread();
+        NotificationState.notifyChanged();
       },
     );
   }

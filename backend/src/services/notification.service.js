@@ -68,6 +68,39 @@ export async function pushToUsers(userIds, title, body, data = {}) {
   return results.map((r) => (r.status === 'fulfilled' ? r.value : { ok: false, error: r.reason?.message }));
 }
 
+export async function notifyPublishedContent({ type, id, label }) {
+  const contentLabel = {
+    announcement: 'item',
+    missing_person: 'missing person',
+    wanted_person: 'wanted person',
+  }[type] || 'item';
+  const title = 'New data published';
+  const body = `1 new ${contentLabel} published: ${label}`;
+  const metadata = { type, contentId: id, newCount: 1 };
+
+  try {
+    const { rows } = await query(
+      `INSERT INTO notifications (user_id, title, body, delivery_type, metadata)
+       SELECT id, $1, $2, 'push', $3::jsonb
+       FROM users WHERE is_active = true
+       RETURNING user_id`,
+      [title, body, JSON.stringify(metadata)],
+    );
+    const deliveries = await pushToUsers(
+      rows.map((row) => row.user_id),
+      title,
+      body,
+      metadata,
+    );
+    const failedDeliveries = deliveries.filter((delivery) => !delivery.ok).length;
+    if (failedDeliveries > 0) {
+      console.error(`[PUBLICATION NOTIFICATION] ${failedDeliveries} push delivery(s) failed`);
+    }
+  } catch (error) {
+    console.error('[PUBLICATION NOTIFICATION ERROR]', error);
+  }
+}
+
 export async function notifyUserWithFallback(userId, title, body) {
   const { rows } = await query('SELECT device_token, phone FROM users WHERE id = $1', [userId]);
   const user = rows[0];

@@ -8,13 +8,16 @@ import '../widgets/fullscreen_image_viewer.dart';
 import '../widgets/road_closure_map_widget.dart';
 import '../widgets/translatable_text.dart';
 import '../services/database_service.dart';
+import '../services/notification_state.dart';
 import 'announcement_detail_screen.dart';
 import 'id_verification_screen.dart';
 import 'missing_report_screen.dart';
 import 'person_detail_screen.dart';
 
 class NewsScreen extends StatefulWidget {
-  const NewsScreen({super.key});
+  const NewsScreen({super.key, this.initialTab = 0});
+
+  final int initialTab;
 
   @override
   State<NewsScreen> createState() => _NewsScreenState();
@@ -49,7 +52,11 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 6, vsync: this);
+    _tabs = TabController(
+      length: 6,
+      initialIndex: widget.initialTab.clamp(0, 5).toInt(),
+      vsync: this,
+    );
     _loadNews();
   }
 
@@ -69,7 +76,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
     return _commentControllers[key]!;
   }
 
-  Future<void> _loadNews() async {
+  Future<void> _loadNews({bool clearContentNotifications = false}) async {
     setState(() {
       _loading = true;
       _loadError = null;
@@ -102,6 +109,18 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
           _sightings = results[4] is List ? results[4] : [];
           _loading = false;
         });
+      }
+      if (clearContentNotifications && mounted && Api.isLoggedIn) {
+        try {
+          await Api.post('/notifications/read-content-updates', {});
+          NotificationState.notifyChanged();
+        } catch (e) {
+          if (mounted) {
+            setState(() {
+              _loadError = 'Feed refreshed, but notifications could not be cleared: $e';
+            });
+          }
+        }
       }
     } catch (e) {
       final cached = await DatabaseService.getCachedList('announcements');
@@ -304,7 +323,9 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                 ),
                 IconButton(
                   tooltip: 'Refresh',
-                  onPressed: _loading ? null : _loadNews,
+                  onPressed: _loading
+                      ? null
+                      : () => _loadNews(clearContentNotifications: true),
                   icon: _loading
                       ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
                       : const Icon(Icons.refresh),
@@ -392,9 +413,24 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
           child: _loading && _items.isEmpty
               ? const Center(child: CircularProgressIndicator())
               : items.isEmpty
-                  ? _empty(AppLocalizations.of(context).nothingHereYet)
+                  ? RefreshIndicator(
+                      onRefresh: () =>
+                          _loadNews(clearContentNotifications: true),
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          SizedBox(
+                            height: 320,
+                            child: _empty(
+                              AppLocalizations.of(context).nothingHereYet,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
                   : RefreshIndicator(
-                      onRefresh: _loadNews,
+                      onRefresh: () =>
+                          _loadNews(clearContentNotifications: true),
                       color: const Color(0xFF0F172A),
                       child: ListView.separated(
                         padding: const EdgeInsets.only(top: 8, bottom: 24),
@@ -432,8 +468,9 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
   Widget _missingTab() {
     final loc = AppLocalizations.of(context);
     return RefreshIndicator(
-      onRefresh: _loadNews,
+      onRefresh: () => _loadNews(clearContentNotifications: true),
       child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 16),
         itemCount: _missing.isEmpty ? 2 : _missing.length + 1,
         itemBuilder: (_, i) {
@@ -465,18 +502,21 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
 
   Widget _wantedTab() {
     final loc = AppLocalizations.of(context);
-    if (_wanted.isEmpty) return _empty(loc.nothingHereYet);
     return RefreshIndicator(
-      onRefresh: _loadNews,
+      onRefresh: () => _loadNews(clearContentNotifications: true),
       child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 16),
-        itemCount: _wanted.length,
-        itemBuilder: (_, i) => _personCard(
-          _wanted[i],
-          'wanted',
-          active: _wanted[i]['status'] == 'wanted',
-          subtitle: '#${_wanted[i]['danger_level'] ?? 'low'} risk · ${_wanted[i]['crime_description'] ?? ''}',
-        ),
+        itemCount: _wanted.isEmpty ? 1 : _wanted.length,
+        itemBuilder: (_, i) {
+          if (_wanted.isEmpty) return _empty(loc.nothingHereYet);
+          return _personCard(
+            _wanted[i],
+            'wanted',
+            active: _wanted[i]['status'] == 'wanted',
+            subtitle: '#${_wanted[i]['danger_level'] ?? 'low'} risk · ${_wanted[i]['crime_description'] ?? ''}',
+          );
+        },
       ),
     );
   }
@@ -548,7 +588,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
       return _empty('No lost or recovered items reported yet.');
     }
     return RefreshIndicator(
-      onRefresh: _loadNews,
+      onRefresh: () => _loadNews(clearContentNotifications: true),
       child: ListView.builder(
         padding: const EdgeInsets.only(bottom: 16),
         itemCount: items.length,
@@ -704,7 +744,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
     final loc = AppLocalizations.of(context);
     if (_sightings.isEmpty) return _empty(loc.nothingHereYet);
     return RefreshIndicator(
-      onRefresh: _loadNews,
+      onRefresh: () => _loadNews(clearContentNotifications: true),
       child: ListView.builder(
         itemCount: _sightings.length + 1,
         itemBuilder: (_, i) {

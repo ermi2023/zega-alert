@@ -1,6 +1,7 @@
 import { query } from '../config/db.js';
 import { ok, fail } from '../utils/response.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
+import { notifyPublishedContent } from '../services/notification.service.js';
 
 // contact_phone is PII and stored AES-256-GCM encrypted at rest.
 const decryptRow = (row) => {
@@ -155,16 +156,29 @@ export const getMissing = async (req, res) => {
 
 export const approveMissing = async (req, res) => {
   const { rows } = await query(
-    `UPDATE missing_persons SET is_approved = true, approved_by = $1, approved_at = now(), rejection_reason = NULL
-     WHERE id = $2 RETURNING *`,
+    `WITH previous AS (
+       SELECT is_approved FROM missing_persons WHERE id = $2 FOR UPDATE
+     )
+     UPDATE missing_persons SET is_approved = true, approved_by = $1, approved_at = now(), rejection_reason = NULL
+     WHERE id = $2 RETURNING *, (SELECT is_approved FROM previous) AS was_approved`,
     [req.user.id, req.params.id],
   );
   if (!rows[0]) return fail(res, 'Not found', 404);
+  const wasApproved = rows[0].was_approved;
+  const { was_approved, ...personRow } = rows[0];
+  const person = decryptRow(personRow);
   await query(
     `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'approve_missing_person','missing_persons',$2)`,
     [req.user.id, rows[0].id],
   );
-  ok(res, decryptRow(rows[0]), 'Missing person approved and published');
+  if (!wasApproved) {
+    await notifyPublishedContent({
+      type: 'missing_person',
+      id: person.id,
+      label: person.name,
+    });
+  }
+  ok(res, person, 'Missing person approved and published');
 };
 
 export const rejectMissing = async (req, res) => {
@@ -184,16 +198,29 @@ export const rejectMissing = async (req, res) => {
 
 export const publishMissing = async (req, res) => {
   const { rows } = await query(
-    `UPDATE missing_persons SET is_approved = true, approved_by = $1, approved_at = now(), rejection_reason = NULL
-     WHERE id = $2 RETURNING *`,
+    `WITH previous AS (
+       SELECT is_approved FROM missing_persons WHERE id = $2 FOR UPDATE
+     )
+     UPDATE missing_persons SET is_approved = true, approved_by = $1, approved_at = now(), rejection_reason = NULL
+     WHERE id = $2 RETURNING *, (SELECT is_approved FROM previous) AS was_approved`,
     [req.user.id, req.params.id],
   );
   if (!rows[0]) return fail(res, 'Not found', 404);
+  const wasApproved = rows[0].was_approved;
+  const { was_approved, ...personRow } = rows[0];
+  const person = decryptRow(personRow);
   await query(
     `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'publish_missing_person','missing_persons',$2)`,
     [req.user.id, rows[0].id],
   );
-  ok(res, decryptRow(rows[0]), 'Published. This case is now visible to the public in the mobile app.');
+  if (!wasApproved) {
+    await notifyPublishedContent({
+      type: 'missing_person',
+      id: person.id,
+      label: person.name,
+    });
+  }
+  ok(res, person, 'Published. This case is now visible to the public in the mobile app.');
 };
 
 export const unpublishMissing = async (req, res) => {
@@ -466,16 +493,29 @@ export const deleteWanted = async (req, res) => {
 // Approval / publish endpoints for wanted persons (mirror missing_persons).
 export const approveWanted = async (req, res) => {
   const { rows } = await query(
-    `UPDATE wanted_persons SET is_approved = true, approved_by = $1, approved_at = now(), rejection_reason = NULL
-     WHERE id = $2 RETURNING *`,
+    `WITH previous AS (
+       SELECT is_approved FROM wanted_persons WHERE id = $2 FOR UPDATE
+     )
+     UPDATE wanted_persons SET is_approved = true, approved_by = $1, approved_at = now(), rejection_reason = NULL
+     WHERE id = $2 RETURNING *, (SELECT is_approved FROM previous) AS was_approved`,
     [req.user.id, req.params.id],
   );
   if (!rows[0]) return fail(res, 'Not found', 404);
+  const wasApproved = rows[0].was_approved;
+  const { was_approved, ...personRow } = rows[0];
+  const person = decryptRow(personRow);
   await query(
     `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'approve_wanted_person','wanted_persons',$2)`,
     [req.user.id, rows[0].id],
   );
-  ok(res, decryptRow(rows[0]), 'Wanted person approved and published');
+  if (!wasApproved) {
+    await notifyPublishedContent({
+      type: 'wanted_person',
+      id: person.id,
+      label: person.name,
+    });
+  }
+  ok(res, person, 'Wanted person approved and published');
 };
 
 export const rejectWanted = async (req, res) => {
@@ -495,16 +535,29 @@ export const rejectWanted = async (req, res) => {
 
 export const publishWanted = async (req, res) => {
   const { rows } = await query(
-    `UPDATE wanted_persons SET is_approved = true, approved_by = $1, approved_at = now(), rejection_reason = NULL
-     WHERE id = $2 RETURNING *`,
+    `WITH previous AS (
+       SELECT is_approved FROM wanted_persons WHERE id = $2 FOR UPDATE
+     )
+     UPDATE wanted_persons SET is_approved = true, approved_by = $1, approved_at = now(), rejection_reason = NULL
+     WHERE id = $2 RETURNING *, (SELECT is_approved FROM previous) AS was_approved`,
     [req.user.id, req.params.id],
   );
   if (!rows[0]) return fail(res, 'Not found', 404);
+  const wasApproved = rows[0].was_approved;
+  const { was_approved, ...personRow } = rows[0];
+  const person = decryptRow(personRow);
   await query(
     `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'publish_wanted_person','wanted_persons',$2)`,
     [req.user.id, rows[0].id],
   );
-  ok(res, decryptRow(rows[0]), 'Published. This wanted-person case is now visible in the mobile app.');
+  if (!wasApproved) {
+    await notifyPublishedContent({
+      type: 'wanted_person',
+      id: person.id,
+      label: person.name,
+    });
+  }
+  ok(res, person, 'Published. This wanted-person case is now visible in the mobile app.');
 };
 
 export const unpublishWanted = async (req, res) => {

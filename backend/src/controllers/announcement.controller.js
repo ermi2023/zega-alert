@@ -1,6 +1,7 @@
 import { query } from '../config/db.js';
 import { ok, fail } from '../utils/response.js';
 import { mirrorSet, mirrorDelete } from '../services/firebase.service.js';
+import { notifyPublishedContent } from '../services/notification.service.js';
 import { translateAnnouncement } from '../services/translation.service.js';
 
 const CATEGORIES = ['news', 'warning', 'legal', 'event', 'road_closure', 'missing_item', 'wanted', 'missing'];
@@ -62,6 +63,13 @@ export const createAnnouncement = async (req, res) => {
   mirrorSet('announcements', announcement.id, announcement).catch(() => {});
   await audit(req.user.id, published ? 'publish_announcement' : 'create_announcement_draft',
     announcement.id, { title, category: announcement.category, region: announcement.region });
+  if (published) {
+    await notifyPublishedContent({
+      type: 'announcement',
+      id: announcement.id,
+      label: announcement.title,
+    });
+  }
   ok(res, { ...announcement, translations }, published ? 'Announcement published' : 'Draft saved', 201);
 };
 
@@ -140,7 +148,10 @@ export const getAnnouncement = async (req, res) => {
 export const updateAnnouncement = async (req, res) => {
   const { title, body, category, is_published, language, latitude, longitude } = req.body;
   const { rows } = await query(
-    `UPDATE announcements SET title = COALESCE($1, title), body = COALESCE($2, body),
+    `WITH previous AS (
+       SELECT is_published FROM announcements WHERE id = $8 FOR UPDATE
+     )
+     UPDATE announcements SET title = COALESCE($1, title), body = COALESCE($2, body),
        category = COALESCE($3, category), is_published = COALESCE($4, is_published),
        language = COALESCE($5, language),
        latitude = COALESCE($6, latitude), longitude = COALESCE($7, longitude),
@@ -148,16 +159,17 @@ export const updateAnnouncement = async (req, res) => {
          WHEN $4 = true AND is_published = false THEN now()
          WHEN $4 = false THEN NULL
          ELSE published_at END
-     WHERE id = $8 RETURNING *`,
+     WHERE id = $8 RETURNING *, (SELECT is_published FROM previous) AS was_published`,
     [title || null, body || null, category || null, is_published ?? null,
       language || null, latitude ?? null, longitude ?? null, req.params.id],
   );
   if (!rows[0]) return fail(res, 'Not found', 404);
+  const { was_published: wasPublished, ...announcement } = rows[0];
   if (title || body || language) {
-    const source = language || rows[0].language || 'en';
+    const source = language || announcement.language || 'en';
     const translations = await translateAnnouncement({
-      title: rows[0].title,
-      body: rows[0].body,
+      title: announcement.title,
+      body: announcement.body,
       source,
     });
     for (const t of translations) {
@@ -166,14 +178,21 @@ export const updateAnnouncement = async (req, res) => {
          VALUES ($1,$2,$3,$4,$5)
          ON CONFLICT (announcement_id, language)
          DO UPDATE SET title = EXCLUDED.title, body = EXCLUDED.body, source = EXCLUDED.source`,
-        [rows[0].id, t.language, t.title, t.body, t.source],
+        [announcement.id, t.language, t.title, t.body, t.source],
       );
     }
   }
-  mirrorSet('announcements', rows[0].id, rows[0]).catch(() => {});
+  mirrorSet('announcements', announcement.id, announcement).catch(() => {});
   await audit(req.user.id, is_published === false ? 'unpublish_announcement' : 'update_announcement',
-    rows[0].id, { title: rows[0].title, is_published: rows[0].is_published });
-  ok(res, rows[0], 'Updated');
+    announcement.id, { title: announcement.title, is_published: announcement.is_published });
+  if (wasPublished === false && announcement.is_published) {
+    await notifyPublishedContent({
+      type: 'announcement',
+      id: announcement.id,
+      label: announcement.title,
+    });
+  }
+  ok(res, announcement, 'Updated');
 };
 
 export const deleteAnnouncement = async (req, res) => {

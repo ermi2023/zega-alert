@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api.dart';
+import '../services/notification_state.dart';
+import 'news_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -42,6 +44,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Future<void> _markRead(String id) async {
     try {
       await Api.post('/notifications/$id/read', {});
+      NotificationState.notifyChanged();
       setState(() {
         _notifications = _notifications.map((n) {
           if (n is Map && n['id']?.toString() == id) {
@@ -58,6 +61,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Future<void> _markAllRead() async {
     try {
       await Api.post('/notifications/read-all', {});
+      NotificationState.notifyChanged();
       setState(() {
         _notifications = _notifications.map((n) {
           if (n is Map) {
@@ -78,6 +82,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case 'sos': return '🆘';
       case 'system': return '⚙️';
       default: return 'ℹ️';
+    }
+  }
+
+  int? _newsTabForNotification(String? type) {
+    switch (type) {
+      case 'announcement':
+        return 0;
+      case 'missing_person':
+        return 1;
+      case 'wanted_person':
+        return 2;
+      default:
+        return null;
     }
   }
 
@@ -120,7 +137,27 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           if (n is! Map) return const SizedBox.shrink();
                           final isRead = n['is_read'] == true;
                           final id = n['id']?.toString();
+                          final metadata = n['metadata'];
+                          final newsTab = metadata is Map
+                              ? _newsTabForNotification(
+                                  metadata['type']?.toString(),
+                                )
+                              : null;
                           return ListTile(
+                            onTap: newsTab != null
+                                ? () async {
+                                    if (id != null) await _markRead(id);
+                                    if (!context.mounted) return;
+                                    final navigator = Navigator.of(context);
+                                    await navigator.push(
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            NewsScreen(initialTab: newsTab),
+                                      ),
+                                    );
+                                    if (mounted) await _load();
+                                  }
+                                : null,
                             leading: CircleAvatar(
                               backgroundColor: isRead ? Colors.grey.shade200 : Colors.blue.shade100,
                               child: Text(_emoji(n['type']?.toString()), style: const TextStyle(fontSize: 18)),

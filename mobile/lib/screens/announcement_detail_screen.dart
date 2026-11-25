@@ -105,8 +105,8 @@ class AnnouncementDetailScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 10),
-                TranslatableText(
-                  text: item['title'] ?? '',
+                Text(
+                  item['title']?.toString() ?? '',
                   style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, height: 1.25),
                 ),
                 const SizedBox(height: 8),

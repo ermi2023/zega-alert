@@ -9,6 +9,7 @@ import 'login_screen.dart';
 import 'id_verification_screen.dart';
 import 'communication_screen.dart';
 import '../services/api.dart';
+import '../services/person_image_cache_service.dart';
 import '../widgets/auth_gate.dart';
 import '../widgets/pod_actions.dart';
 import 'callbacks_screen.dart';
@@ -49,6 +50,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _passwordStatus;
   bool _passwordBusy = false;
   bool _showPasswords = false;
+  bool _personPhotoCachingEnabled = PersonImageCacheService.enabled.value;
+  bool _personPhotoCacheBusy = false;
+  int _cachedPersonPhotoBytes = 0;
+  int _cachedPersonPhotoCount = 0;
 
   List<dynamic> _geofences = [];
   List<dynamic> _legal = [];
@@ -71,6 +76,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _load() async {
+    final cachedProfile = Api.profile;
+    if (_loggedIn && cachedProfile != null) {
+      _profile = cachedProfile;
+      _name.text = (cachedProfile['full_name'] ?? '').toString();
+      _email.text = (cachedProfile['email'] ?? '').toString();
+      _accessibility = cachedProfile['accessibility_mode'] == true;
+      _language = (cachedProfile['preferred_language'] ?? 'en').toString();
+      _region = (cachedProfile['region'] ?? 'Addis Ababa').toString();
+      _subCity =
+          (cachedProfile['sub_city'] ?? subCitiesByRegion[_region]?.first ?? '')
+              .toString();
+      if (mounted) setState(() {});
+    }
     try {
       final legal = await Api.get('/legal');
       _legal = legal as List<dynamic>;
@@ -102,10 +120,97 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _refreshPersonPhotoCacheUsage() async {
+    try {
+      final bytes = await PersonImageCacheService.cachedBytes();
+      final count = await PersonImageCacheService.cachedCount();
+      if (mounted) {
+        setState(() {
+          _cachedPersonPhotoBytes = bytes;
+          _cachedPersonPhotoCount = count;
+        });
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() => _status = 'Could not read cached photo storage: $error');
+      }
+    }
+  }
+
+  Future<void> _setPersonPhotoCaching(bool enabled) async {
+    setState(() => _personPhotoCacheBusy = true);
+    try {
+      await PersonImageCacheService.setEnabled(enabled);
+      if (mounted) {
+        setState(
+          () => _personPhotoCachingEnabled =
+              PersonImageCacheService.enabled.value,
+        );
+      }
+      await _refreshPersonPhotoCacheUsage();
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _personPhotoCachingEnabled = PersonImageCacheService.enabled.value;
+          _status = 'Could not update photo storage settings: $error';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _personPhotoCacheBusy = false);
+    }
+  }
+
+  Future<void> _clearPersonPhotoCache() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear saved person photos?'),
+        content: const Text(
+          'This removes wanted and missing-person photos saved on this device. '
+          'They can be saved again while photo storage is enabled.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Clear photos'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _personPhotoCacheBusy = true);
+    try {
+      await PersonImageCacheService.clear();
+      await _refreshPersonPhotoCacheUsage();
+    } catch (error) {
+      if (mounted) {
+        setState(() => _status = 'Could not clear saved photos: $error');
+      }
+    } finally {
+      if (mounted) setState(() => _personPhotoCacheBusy = false);
+    }
+  }
+
+  String _formatStorageSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
   @override
   void initState() {
     super.initState();
+    PersonImageCacheService.cacheRevision.addListener(
+      _refreshPersonPhotoCacheUsage,
+    );
+    _personPhotoCachingEnabled = PersonImageCacheService.enabled.value;
     _load();
+    _refreshPersonPhotoCacheUsage();
   }
 
   @override
@@ -116,6 +221,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _newPassword.dispose();
     _confirmPassword.dispose();
     _profileTileController.dispose();
+    PersonImageCacheService.cacheRevision.removeListener(
+      _refreshPersonPhotoCacheUsage,
+    );
     super.dispose();
   }
 
@@ -130,12 +238,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'region': _region,
         'sub_city': _subCity,
       });
-      await Api.setProfile({'region': _region, 'sub_city': _subCity});
+      _profile = {
+        ..._profile,
+        'full_name': _name.text.trim(),
+        'email': _email.text.trim(),
+        'accessibility_mode': _accessibility,
+        'preferred_language': _language,
+        'region': _region,
+        'sub_city': _subCity,
+      };
+      await Api.setProfile(_profile);
       if (!mounted) return;
-      _profile['full_name'] = _name.text.trim();
-      _profile['email'] = _email.text.trim();
-      _profile['region'] = _region;
-      _profile['sub_city'] = _subCity;
       ZegaAlertApp.of(context)?.setLanguage(_language);
       setState(() => _status = 'Profile and settings saved.');
     } catch (e) {
@@ -304,7 +417,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 8),
           Semantics(
-            label: 'Police and rescue emergency contacts. Police 991, rescue 907.',
+            label:
+                'Police and rescue emergency contacts. Police 991, rescue 907.',
             child: ListTile(
               leading: const Icon(Icons.local_police_outlined),
               title: const Text('Police and rescue contacts'),
@@ -466,6 +580,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ZegaAlertApp.of(context)?.toggleDarkMode(v);
               },
             ),
+          ),
+        ]),
+        _category('Offline data', Icons.cloud_download_outlined, [
+          SwitchListTile(
+            title: const Text('Save wanted and missing-person photos'),
+            subtitle: const Text(
+              'Photos you view are stored on this device for offline access. '
+              'This is off by default.',
+            ),
+            value: _personPhotoCachingEnabled,
+            onChanged: _personPhotoCacheBusy ? null : _setPersonPhotoCaching,
+          ),
+          ListTile(
+            leading: const Icon(Icons.delete_outline),
+            title: const Text('Clear saved person photos'),
+            subtitle: Text(
+              '$_cachedPersonPhotoCount photos · '
+              '${_formatStorageSize(_cachedPersonPhotoBytes)} used',
+            ),
+            trailing: _personPhotoCacheBusy
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : null,
+            onTap: _personPhotoCacheBusy || _cachedPersonPhotoCount == 0
+                ? null
+                : _clearPersonPhotoCache,
           ),
         ]),
         if (_loggedIn)

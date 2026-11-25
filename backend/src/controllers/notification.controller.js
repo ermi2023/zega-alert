@@ -36,12 +36,20 @@ export const markAllRead = async (req, res) => {
 };
 
 export const markContentUpdatesRead = async (req, res) => {
+  const { scope = 'all' } = req.body || {};
+  const notificationTypes = {
+    all: ['announcement', 'missing_person', 'wanted_person'],
+    news: ['announcement'],
+    persons: ['missing_person', 'wanted_person'],
+  }[scope];
+  if (!notificationTypes) return fail(res, 'Invalid content notification scope', 400);
+
   const { rows } = await query(
     `UPDATE notifications SET is_read = true
      WHERE user_id = $1 AND is_read = false
-       AND metadata->>'type' IN ('announcement', 'missing_person', 'wanted_person')
+       AND metadata->>'type' = ANY($2)
      RETURNING id`,
-    [req.user.id],
+    [req.user.id, notificationTypes],
   );
   ok(res, { count: rows.length }, 'Content update notifications cleared');
 };

@@ -182,6 +182,8 @@ class Api {
   static String? _refreshToken;
   static String? _region;
   static String? _subCity;
+  static Map<String, dynamic>? _profile;
+  static const String _profileCacheKey = 'public_user_profile';
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   static String? _role;
   static String? get token => _token;
@@ -196,11 +198,32 @@ class Api {
   static String? get region => _region;
   static String? get subCity => _subCity;
   static String? get role => _role;
+  static Map<String, dynamic>? get profile =>
+      _profile == null ? null : Map<String, dynamic>.from(_profile!);
 
-  /// Cache the region/sub-city from a user object (login or /auth/me).
+  /// Cache only public profile fields; credentials are never stored here.
   static Future<void> setProfile(Map<String, dynamic>? user) async {
     if (user == null) return;
     final prefs = await SharedPreferences.getInstance();
+    const publicFields = [
+      'full_name',
+      'email',
+      'phone',
+      'role',
+      'region',
+      'sub_city',
+      'accessibility_mode',
+      'preferred_language',
+      'is_verified',
+      'created_at',
+    ];
+    final publicProfile = <String, dynamic>{};
+    for (final field in publicFields) {
+      if (user.containsKey(field)) publicProfile[field] = user[field];
+    }
+    _profile = {...?_profile, ...publicProfile};
+    await DatabaseService.cacheValue(_profileCacheKey, _profile);
+
     final role = (user['role'] as String?)?.trim();
     if (role != null && role.isNotEmpty) {
       _role = role;
@@ -247,6 +270,12 @@ class Api {
 
   static Future<void> loadToken() async {
     final prefs = await SharedPreferences.getInstance();
+    final cachedProfile = await DatabaseService.getCachedValue(
+      _profileCacheKey,
+    );
+    if (cachedProfile is Map) {
+      _profile = Map<String, dynamic>.from(cachedProfile);
+    }
     if (kIsWeb) {
       _token = null;
       _userId = null;
@@ -305,13 +334,16 @@ class Api {
     _region = null;
     _subCity = null;
     _role = null;
+    _profile = null;
     final prefs = await SharedPreferences.getInstance();
+    await DatabaseService.removeCachedValue(_profileCacheKey);
     if (kIsWeb) {
       await prefs.remove('token');
       await prefs.remove('userId');
       await prefs.remove('refreshToken');
       await prefs.remove('region');
       await prefs.remove('sub_city');
+      await prefs.remove('role');
       return;
     }
     await _secureStorage.delete(key: 'token');
@@ -474,6 +506,22 @@ class Api {
 
   // On-demand translation (news + missing/wanted descriptions).
   // Returns { text, source, target, cached? } on success.
+  static bool hasUsableTranslation(
+    Map<String, dynamic> result,
+    String originalText,
+  ) {
+    final translated = result['text']?.toString().trim() ?? '';
+    final source = result['source']?.toString().toLowerCase();
+    return translated.isNotEmpty &&
+        translated != originalText.trim() &&
+        source != 'original' &&
+        source != 'placeholder' &&
+        !translated.startsWith('[Amharic]') &&
+        !translated.startsWith('[Oromifa]') &&
+        !translated.startsWith('[Tigrigna]') &&
+        !translated.startsWith('[Somali]');
+  }
+
   static Future<Map<String, dynamic>> translate(
     String text,
     String targetLanguage, {
@@ -488,15 +536,7 @@ class Api {
       final result = (data is Map)
           ? Map<String, dynamic>.from(data)
           : <String, dynamic>{};
-      final translated = result['text']?.toString() ?? '';
-      final source = result['source']?.toString() ?? '';
-      final placeholder =
-          source == 'placeholder' ||
-          translated.startsWith('[Amharic]') ||
-          translated.startsWith('[Oromifa]') ||
-          translated.startsWith('[Tigrigna]') ||
-          translated.startsWith('[Somali]');
-      if (!placeholder && translated.isNotEmpty) return result;
+      if (hasUsableTranslation(result, text)) return result;
     } catch (_) {
       // Old deployed servers may not have the /translate route yet.
     }
@@ -526,12 +566,16 @@ class Api {
     if (translated.trim().isEmpty) {
       throw ApiException('Translation service returned no result');
     }
-    return {
+    final result = <String, dynamic>{
       'text': translated,
       'source': 'google-public',
       'target': targetLanguage,
       'cached': false,
     };
+    if (!hasUsableTranslation(result, text)) {
+      throw ApiException('Translation service returned the original text');
+    }
+    return result;
   }
 
   static Future<dynamic> upload(

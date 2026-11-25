@@ -1,13 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/rendering.dart';
 
 import 'firebase_options.dart';
-
-import 'package:geolocator/geolocator.dart';
 
 import 'l10n/app_localizations.dart';
 import 'l10n/fallback_localizations.dart';
@@ -27,8 +28,9 @@ import 'services/socket_service.dart';
 import 'services/notification_service.dart';
 import 'services/notification_state.dart';
 import 'services/officer_position_service.dart';
+import 'services/person_image_cache_service.dart';
 
-import 'package:workmanager/workmanager.dart';
+import 'package:workmanager/workmanager.dart' as workmanager;
 
 import 'services/sync_service.dart';
 import 'widgets/auth_gate.dart';
@@ -38,7 +40,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 @pragma('vm:entry-point')
 void callbackDispatcher() {
-  Workmanager().executeTask((task, inputData) async {
+  workmanager.Workmanager().executeTask((task, inputData) async {
     // Background work that runs even when the app is closed.
     try {
       if (task == 'zega-officer-position') {
@@ -61,28 +63,28 @@ void main() async {
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
     } catch (_) {}
     try {
-      await Workmanager().initialize(callbackDispatcher);
-      await Workmanager().registerPeriodicTask(
+      await workmanager.Workmanager().initialize(callbackDispatcher);
+      await workmanager.Workmanager().registerPeriodicTask(
         'zega-outbox-sync',
         'zega-outbox-sync',
         frequency: const Duration(minutes: 15),
-        constraints: Constraints(networkType: NetworkType.connected),
+        constraints: workmanager.Constraints(
+          networkType: workmanager.NetworkType.connected,
+        ),
       );
-      await Workmanager().registerPeriodicTask(
+      await workmanager.Workmanager().registerPeriodicTask(
         'zega-officer-position',
         'zega-officer-position',
         frequency: const Duration(minutes: 15),
-        constraints: Constraints(networkType: NetworkType.connected),
+        constraints: workmanager.Constraints(
+          networkType: workmanager.NetworkType.connected,
+        ),
       );
-    } catch (_) {}
-  }
-  if (!kIsWeb) {
-    try {
-      await Geolocator.requestPermission();
     } catch (_) {}
   }
   await Api.resolveHost();
   await Api.loadToken();
+  await PersonImageCacheService.initialize();
   if (Api.token != null && !kIsWeb) {
     await NotificationService.initialize();
   }
@@ -219,7 +221,7 @@ class ZegaAlertAppState extends State<ZegaAlertApp> {
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFFF8FAFC),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF1E40AF),
+          backgroundColor: Color(0xFF142B4A),
           foregroundColor: Colors.white,
           elevation: 2,
         ),
@@ -259,17 +261,43 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _index = 0;
+  bool _showBottomNav = true;
+  final Set<int> _visitedTabs = {0};
   int _newsUnread = 0;
+  int _newsUnreadFetchGeneration = 0;
+  bool _markingNewsRead = false;
   bool _searchExpanded = false;
   String _homeSearchQuery = '';
   final TextEditingController _searchController = TextEditingController();
 
+  bool _handleScrollNotification(ScrollNotification notification) {
+    if (notification is UserScrollNotification &&
+        notification.metrics.axis == Axis.vertical) {
+      final direction = notification.direction;
+
+      if (direction == ScrollDirection.reverse && _showBottomNav) {
+        setState(() => _showBottomNav = false);
+      } else if (direction == ScrollDirection.forward && !_showBottomNav) {
+        setState(() => _showBottomNav = true);
+      }
+    }
+
+    if (notification.metrics.axis == Axis.vertical &&
+        notification.metrics.pixels <=
+            notification.metrics.minScrollExtent + 2 &&
+        !_showBottomNav) {
+      setState(() => _showBottomNav = true);
+    }
+
+    return false;
+  }
+
   List<Widget> get _tabs => [
     HomeScreen(searchQuery: _homeSearchQuery),
-    ReportScreen(),
-    NewsScreen(),
-    CommunicationScreen(),
-    SettingsScreen(),
+    const ReportScreen(),
+    const NewsScreen(),
+    const CommunicationScreen(),
+    const SettingsScreen(),
   ];
 
   @override
@@ -309,12 +337,35 @@ class _MainShellState extends State<MainShell> {
   void _selectTab(int index) {
     setState(() {
       _index = index;
+      _visitedTabs.add(index);
       if (index != 0) {
         _searchExpanded = false;
         _homeSearchQuery = '';
         _searchController.clear();
       }
     });
+    if (index == 2 && _newsUnread > 0) {
+      unawaited(_markNewsNotificationsRead());
+    }
+  }
+
+  Future<void> _markNewsNotificationsRead() async {
+    if (!Api.isLoggedIn || _newsUnread == 0 || _markingNewsRead) return;
+    _markingNewsRead = true;
+    try {
+      await Api.post('/notifications/read-content-updates', {'scope': 'news'});
+      if (!mounted) return;
+      _newsUnreadFetchGeneration++;
+      setState(() => _newsUnread = 0);
+      NotificationState.notifyChanged();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not clear news notifications: $e')),
+      );
+    } finally {
+      _markingNewsRead = false;
+    }
   }
 
   void _toggleHomeSearch() {
@@ -333,13 +384,17 @@ class _MainShellState extends State<MainShell> {
 
   Future<void> _fetchNewsUnread() async {
     if (!Api.isLoggedIn) return;
+    final generation = ++_newsUnreadFetchGeneration;
     try {
       final res = await Api.get('/notifications/unread-count');
-      if (!mounted) return;
+      if (!mounted || generation != _newsUnreadFetchGeneration) return;
       final newsUpdates = res is Map
           ? (res['newsUpdates'] as num?)?.toInt() ?? 0
           : 0;
       setState(() => _newsUnread = newsUpdates);
+      if (_index == 2 && newsUpdates > 0) {
+        unawaited(_markNewsNotificationsRead());
+      }
     } catch (_) {}
   }
 
@@ -417,10 +472,11 @@ class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final tabs = _tabs;
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF0F172A),
+        backgroundColor: const Color(0xFF142B4A),
+        foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
         titleSpacing: 0,
@@ -433,7 +489,7 @@ class _MainShellState extends State<MainShell> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: const Color(0xFF00338D).withOpacity(0.2),
+                  color: Colors.white.withOpacity(0.35),
                   width: 1.5,
                 ),
               ),
@@ -441,11 +497,8 @@ class _MainShellState extends State<MainShell> {
                 child: Image.asset(
                   'assets/images/logo.png',
                   fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const Icon(
-                    Icons.shield,
-                    color: Color(0xFF00338D),
-                    size: 22,
-                  ),
+                  errorBuilder: (_, __, ___) =>
+                      const Icon(Icons.shield, color: Colors.white, size: 22),
                 ),
               ),
             ),
@@ -456,9 +509,11 @@ class _MainShellState extends State<MainShell> {
                 controller: _searchController,
                 autofocus: true,
                 textInputAction: TextInputAction.search,
+                style: const TextStyle(color: Colors.white),
                 onChanged: _updateHomeSearch,
                 decoration: InputDecoration(
                   hintText: 'Search missing or wanted people',
+                  hintStyle: const TextStyle(color: Colors.white70),
                   border: InputBorder.none,
                   suffixIcon: _homeSearchQuery.isEmpty
                       ? null
@@ -473,11 +528,11 @@ class _MainShellState extends State<MainShell> {
                 ),
               )
             : _index == 0
-                ? const SizedBox.shrink()
-                : const Text(
+            ? const SizedBox.shrink()
+            : const Text(
                 'ZEGA-ALERT',
                 style: TextStyle(
-                  color: Color(0xFF00338D),
+                  color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
                   letterSpacing: 0.3,
@@ -485,43 +540,70 @@ class _MainShellState extends State<MainShell> {
                 overflow: TextOverflow.ellipsis,
               ),
         actions: [
-                if (_index == 0)
-                  IconButton(
-                    tooltip: _searchExpanded ? 'Close search' : 'Search people',
-                    icon: Icon(_searchExpanded ? Icons.close : Icons.search),
-                    onPressed: _toggleHomeSearch,
-                  ),
+          if (_index == 0)
+            IconButton(
+              tooltip: _searchExpanded ? 'Close search' : 'Search people',
+              icon: Icon(_searchExpanded ? Icons.close : Icons.search),
+              onPressed: _toggleHomeSearch,
+            ),
           IconButton(
             tooltip: 'Profile',
             icon: const Icon(Icons.person_outline),
-                  onPressed: () => _selectTab(4),
+            onPressed: () => _selectTab(4),
           ),
           const _NotificationBell(),
           const SizedBox(width: 4),
         ],
       ),
-      body: _tabs[_index],
-      bottomNavigationBar: Container(
-        height: 64,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 10,
-              offset: const Offset(0, -3),
-            ),
-          ],
+      body: NotificationListener<ScrollNotification>(
+        onNotification: _handleScrollNotification,
+        child: IndexedStack(
+          index: _index,
+          children: List.generate(
+            tabs.length,
+            (index) => _visitedTabs.contains(index)
+                ? tabs[index]
+                : const SizedBox.shrink(),
+          ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _navItem(Icons.home, loc.home, 0),
-            _navItem(Icons.assignment_outlined, loc.report, 1),
-            _sosNavItem(context),
-            _navItem(Icons.newspaper, loc.news, 2, badgeCount: _newsUnread),
-            _navItem(Icons.settings_outlined, loc.settings, 4),
-          ],
+      ),
+
+      bottomNavigationBar: AnimatedSize(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        alignment: Alignment.bottomCenter,
+        child: ClipRect(
+          child: Align(
+            heightFactor: _showBottomNav ? 1 : 0,
+            child: Container(
+              height: 64,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, -3),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _navItem(Icons.home, loc.home, 0),
+                  _navItem(Icons.assignment_outlined, loc.report, 1),
+                  _sosNavItem(context),
+                  _navItem(
+                    Icons.newspaper,
+                    loc.news,
+                    2,
+                    badgeCount: _newsUnread,
+                  ),
+                  _navItem(Icons.settings_outlined, loc.settings, 4),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -657,9 +739,7 @@ class _NotificationBellState extends State<_NotificationBell> {
       final newsUpdates = res is Map
           ? (res['newsUpdates'] as num?)?.toInt() ?? 0
           : 0;
-      setState(
-        () => _unread = (total - newsUpdates).clamp(0, total).toInt(),
-      );
+      setState(() => _unread = (total - newsUpdates).clamp(0, total).toInt());
     } catch (_) {}
   }
 

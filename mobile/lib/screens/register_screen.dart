@@ -11,14 +11,7 @@ import '../widgets/auth_widgets.dart';
 import 'login_screen.dart';
 import '../main.dart';
 
-/// Premium Registration Screen for ZEGA-ALERT
-/// Implements the exact design specification with:
-/// - Header with back navigation
-/// - Registration Form (5 fields + dropdowns)
-/// - Location permission toggle
-/// - Terms & Privacy Policy checkbox
-/// - Create Account Button
-/// - Login Navigation link
+/// Registration screen for ZEGA-ALERT.
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -26,7 +19,8 @@ class RegisterScreen extends StatefulWidget {
   _RegisterScreenState createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStateMixin {
+class _RegisterScreenState extends State<RegisterScreen>
+    with TickerProviderStateMixin {
   // Form controllers
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
@@ -51,7 +45,6 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
   bool _isKeyboardVisible = false;
   bool _useDeviceLocation = false;
   bool _isFetchingLocation = false;
-  String? _detectedAddress;
 
   // Animations
   late AnimationController _fadeController;
@@ -80,13 +73,10 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
       parent: _fadeController,
       curve: Curves.easeOutCubic,
     );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.15),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeOutCubic,
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.15), end: Offset.zero).animate(
+          CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
+        );
 
     _fadeController.forward();
     _slideController.forward();
@@ -101,7 +91,8 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
   }
 
   void _onFocusChange() {
-    final keyboardVisible = _nameFocus.hasFocus ||
+    final keyboardVisible =
+        _nameFocus.hasFocus ||
         _phoneFocus.hasFocus ||
         _emailFocus.hasFocus ||
         _passwordFocus.hasFocus ||
@@ -166,7 +157,8 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
   /// Validate email (optional)
   String? _validateEmail(String? value) {
     if (value == null || value.trim().isEmpty) return null;
-    if (RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value.trim())) return null;
+    if (RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value.trim()))
+      return null;
     return 'Enter a valid email address';
   }
 
@@ -193,15 +185,6 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
     return null;
   }
 
-  /// Validate region selection
-  String? _validateRegion(String? value) {
-    if (_useDeviceLocation) return null;
-    if (value == null || value.isEmpty) {
-      return 'Please select your region';
-    }
-    return null;
-  }
-
   String _friendlyError(Object e) {
     final s = e.toString();
     if (s.contains('SocketException') ||
@@ -210,10 +193,12 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
         s.contains('errno = 110')) {
       return 'Cannot reach the server at ${Api.baseUrl}.\nCheck your internet connection.';
     }
-    if (s.toLowerCase().contains('already exists') || s.toLowerCase().contains('duplicate')) {
+    if (s.toLowerCase().contains('already exists') ||
+        s.toLowerCase().contains('duplicate')) {
       return 'An account with this phone number or email already exists.';
     }
-    if (s.toLowerCase().contains('validation') || s.toLowerCase().contains('invalid')) {
+    if (s.toLowerCase().contains('validation') ||
+        s.toLowerCase().contains('invalid')) {
       return 'Please check your information and try again.';
     }
     return s;
@@ -222,13 +207,9 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     if (!_acceptedTerms) {
-      setState(() => _error = 'You must accept the Terms of Service and Privacy Policy to register.');
-      return;
-    }
-    if (_selectedRegion == null) {
-      setState(() => _error = _useDeviceLocation
-          ? 'Could not detect location. Please select region manually.'
-          : 'Please check "Use my current location" or select your region.');
+      setState(
+        () => _error = 'You must accept the Terms of Service and Privacy Policy to register.',
+      );
       return;
     }
     if (!mounted) return;
@@ -266,14 +247,20 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
         final otp = await _askOtp(phone);
         if (otp != null && otp.isNotEmpty) {
           try {
-            await Api.post('/auth/verify-otp',
-                {'contact': phone, 'code': otp, 'purpose': 'verify_phone'});
+            await Api.post('/auth/verify-otp', {
+              'contact': phone,
+              'code': otp,
+              'purpose': 'verify_phone',
+            });
           } catch (_) {}
         }
       } else {
         try {
-          await Api.post('/auth/verify-otp',
-              {'contact': phone, 'code': devOtp, 'purpose': 'verify_phone'});
+          await Api.post('/auth/verify-otp', {
+            'contact': phone,
+            'code': devOtp,
+            'purpose': 'verify_phone',
+          });
         } catch (_) {}
       }
 
@@ -284,14 +271,17 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
         'password': _passwordController.text,
       });
 
-      await Api.setToken(data['accessToken'], userId: data['user']['id'] as String);
+      await Api.setToken(
+        data['accessToken'],
+        userId: data['user']['id'] as String,
+      );
       await Api.setRefreshToken(data['refreshToken']);
       await Api.setProfile(data['user'] as Map<String, dynamic>?);
 
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MainShell()),
-      );
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const MainShell()));
     } catch (e) {
       if (mounted) {
         setState(() => _error = _friendlyError(e));
@@ -310,7 +300,9 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(ZegaTheme.radiusXLarge)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(ZegaTheme.radiusXLarge),
+        ),
         title: Row(
           children: [
             Container(
@@ -319,7 +311,11 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                 color: ZegaTheme.primaryNavy.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(ZegaTheme.radiusMedium),
               ),
-              child: const Icon(Icons.sms_outlined, color: ZegaTheme.primaryNavy, size: 24),
+              child: const Icon(
+                Icons.sms_outlined,
+                color: ZegaTheme.primaryNavy,
+                size: 24,
+              ),
             ),
             const SizedBox(width: 12),
             const Expanded(child: Text('Verify Phone Number')),
@@ -352,7 +348,10 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(ZegaTheme.radiusLarge),
-                  borderSide: const BorderSide(color: ZegaTheme.primaryNavy, width: 2),
+                  borderSide: const BorderSide(
+                    color: ZegaTheme.primaryNavy,
+                    width: 2,
+                  ),
                 ),
               ),
               autofocus: true,
@@ -376,16 +375,9 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
   }
 
   void _navigateToLogin() {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-    );
-  }
-
-  void _onRegionChanged(String? region) {
-    setState(() {
-      _selectedRegion = region;
-      _selectedSubCity = subCitiesByRegion[region]?.first;
-    });
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginScreen()));
   }
 
   Future<void> _onToggleUseLocation(bool? value) async {
@@ -393,6 +385,10 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
     setState(() {
       _useDeviceLocation = enabled;
       _error = '';
+      if (!enabled) {
+        _selectedRegion = null;
+        _selectedSubCity = null;
+      }
     });
 
     if (!enabled) {
@@ -408,7 +404,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
       if (perm == LocationPermission.deniedForever) {
         if (mounted) {
           setState(() {
-            _error = 'Location permission is denied permanently. Please enable it in system settings.';
+            _error = 'Location access is unavailable. You can continue without sharing your location.';
             _useDeviceLocation = false;
             _isFetchingLocation = false;
           });
@@ -416,11 +412,13 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
         return;
       }
 
-      final pos = await LocationService.best(gpsTimeout: const Duration(seconds: 8));
+      final pos = await LocationService.best(
+        gpsTimeout: const Duration(seconds: 8),
+      );
       if (pos == null) {
         if (mounted) {
           setState(() {
-            _error = 'Unable to determine your current location. Please select region manually.';
+            _error = 'Could not determine your location. You can continue without sharing it.';
             _useDeviceLocation = false;
             _isFetchingLocation = false;
           });
@@ -428,41 +426,58 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
         return;
       }
 
-      final geo = await LocationService.reverseGeocode(pos.latitude, pos.longitude);
+      final geo = await LocationService.reverseGeocode(
+        pos.latitude,
+        pos.longitude,
+      );
       String? matchedRegion;
       String? matchedSubCity;
-      String? addressText;
 
       if (geo != null) {
-        addressText = geo['address'] as String?;
-        final rName = (geo['region'] ?? geo['city'] ?? '').toString().toLowerCase();
-        for (final r in ethiopianRegions) {
-          if (rName.contains(r.toLowerCase()) || r.toLowerCase().contains(rName)) {
-            matchedRegion = r;
-            break;
+        final rName = (geo['region'] ?? geo['city'] ?? '')
+            .toString()
+            .toLowerCase();
+        if (rName.isNotEmpty) {
+          for (final r in ethiopianRegions) {
+            if (rName.contains(r.toLowerCase()) ||
+                r.toLowerCase().contains(rName)) {
+              matchedRegion = r;
+              break;
+            }
           }
         }
         if (matchedRegion != null) {
           final subCities = subCitiesByRegion[matchedRegion] ?? [];
-          final cName = (geo['city'] ?? geo['locality'] ?? '').toString().toLowerCase();
-          for (final sc in subCities) {
-            if (cName.contains(sc.toLowerCase()) || sc.toLowerCase().contains(cName)) {
-              matchedSubCity = sc;
-              break;
+          final cName = (geo['city'] ?? geo['locality'] ?? '')
+              .toString()
+              .toLowerCase();
+          if (cName.isNotEmpty) {
+            for (final sc in subCities) {
+              if (cName.contains(sc.toLowerCase()) ||
+                  sc.toLowerCase().contains(cName)) {
+                matchedSubCity = sc;
+                break;
+              }
             }
           }
         }
       }
 
-      matchedRegion ??= 'Addis Ababa';
-      matchedSubCity ??= subCitiesByRegion[matchedRegion]?.first;
-      addressText ??= '$matchedRegion, Ethiopia';
+      if (matchedRegion == null) {
+        if (mounted) {
+          setState(() {
+            _error = 'Could not identify your region. You can continue without sharing your location.';
+            _useDeviceLocation = false;
+            _isFetchingLocation = false;
+          });
+        }
+        return;
+      }
 
       if (mounted) {
         setState(() {
           _selectedRegion = matchedRegion;
           _selectedSubCity = matchedSubCity;
-          _detectedAddress = addressText;
           _isFetchingLocation = false;
         });
       }
@@ -477,461 +492,179 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
     }
   }
 
-  Widget _buildHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
+  Widget _buildHeader(double height) {
+    final logoSize = (height * 0.46).clamp(64.0, 104.0).toDouble();
+
+    return Stack(
       children: [
-        // Back Button
-        Align(
-          alignment: Alignment.centerLeft,
+        Positioned(
+          top: 0,
+          left: 0,
           child: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new, size: 22),
-            color: ZegaTheme.mainText,
+            color: ZegaTheme.white,
             onPressed: () => Navigator.of(context).pop(),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
             tooltip: 'Back',
           ),
         ),
-        const SizedBox(height: ZegaTheme.space8),
-
-        // Federal Police Logo
-        Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(ZegaTheme.radiusRound),
-            boxShadow: [
-              BoxShadow(
-                color: ZegaTheme.primaryNavy.withValues(alpha: 0.25),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
+        Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'ZEGA-ALERT',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.3,
+                ),
+              ),
+              const SizedBox(height: 10),
+              ClipOval(
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  width: logoSize,
+                  height: logoSize,
+                  fit: BoxFit.contain,
+                ),
               ),
             ],
           ),
-          child: const Center(
-            child: Image(
-              image: AssetImage('assets/images/efp_logo.png'),
-              width: 32,
-              height: 32,
-            ),
-          ),
-        ),
-        const SizedBox(height: ZegaTheme.space16),
-
-        // App Logo
-        Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            gradient: ZegaTheme.primaryGradient,
-            borderRadius: BorderRadius.circular(ZegaTheme.radiusRound),
-            boxShadow: [
-              BoxShadow(
-                color: ZegaTheme.primaryNavy.withValues(alpha: 0.25),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: const Center(
-            child: Icon(
-              Icons.shield_outlined,
-              color: ZegaTheme.white,
-              size: 32,
-            ),
-          ),
-        ),
-        const SizedBox(height: ZegaTheme.space16),
-
-        // App Name
-        Text(
-          'ZEGA-ALERT',
-          style: ZegaTheme.headlineMedium.copyWith(
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.0,
-            color: ZegaTheme.primaryNavy,
-            height: 1.2,
-          ),
-        ),
-        const SizedBox(height: ZegaTheme.space20),
-
-        // Section Title
-        Text(
-          'Create Your Account',
-          style: ZegaTheme.headlineSmall.copyWith(
-            fontWeight: FontWeight.w700,
-            color: ZegaTheme.mainText,
-            height: 1.3,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: ZegaTheme.space8),
-
-        // Supportive Text
-        Text(
-          'Join ZEGA-ALERT to help keep your community safe and stay informed.',
-          style: ZegaTheme.bodyLarge.copyWith(
-            color: ZegaTheme.secondaryText,
-            height: 1.6,
-          ),
-          textAlign: TextAlign.center,
         ),
       ],
     );
   }
 
-  Widget _buildRegistrationFormCard(AppLocalizations loc) {
-    return ZegaAuthCard(
-      child: Form(
-        key: _formKey,
-        onChanged: () => setState(() {}),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Full Name
-            ZegaTextField(
-              controller: _nameController,
-              focusNode: _nameFocus,
-              label: loc.fullName,
-              hint: 'Enter your full name',
-              prefixIcon: Icons.person_outline,
-              textInputAction: TextInputAction.next,
-              validator: _validateName,
-              onFieldSubmitted: (_) => _phoneFocus.requestFocus(),
-              autofocus: true,
-            ),
-            const SizedBox(height: ZegaTheme.space20),
+  Widget _buildRegistrationForm(AppLocalizations loc) {
+    return Form(
+      key: _formKey,
+      onChanged: () => setState(() {}),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Full Name
+          ZegaTextField(
+            controller: _nameController,
+            focusNode: _nameFocus,
+            label: loc.fullName,
+            hint: 'Enter your full name',
+            prefixIcon: Icons.person_outline,
+            textInputAction: TextInputAction.next,
+            validator: _validateName,
+            onFieldSubmitted: (_) => _phoneFocus.requestFocus(),
+            autofocus: false,
+          ),
+          const SizedBox(height: ZegaTheme.space20),
 
-            // Phone Number
-            ZegaPhoneField(
-              controller: _phoneController,
-              focusNode: _phoneFocus,
-              label: loc.phone,
-              hint: '911 234 567',
-              defaultCountryCode: '+251',
-              countryCodes: const ['+251'],
-              validator: _validatePhone,
-              onFieldSubmitted: (_) => _emailFocus.requestFocus(),
-            ),
-            const SizedBox(height: ZegaTheme.space20),
+          // Phone Number
+          ZegaPhoneField(
+            controller: _phoneController,
+            focusNode: _phoneFocus,
+            label: loc.phone,
+            hint: '911 234 567',
+            defaultCountryCode: '+251',
+            countryCodes: const ['+251'],
+            validator: _validatePhone,
+            onFieldSubmitted: (_) => _emailFocus.requestFocus(),
+          ),
+          const SizedBox(height: ZegaTheme.space20),
 
-            // Email (Optional)
-            ZegaTextField(
-              controller: _emailController,
-              focusNode: _emailFocus,
-              label: 'Email (Optional)',
-              hint: 'your@email.com',
-              prefixIcon: Icons.email_outlined,
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.next,
-              validator: _validateEmail,
-              helperText: 'Add an email so you can also sign in with it',
-            ),
-            const SizedBox(height: ZegaTheme.space20),
+          // Email (Optional)
+          ZegaTextField(
+            controller: _emailController,
+            focusNode: _emailFocus,
+            label: 'Email (Optional)',
+            hint: 'your@email.com',
+            prefixIcon: Icons.email_outlined,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            validator: _validateEmail,
+            helperText: 'Add an email so you can also sign in with it',
+          ),
+          const SizedBox(height: ZegaTheme.space20),
 
-            // Password
-            ZegaPasswordField(
-              controller: _passwordController,
-              focusNode: _passwordFocus,
-              label: loc.password,
-              hint: 'Create a strong password',
-              textInputAction: TextInputAction.next,
-              validator: _validatePassword,
-              helperText: 'At least 8 characters',
-            ),
-            const SizedBox(height: ZegaTheme.space20),
+          // Password
+          ZegaPasswordField(
+            controller: _passwordController,
+            focusNode: _passwordFocus,
+            label: loc.password,
+            hint: 'Create a strong password',
+            textInputAction: TextInputAction.next,
+            validator: _validatePassword,
+            helperText: 'At least 8 characters',
+          ),
+          const SizedBox(height: ZegaTheme.space20),
 
-            // Confirm Password
-            ZegaPasswordField(
-              controller: _confirmPasswordController,
-              focusNode: _confirmPasswordFocus,
-              label: 'Confirm Password',
-              hint: 'Re-enter your password',
-              textInputAction: TextInputAction.done,
-              validator: _validateConfirmPassword,
-              onFieldSubmitted: (_) => _submit(),
-            ),
-            const SizedBox(height: ZegaTheme.space20),
+          // Confirm Password
+          ZegaPasswordField(
+            controller: _confirmPasswordController,
+            focusNode: _confirmPasswordFocus,
+            label: 'Confirm Password',
+            hint: 'Re-enter your password',
+            textInputAction: TextInputAction.done,
+            validator: _validateConfirmPassword,
+            onFieldSubmitted: (_) => _submit(),
+          ),
+          const SizedBox(height: ZegaTheme.space20),
 
-            // Location Permission Checkbox & Auto-detection
-            _buildLocationCheckbox(loc),
+          // Location sharing is optional; the account can be created without it.
+          _buildLocationCheckbox(),
+          const SizedBox(height: ZegaTheme.space16),
 
-            if (_detectedAddress != null && _useDeviceLocation) ...[
-              const SizedBox(height: ZegaTheme.space8),
-              _buildDetectedAddressBanner(),
-            ],
+          // Terms & Privacy Policy Checkbox
+          _buildTermsCheckbox(),
 
-            // Fallback / Manual Region & Subcity Selection
-            if (!_useDeviceLocation) ...[
-              const SizedBox(height: ZegaTheme.space12),
-              _buildRegionDropdown(loc),
-              if (_selectedRegion != null) ...[
-                const SizedBox(height: ZegaTheme.space20),
-                _buildSubCityDropdown(loc),
-              ],
-            ],
+          // Error Message
+          if (_error.isNotEmpty) ...[
             const SizedBox(height: ZegaTheme.space16),
-
-            // Terms & Privacy Policy Checkbox
-            _buildTermsCheckbox(),
-
-            // Error Message
-            if (_error.isNotEmpty) ...[
-              const SizedBox(height: ZegaTheme.space16),
-              _buildErrorBanner(),
-            ],
-
-            const SizedBox(height: ZegaTheme.space24),
-
-            // Create Account Button
-            ZegaPrimaryButton(
-              label: 'Create Account',
-              onPressed: _isLoading ? null : _submit,
-              isLoading: _isLoading,
-              isEnabled: _formKey.currentState?.validate() ?? false,
-              leadingIcon: Icons.person_add_rounded,
-              height: 56,
-            ),
+            _buildErrorBanner(),
           ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildLocationCheckbox(AppLocalizations loc) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: _useDeviceLocation
-            ? ZegaTheme.primaryNavy.withValues(alpha: 0.05)
-            : ZegaTheme.white,
-        borderRadius: BorderRadius.circular(ZegaTheme.radiusMedium),
-        border: Border.all(
-          color: _useDeviceLocation ? ZegaTheme.primaryNavy : ZegaTheme.inputBorder,
-          width: 1,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Checkbox(
-            value: _useDeviceLocation,
-            onChanged: _isFetchingLocation ? null : _onToggleUseLocation,
-            activeColor: ZegaTheme.primaryNavy,
-            checkColor: ZegaTheme.white,
-            side: BorderSide(
-              color: _useDeviceLocation ? ZegaTheme.primaryNavy : ZegaTheme.inputBorder,
-              width: 1.5,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(ZegaTheme.radiusSmall),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: GestureDetector(
-              onTap: _isFetchingLocation ? null : () => _onToggleUseLocation(!_useDeviceLocation),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.my_location_rounded,
-                        size: 16,
-                        color: _useDeviceLocation ? ZegaTheme.primaryNavy : ZegaTheme.secondaryText,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          'Use my current location',
-                          style: ZegaTheme.bodyMedium.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: _useDeviceLocation ? ZegaTheme.primaryNavy : ZegaTheme.mainText,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Automatically set your address, region and sub-city using GPS',
-                    style: ZegaTheme.bodySmall.copyWith(
-                      color: ZegaTheme.secondaryText,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (_isFetchingLocation)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8),
-              child: SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
+          const SizedBox(height: ZegaTheme.space24),
 
-  Widget _buildDetectedAddressBanner() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: ZegaTheme.successGreen.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(ZegaTheme.radiusMedium),
-        border: Border.all(color: ZegaTheme.successGreen.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.location_on, color: ZegaTheme.successGreen, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Detected Address',
-                  style: ZegaTheme.bodySmall.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: ZegaTheme.successGreen,
-                  ),
-                ),
-                Text(
-                  _detectedAddress ?? '',
-                  style: ZegaTheme.bodySmall.copyWith(color: ZegaTheme.mainText),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
+          // Create Account Button
+          ZegaPrimaryButton(
+            label: 'Create Account',
+            onPressed: _isLoading ? null : _submit,
+            isLoading: _isLoading,
+            isEnabled: _formKey.currentState?.validate() ?? false,
+            height: 56,
+            borderRadius: 28,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRegionDropdown(AppLocalizations loc) {
-    return DropdownButtonFormField<String>(
-      value: _selectedRegion,
-      isExpanded: true,
-      decoration: InputDecoration(
-        labelText: loc.regionLabel,
-        prefixIcon: Icon(
-          Icons.location_on_outlined,
-          size: 22,
-          color: ZegaTheme.secondaryText,
-        ),
-        filled: true,
-        fillColor: ZegaTheme.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(ZegaTheme.radiusLarge),
-          borderSide: const BorderSide(color: ZegaTheme.inputBorder),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(ZegaTheme.radiusLarge),
-          borderSide: const BorderSide(color: ZegaTheme.inputBorder),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(ZegaTheme.radiusLarge),
-          borderSide: const BorderSide(color: ZegaTheme.primaryNavy, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(ZegaTheme.radiusLarge),
-          borderSide: const BorderSide(color: ZegaTheme.error),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: ZegaTheme.space16,
-          vertical: ZegaTheme.space16,
+  Widget _buildLocationCheckbox() {
+    return CheckboxListTile(
+      contentPadding: EdgeInsets.zero,
+      controlAffinity: ListTileControlAffinity.leading,
+      value: _useDeviceLocation,
+      onChanged: _isFetchingLocation ? null : _onToggleUseLocation,
+      activeColor: ZegaTheme.primaryNavy,
+      title: Text(
+        'Use my current location',
+        style: ZegaTheme.bodyMedium.copyWith(
+          fontWeight: FontWeight.w600,
+          color: ZegaTheme.mainText,
         ),
       ),
-      style: ZegaTheme.bodyLarge.copyWith(color: ZegaTheme.mainText),
-      dropdownColor: ZegaTheme.white,
-      icon: Icon(
-        Icons.keyboard_arrow_down,
-        color: ZegaTheme.secondaryText,
-        size: 24,
+      subtitle: Text(
+        'With your permission, we will use it to identify your region.',
+        style: ZegaTheme.bodySmall.copyWith(color: ZegaTheme.secondaryText),
       ),
-      items: ethiopianRegions.map((region) => DropdownMenuItem(
-        value: region,
-        child: Text(
-          region,
-          style: ZegaTheme.bodyLarge,
-          overflow: TextOverflow.ellipsis,
-        ),
-      )).toList(),
-      onChanged: _onRegionChanged,
-      validator: _validateRegion,
-      selectedItemBuilder: (context) => ethiopianRegions.map((region) => Text(
-        region,
-        style: ZegaTheme.bodyLarge.copyWith(color: ZegaTheme.mainText),
-        overflow: TextOverflow.ellipsis,
-      )).toList(),
-    );
-  }
-
-  Widget _buildSubCityDropdown(AppLocalizations loc) {
-    final subCities = subCitiesByRegion[_selectedRegion] ?? [];
-
-    return DropdownButtonFormField<String>(
-      value: _selectedSubCity,
-      isExpanded: true,
-      decoration: InputDecoration(
-        labelText: loc.subCityLabel,
-        prefixIcon: Icon(
-          Icons.location_city_outlined,
-          size: 22,
-          color: ZegaTheme.secondaryText,
-        ),
-        filled: true,
-        fillColor: ZegaTheme.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(ZegaTheme.radiusLarge),
-          borderSide: const BorderSide(color: ZegaTheme.inputBorder),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(ZegaTheme.radiusLarge),
-          borderSide: const BorderSide(color: ZegaTheme.inputBorder),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(ZegaTheme.radiusLarge),
-          borderSide: const BorderSide(color: ZegaTheme.primaryNavy, width: 2),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: ZegaTheme.space16,
-          vertical: ZegaTheme.space16,
-        ),
-      ),
-      style: ZegaTheme.bodyLarge.copyWith(color: ZegaTheme.mainText),
-      dropdownColor: ZegaTheme.white,
-      icon: Icon(
-        Icons.keyboard_arrow_down,
-        color: ZegaTheme.secondaryText,
-        size: 24,
-      ),
-      items: subCities.map((subCity) => DropdownMenuItem(
-        value: subCity,
-        child: Text(
-          subCity,
-          style: ZegaTheme.bodyLarge,
-          overflow: TextOverflow.ellipsis,
-        ),
-      )).toList(),
-      onChanged: (value) => setState(() => _selectedSubCity = value),
-      selectedItemBuilder: (context) => subCities.map((subCity) => Text(
-        subCity,
-        style: ZegaTheme.bodyLarge.copyWith(color: ZegaTheme.mainText),
-        overflow: TextOverflow.ellipsis,
-      )).toList(),
+      secondary: _isFetchingLocation
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : null,
     );
   }
 
@@ -949,7 +682,9 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
             activeColor: ZegaTheme.primaryNavy,
             checkColor: ZegaTheme.white,
             side: BorderSide(
-              color: _acceptedTerms ? ZegaTheme.primaryNavy : ZegaTheme.inputBorder,
+              color: _acceptedTerms
+                  ? ZegaTheme.primaryNavy
+                  : ZegaTheme.inputBorder,
               width: 1.5,
             ),
             shape: RoundedRectangleBorder(
@@ -1031,85 +766,89 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
       label: 'Already have an account?',
       actionLabel: 'Sign In',
       onActionPressed: _navigateToLogin,
-      labelStyle: ZegaTheme.bodyMedium.copyWith(color: ZegaTheme.secondaryText),
+      labelStyle: ZegaTheme.bodyMedium.copyWith(color: Colors.white70),
       actionStyle: ZegaTheme.labelLarge.copyWith(
         fontWeight: FontWeight.w600,
-        color: ZegaTheme.secondaryBlue,
+        color: ZegaTheme.warningAmber,
       ),
-    );
-  }
-
-  Widget _buildSecurityFooter() {
-    return ZegaSecurityFooter(
-      message: 'Your information is protected with bank-grade encryption.',
-      icon: Icons.verified_user_outlined,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    final isKeyboardOpen = bottomInset > 100;
 
     return ZegaAuthScreen(
-      backgroundColor: ZegaTheme.background,
+      backgroundColor: ZegaTheme.primaryNavy,
       resizeToAvoidBottomInset: true,
-      child: ZegaAuthBackground(
-        child: Column(
-          children: [
-            // Spacer to push content down slightly on large screens
-            SizedBox(height: isKeyboardOpen ? ZegaTheme.space8 : ZegaTheme.space24),
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: SlideTransition(
+          position: _slideAnimation,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isKeyboardOpen =
+                  MediaQuery.of(context).viewInsets.bottom > 100;
+              final heroHeight =
+                  (constraints.maxHeight * (isKeyboardOpen ? 0.22 : 0.37))
+                      .clamp(
+                        isKeyboardOpen ? 104.0 : 170.0,
+                        isKeyboardOpen ? 145.0 : 280.0,
+                      )
+                      .toDouble();
 
-            // Main content with animations
-            Expanded(
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: SlideTransition(
-                  position: _slideAnimation,
-                  child: SingleChildScrollView(
-                    physics: const ClampingScrollPhysics(),
-                    padding: EdgeInsets.only(
-                      bottom: isKeyboardOpen ? ZegaTheme.space16 : ZegaTheme.space32,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // ============================================================
-                        // HEADER (Branding + Welcome)
-                        // ============================================================
-                        _buildHeader(),
-
-                        const SizedBox(height: ZegaTheme.space32),
-
-                        // ============================================================
-                        // REGISTRATION FORM CARD
-                        // ============================================================
-                        _buildRegistrationFormCard(loc),
-
-                        const SizedBox(height: ZegaTheme.space24),
-
-                        // ============================================================
-                        // LOGIN NAVIGATION
-                        // ============================================================
-                        _buildLoginNavigation(loc),
-
-                        const SizedBox(height: ZegaTheme.space24),
-
-                        // ============================================================
-                        // SECURITY FOOTER
-                        // ============================================================
-                        _buildSecurityFooter(),
-
-                        // Bottom spacing for keyboard
-                        SizedBox(height: isKeyboardOpen ? ZegaTheme.space16 : ZegaTheme.space8),
-                      ],
+              return Column(
+                children: [
+                  SizedBox(height: heroHeight, child: _buildHeader(heroHeight)),
+                  Expanded(
+                    child: Container(
+                      width: double.infinity,
+                      decoration: const BoxDecoration(
+                        color: ZegaTheme.white,
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(24),
+                        ),
+                      ),
+                      child: SingleChildScrollView(
+                        physics: const ClampingScrollPhysics(),
+                        padding: EdgeInsets.fromLTRB(
+                          20,
+                          26,
+                          20,
+                          isKeyboardOpen ? 16 : 24,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              'Create Account',
+                              textAlign: TextAlign.center,
+                              style: ZegaTheme.headlineSmall.copyWith(
+                                color: ZegaTheme.primaryNavy,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Register to access ZEGA-ALERT services.',
+                              textAlign: TextAlign.center,
+                              style: ZegaTheme.bodySmall.copyWith(
+                                color: ZegaTheme.secondaryText,
+                              ),
+                            ),
+                            const SizedBox(height: 22),
+                            _buildRegistrationForm(loc),
+                            const SizedBox(height: 16),
+                            _buildLoginNavigation(loc),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-            ),
-          ],
+                ],
+              );
+            },
+          ),
         ),
       ),
     );

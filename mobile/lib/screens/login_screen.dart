@@ -10,14 +10,7 @@ import 'forgot_password_screen.dart';
 import 'register_screen.dart';
 import '../main.dart';
 
-/// Premium Login Screen for ZEGA-ALERT
-/// Implements the exact design specification with:
-/// - Branding Header (logo, app name, tagline)
-/// - Welcome Section (headline + supportive text)
-/// - Login Form (phone/email + password with validation)
-/// - Sign In Button (primary CTA with loading state)
-/// - Registration Navigation (link to create account)
-/// - Security Footer (trust indicator)
+/// Login screen for ZEGA-ALERT.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -25,7 +18,8 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen>
+    with TickerProviderStateMixin {
   // Form controllers
   final _formKey = GlobalKey<FormState>();
   final _identifierController = TextEditingController();
@@ -69,13 +63,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       parent: _fadeController,
       curve: Curves.easeOutCubic,
     );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.15),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeOutCubic,
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.15), end: Offset.zero).animate(
+          CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
+        );
 
     _fadeController.forward();
     _slideController.forward();
@@ -87,7 +78,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 
   void _onFocusChange() {
-    final keyboardVisible = _identifierFocus.hasFocus || _passwordFocus.hasFocus;
+    final keyboardVisible =
+        _identifierFocus.hasFocus || _passwordFocus.hasFocus;
     if (keyboardVisible != _isKeyboardVisible && mounted) {
       setState(() => _isKeyboardVisible = keyboardVisible);
     }
@@ -126,7 +118,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   /// Validate email
   String? _validateEmail(String? value) {
     if (value == null || value.trim().isEmpty) return null; // Optional field
-    if (RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value.trim())) return null;
+    if (RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value.trim()))
+      return null;
     return 'Enter a valid email address';
   }
 
@@ -141,7 +134,9 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       return _validateEmail(trimmed);
     }
     final phone = _normalizePhone(trimmed);
-    return phone.length == 10 && phone.startsWith('0') ? null : 'Enter a valid phone number or email';
+    return phone.length == 10 && phone.startsWith('0')
+        ? null
+        : 'Enter a valid phone number or email';
   }
 
   /// Validate password
@@ -161,10 +156,12 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         s.contains('errno = 110')) {
       return 'Cannot reach the server at ${Api.baseUrl}.\nCheck your internet connection.';
     }
-    if (s.toLowerCase().contains('unauthorized') || s.toLowerCase().contains('invalid credentials')) {
+    if (s.toLowerCase().contains('unauthorized') ||
+        s.toLowerCase().contains('invalid credentials')) {
       return 'Invalid phone/email or password. Please try again.';
     }
-    if (s.toLowerCase().contains('not found') || s.toLowerCase().contains('user not found')) {
+    if (s.toLowerCase().contains('not found') ||
+        s.toLowerCase().contains('user not found')) {
       return 'No account found with this phone/email.';
     }
     return s;
@@ -186,20 +183,26 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       final identifier = _identifierController.text.trim();
       final body = identifier.contains('@')
           ? {'email': identifier, 'password': _passwordController.text}
-          : {'phone': _normalizePhone(identifier), 'password': _passwordController.text};
+          : {
+              'phone': _normalizePhone(identifier),
+              'password': _passwordController.text,
+            };
 
       final data = await Api.post('/auth/login', body);
 
       if (!mounted) return;
 
-      await Api.setToken(data['accessToken'], userId: data['user']['id'] as String);
+      await Api.setToken(
+        data['accessToken'],
+        userId: data['user']['id'] as String,
+      );
       await Api.setRefreshToken(data['refreshToken']);
       await Api.setProfile(data['user'] as Map<String, dynamic>?);
 
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MainShell()),
-      );
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const MainShell()));
     } catch (e) {
       if (mounted) {
         setState(() => _error = _friendlyError(e));
@@ -224,18 +227,23 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     try {
       final ok = await BiometricService.authenticate();
       if (!ok) {
-        if (mounted) setState(() => _error = 'Biometric authentication cancelled.');
+        if (mounted)
+          setState(() => _error = 'Biometric authentication cancelled.');
         return;
       }
       final refreshed = await Api.refreshSession();
       if (!refreshed) {
-        if (mounted) setState(() => _error = 'Session expired. Please sign in with your password.');
+        if (mounted)
+          setState(
+            () =>
+                _error = 'Session expired. Please sign in with your password.',
+          );
         return;
       }
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MainShell()),
-      );
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const MainShell()));
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
     } finally {
@@ -244,9 +252,13 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 
   void _navigateToRegister() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const RegisterScreen()),
-    );
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const RegisterScreen()));
+  }
+
+  void _continueAsGuest() {
+    Navigator.of(context)
+        .pushReplacement(MaterialPageRoute(builder: (_) => const MainShell()));
   }
 
   void _navigateToForgotPassword() {
@@ -262,265 +274,187 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    final isKeyboardOpen = bottomInset > 100;
 
     return ZegaAuthScreen(
-      backgroundColor: ZegaTheme.background,
+      backgroundColor: ZegaTheme.primaryNavy,
       resizeToAvoidBottomInset: true,
-      child: ZegaAuthBackground(
-        child: Column(
-          children: [
-            // Spacer to push content down slightly on large screens
-            SizedBox(height: isKeyboardOpen ? ZegaTheme.space8 : ZegaTheme.space24),
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: SlideTransition(
+          position: _slideAnimation,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isKeyboardOpen =
+                  MediaQuery.of(context).viewInsets.bottom > 100;
+              final heroHeight =
+                  (constraints.maxHeight * (isKeyboardOpen ? 0.22 : 0.37))
+                      .clamp(
+                        isKeyboardOpen ? 104.0 : 170.0,
+                        isKeyboardOpen ? 145.0 : 280.0,
+                      )
+                      .toDouble();
 
-            // Main content with animations
-            Expanded(
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: SlideTransition(
-                  position: _slideAnimation,
-                  child: SingleChildScrollView(
-                    physics: const ClampingScrollPhysics(),
-                    padding: EdgeInsets.only(
-                      bottom: isKeyboardOpen ? ZegaTheme.space16 : ZegaTheme.space32,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // ============================================================
-                        // BRANDING HEADER
-                        // ============================================================
-                        _buildBrandingHeader(loc),
-
-                        const SizedBox(height: ZegaTheme.space32),
-
-                        // ============================================================
-                        // WELCOME SECTION
-                        // ============================================================
-                        _buildWelcomeSection(loc),
-
-                        const SizedBox(height: ZegaTheme.space32),
-
-                        // ============================================================
-                        // LOGIN FORM CARD
-                        // ============================================================
-                        _buildLoginFormCard(loc),
-
-                        const SizedBox(height: ZegaTheme.space24),
-
-                        // ============================================================
-                        // REGISTRATION NAVIGATION
-                        // ============================================================
-                        _buildRegistrationNavigation(loc),
-
-                        const SizedBox(height: ZegaTheme.space24),
-
-                        // ============================================================
-                        // SECURITY FOOTER
-                        // ============================================================
-                        _buildSecurityFooter(),
-
-                        // Bottom spacing for keyboard
-                        SizedBox(height: isKeyboardOpen ? ZegaTheme.space16 : ZegaTheme.space8),
-                      ],
+              return Column(
+                children: [
+                  SizedBox(
+                    height: heroHeight,
+                    child: _buildBrandingHeader(heroHeight),
+                  ),
+                  Expanded(
+                    child: Container(
+                      width: double.infinity,
+                      decoration: const BoxDecoration(
+                        color: ZegaTheme.white,
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(24),
+                        ),
+                      ),
+                      child: SingleChildScrollView(
+                        physics: const ClampingScrollPhysics(),
+                        padding: EdgeInsets.fromLTRB(
+                          20,
+                          26,
+                          20,
+                          isKeyboardOpen ? 16 : 24,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              'Welcome Back',
+                              textAlign: TextAlign.center,
+                              style: ZegaTheme.headlineSmall.copyWith(
+                                color: ZegaTheme.primaryNavy,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Thank you for helping keep our community safe.',
+                              textAlign: TextAlign.center,
+                              style: ZegaTheme.bodySmall.copyWith(
+                                color: ZegaTheme.secondaryText,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            _buildLoginForm(loc),
+                            const SizedBox(height: 14),
+                            _buildRegistrationNavigation(loc),
+                            TextButton(
+                              onPressed: _isLoading ? null : _continueAsGuest,
+                              style: TextButton.styleFrom(
+                                foregroundColor: ZegaTheme.secondaryText,
+                                textStyle: ZegaTheme.bodySmall,
+                              ),
+                              child: const Text('Skip'),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-            ),
-          ],
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildBrandingHeader(AppLocalizations loc) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        // Federal Police Logo
-        Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(ZegaTheme.radiusRound),
-            boxShadow: [
-              BoxShadow(
-                color: ZegaTheme.primaryNavy.withValues(alpha: 0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-                spreadRadius: 0,
-              ),
-            ],
-          ),
-          child: const Center(
-            child: Image(
-              image: AssetImage('assets/images/efp_logo.png'),
-              width: 36,
-              height: 36,
+  Widget _buildBrandingHeader(double height) {
+    final logoSize = (height * 0.46).clamp(64.0, 104.0).toDouble();
+
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'ZEGA-ALERT',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.3,
             ),
           ),
-        ),
-        const SizedBox(height: ZegaTheme.space16),
-
-        // App Logo / Shield Badge
-        Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            gradient: ZegaTheme.primaryGradient,
-            borderRadius: BorderRadius.circular(ZegaTheme.radiusRound),
-            boxShadow: [
-              BoxShadow(
-                color: ZegaTheme.primaryNavy.withValues(alpha: 0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-                spreadRadius: 0,
-              ),
-            ],
-          ),
-          child: const Center(
-            child: Icon(
-              Icons.shield_outlined,
-              color: ZegaTheme.white,
-              size: 36,
+          const SizedBox(height: 10),
+          ClipOval(
+            child: Image.asset(
+              'assets/images/logo.png',
+              width: logoSize,
+              height: logoSize,
+              fit: BoxFit.contain,
             ),
           ),
-        ),
-        const SizedBox(height: ZegaTheme.space16),
-
-        // App Name
-        Text(
-          'ZEGA-ALERT',
-          style: ZegaTheme.headlineMedium.copyWith(
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.2,
-            color: ZegaTheme.primaryNavy,
-            height: 1.2,
-          ),
-        ),
-        const SizedBox(height: ZegaTheme.space8),
-
-        // Tagline
-        Text(
-          'Your Safety, Our Priority.',
-          style: ZegaTheme.bodyLarge.copyWith(
-            color: ZegaTheme.secondaryText,
-            fontWeight: FontWeight.w500,
-            height: 1.4,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  Widget _buildWelcomeSection(AppLocalizations loc) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Text(
-          'Welcome Back',
-          style: ZegaTheme.headlineSmall.copyWith(
-            fontWeight: FontWeight.w700,
-            color: ZegaTheme.mainText,
-            height: 1.3,
+  Widget _buildLoginForm(AppLocalizations loc) {
+    return Form(
+      key: _formKey,
+      onChanged: () => setState(() {}),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ZegaTextField(
+            controller: _identifierController,
+            focusNode: _identifierFocus,
+            label: 'Phone Number or Email',
+            hint: 'e.g., +251 911 234 567 or user@email.com',
+            prefixIcon: Icons.person_outline,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            validator: _validateIdentifier,
+            onFieldSubmitted: (_) => _passwordFocus.requestFocus(),
           ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: ZegaTheme.space12),
-        Text(
-          'Sign in to access your account and stay connected to your community safety network.',
-          style: ZegaTheme.bodyLarge.copyWith(
-            color: ZegaTheme.secondaryText,
-            height: 1.6,
+          const SizedBox(height: 16),
+          ZegaPasswordField(
+            controller: _passwordController,
+            focusNode: _passwordFocus,
+            label: loc.password,
+            hint: 'Enter your password',
+            textInputAction: TextInputAction.done,
+            validator: _validatePassword,
+            onFieldSubmitted: (_) => _submit(),
           ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLoginFormCard(AppLocalizations loc) {
-    return ZegaAuthCard(
-      child: Form(
-        key: _formKey,
-        onChanged: () => setState(() {}),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Phone/Email Field
-            ZegaTextField(
-              controller: _identifierController,
-              focusNode: _identifierFocus,
-              label: 'Phone Number or Email',
-              hint: 'e.g., +251 911 234 567 or user@email.com',
-              prefixIcon: Icons.person_outline,
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.next,
-              validator: _validateIdentifier,
-              onFieldSubmitted: (_) => _passwordFocus.requestFocus(),
-              autofocus: true,
-            ),
-            const SizedBox(height: ZegaTheme.space20),
-
-            // Password Field
-            ZegaPasswordField(
-              controller: _passwordController,
-              focusNode: _passwordFocus,
-              label: loc.password,
-              hint: 'Enter your password',
-              textInputAction: TextInputAction.done,
-              validator: _validatePassword,
-              onFieldSubmitted: (_) => _submit(),
-            ),
-            const SizedBox(height: ZegaTheme.space16),
-
-            // Forgot Password Link
-            Align(
-              alignment: Alignment.centerRight,
-              child: ZegaTextButton(
-                label: 'Forgot Password?',
-                onPressed: _isLoading ? null : _navigateToForgotPassword,
-                style: ZegaTheme.labelMedium.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: ZegaTheme.secondaryBlue,
-                ),
-              ),
-            ),
-
-            // Error Message
-            if (_error.isNotEmpty) ...[
-              const SizedBox(height: ZegaTheme.space16),
-              _buildErrorBanner(),
-            ],
-
-            const SizedBox(height: ZegaTheme.space24),
-
-            // Sign In Button
-            ZegaPrimaryButton(
-              label: loc.signingIn,
-              onPressed: _isLoading ? null : _submit,
-              isLoading: _isLoading,
-              isEnabled: _formKey.currentState?.validate() ?? false,
-              leadingIcon: Icons.login_rounded,
-              height: 56,
-            ),
-
-            // Biometric Login
-            if (_canBioLogin && !_isLoading) ...[
-              const SizedBox(height: ZegaTheme.space16),
-              ZegaSecondaryButton(
-                label: 'Sign in with Biometrics',
-                onPressed: _biometricLogin,
-                leadingIcon: Icons.fingerprint,
-                height: 52,
-              ),
-            ],
+          if (_error.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _buildErrorBanner(),
           ],
-        ),
+          const SizedBox(height: 18),
+          ZegaPrimaryButton(
+            label: 'Log In',
+            onPressed: _isLoading ? null : _submit,
+            isLoading: _isLoading,
+            isEnabled: _formKey.currentState?.validate() ?? false,
+            height: 52,
+            borderRadius: 28,
+          ),
+          Align(
+            alignment: Alignment.center,
+            child: ZegaTextButton(
+              label: 'Forgot your password?',
+              onPressed: _isLoading ? null : _navigateToForgotPassword,
+              style: ZegaTheme.bodySmall.copyWith(
+                color: ZegaTheme.primaryNavy,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          if (_canBioLogin && !_isLoading) ...[
+            const SizedBox(height: 8),
+            ZegaSecondaryButton(
+              label: 'Sign in with Biometrics',
+              onPressed: _biometricLogin,
+              leadingIcon: Icons.fingerprint,
+              height: 48,
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -559,20 +493,13 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   Widget _buildRegistrationNavigation(AppLocalizations loc) {
     return ZegaAuthNavigation(
       label: "Don't have an account?",
-      actionLabel: 'Create Account',
+      actionLabel: 'Sign up',
       onActionPressed: _navigateToRegister,
-      labelStyle: ZegaTheme.bodyMedium.copyWith(color: ZegaTheme.secondaryText),
+      labelStyle: ZegaTheme.bodyMedium.copyWith(color: Colors.white70),
       actionStyle: ZegaTheme.labelLarge.copyWith(
         fontWeight: FontWeight.w600,
-        color: ZegaTheme.secondaryBlue,
+        color: ZegaTheme.warningAmber,
       ),
-    );
-  }
-
-  Widget _buildSecurityFooter() {
-    return ZegaSecurityFooter(
-      message: 'Your information is protected with bank-grade encryption.',
-      icon: Icons.verified_user_outlined,
     );
   }
 }

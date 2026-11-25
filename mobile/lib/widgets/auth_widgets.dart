@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import '../config/theme.dart';
 
 /// A premium text input field with consistent styling for auth screens.
@@ -102,7 +103,13 @@ class _ZegaTextFieldState extends State<ZegaTextField> {
         hintText: widget.hint,
         helperText: widget.helperText,
         prefixIcon: widget.prefixIcon != null
-            ? Icon(widget.prefixIcon, size: 22, color: _hasFocus ? ZegaTheme.primaryNavy : ZegaTheme.secondaryText)
+            ? Icon(
+                widget.prefixIcon,
+                size: 22,
+                color: _hasFocus
+                    ? ZegaTheme.primaryNavy
+                    : ZegaTheme.secondaryText,
+              )
             : null,
         prefix: widget.prefix,
         suffixIcon: widget.suffix,
@@ -181,7 +188,9 @@ class _ZegaPhoneFieldState extends State<ZegaPhoneField> {
       controller: widget.controller,
       focusNode: _focusNode,
       keyboardType: TextInputType.phone,
-      textInputAction: widget.onFieldSubmitted != null ? TextInputAction.done : TextInputAction.next,
+      textInputAction: widget.onFieldSubmitted != null
+          ? TextInputAction.done
+          : TextInputAction.next,
       validator: widget.validator,
       onChanged: widget.onChanged,
       onFieldSubmitted: widget.onFieldSubmitted,
@@ -193,7 +202,11 @@ class _ZegaPhoneFieldState extends State<ZegaPhoneField> {
         hintText: widget.hint,
         filled: true,
         fillColor: ZegaTheme.white,
-        prefixIcon: Icon(Icons.phone_outlined, size: 22, color: _hasFocus ? ZegaTheme.primaryNavy : ZegaTheme.secondaryText),
+        prefixIcon: Icon(
+          Icons.phone_outlined,
+          size: 22,
+          color: _hasFocus ? ZegaTheme.primaryNavy : ZegaTheme.secondaryText,
+        ),
         prefix: _CountryCodeSelector(
           selectedCode: _selectedCountryCode,
           codes: widget.countryCodes,
@@ -206,7 +219,8 @@ class _ZegaPhoneFieldState extends State<ZegaPhoneField> {
   }
 
   /// Returns the full phone number with country code
-  String get fullPhoneNumber => '$_selectedCountryCode ${widget.controller.text}';
+  String get fullPhoneNumber =>
+      '$_selectedCountryCode ${widget.controller.text}';
 }
 
 /// Internal widget for country code selection in phone field
@@ -243,10 +257,19 @@ class _CountryCodeSelector extends StatelessWidget {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: selectedCode,
-          items: codes.map((code) => DropdownMenuItem(
-            value: code,
-            child: Text(code, style: ZegaTheme.bodyLarge.copyWith(fontWeight: FontWeight.w600)),
-          )).toList(),
+          items: codes
+              .map(
+                (code) => DropdownMenuItem(
+                  value: code,
+                  child: Text(
+                    code,
+                    style: ZegaTheme.bodyLarge.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
           onChanged: (value) => onChanged(value!),
           icon: Icon(
             Icons.keyboard_arrow_down,
@@ -273,6 +296,7 @@ class ZegaPrimaryButton extends StatefulWidget {
   final IconData? trailingIcon;
   final double? width;
   final double height;
+  final double borderRadius;
 
   const ZegaPrimaryButton({
     super.key,
@@ -284,6 +308,7 @@ class ZegaPrimaryButton extends StatefulWidget {
     this.trailingIcon,
     this.width,
     this.height = 56,
+    this.borderRadius = ZegaTheme.radiusLarge,
   });
 
   @override
@@ -302,9 +327,10 @@ class _ZegaPrimaryButtonState extends State<ZegaPrimaryButton>
       duration: ZegaTheme.durationFast,
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.98).animate(
-      CurvedAnimation(parent: _pressController, curve: Curves.easeOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.98,
+    ).animate(CurvedAnimation(parent: _pressController, curve: Curves.easeOut));
   }
 
   @override
@@ -327,66 +353,75 @@ class _ZegaPrimaryButtonState extends State<ZegaPrimaryButton>
             height: widget.height,
             child: FilledButton(
               onPressed: isActive ? widget.onPressed : null,
-              style: FilledButton.styleFrom(
-                backgroundColor: ZegaTheme.primaryNavy,
-                foregroundColor: ZegaTheme.white,
-                disabledBackgroundColor: ZegaTheme.primaryNavy.withValues(alpha: 0.4),
-                disabledForegroundColor: ZegaTheme.white.withValues(alpha: 0.6),
-                padding: EdgeInsets.zero,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(ZegaTheme.radiusLarge),
-                ),
-                elevation: 0,
-                shadowColor: Colors.transparent,
-              ).copyWith(
-                overlayColor: WidgetStateProperty.resolveWith<Color?>((states) {
-                  if (states.contains(WidgetState.pressed)) {
-                    return ZegaTheme.white.withValues(alpha: 0.12);
-                  }
-                  if (states.contains(WidgetState.hovered)) {
-                    return ZegaTheme.white.withValues(alpha: 0.08);
-                  }
-                  if (states.contains(WidgetState.focused)) {
-                    return ZegaTheme.white.withValues(alpha: 0.1);
-                  }
-                  return null;
-                }),
-              ),
+              style:
+                  FilledButton.styleFrom(
+                    backgroundColor: ZegaTheme.primaryNavy,
+                    foregroundColor: ZegaTheme.white,
+                    disabledBackgroundColor: ZegaTheme.primaryNavy.withValues(
+                      alpha: 0.4,
+                    ),
+                    disabledForegroundColor: ZegaTheme.white.withValues(
+                      alpha: 0.6,
+                    ),
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(widget.borderRadius),
+                    ),
+                    elevation: 0,
+                    shadowColor: Colors.transparent,
+                  ).copyWith(
+                    overlayColor: WidgetStateProperty.resolveWith<Color?>((
+                      states,
+                    ) {
+                      if (states.contains(WidgetState.pressed)) {
+                        return ZegaTheme.white.withValues(alpha: 0.12);
+                      }
+                      if (states.contains(WidgetState.hovered)) {
+                        return ZegaTheme.white.withValues(alpha: 0.08);
+                      }
+                      if (states.contains(WidgetState.focused)) {
+                        return ZegaTheme.white.withValues(alpha: 0.1);
+                      }
+                      return null;
+                    }),
+                  ),
               child: widget.isLoading
                   ? const SizedBox(
                       width: 22,
                       height: 22,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        valueColor: AlwaysStoppedAnimation<Color>(ZegaTheme.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          ZegaTheme.white,
+                        ),
                       ),
                     )
                   : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
-                      if (widget.leadingIcon != null) ...[
-                        Icon(widget.leadingIcon, size: 20),
-                        const SizedBox(width: 8),
-                      ],
-                      Flexible(
-                        child: Text(
-                          widget.label,
-                          style: ZegaTheme.labelLarge.copyWith(
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.2,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.max,
+                      children: [
+                        if (widget.leadingIcon != null) ...[
+                          Icon(widget.leadingIcon, size: 20),
+                          const SizedBox(width: 8),
+                        ],
+                        Flexible(
+                          child: Text(
+                            widget.label,
+                            style: ZegaTheme.labelLarge.copyWith(
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.2,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            textAlign: TextAlign.center,
                           ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                          textAlign: TextAlign.center,
                         ),
-                      ),
-                      if (widget.trailingIcon != null) ...[
-                        const SizedBox(width: 8),
-                        Icon(widget.trailingIcon, size: 20),
+                        if (widget.trailingIcon != null) ...[
+                          const SizedBox(width: 8),
+                          Icon(widget.trailingIcon, size: 20),
+                        ],
                       ],
-                    ],
-                  ),
+                    ),
             ),
           ),
         );
@@ -421,25 +456,28 @@ class ZegaSecondaryButton extends StatelessWidget {
       height: height,
       child: OutlinedButton(
         onPressed: isEnabled ? onPressed : null,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: ZegaTheme.primaryNavy,
-          disabledForegroundColor: ZegaTheme.secondaryText.withValues(alpha: 0.5),
-          side: const BorderSide(color: ZegaTheme.primaryNavy, width: 1.5),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(ZegaTheme.radiusLarge),
-          ),
-          padding: EdgeInsets.zero,
-        ).copyWith(
-          overlayColor: WidgetStateProperty.resolveWith<Color?>((states) {
-            if (states.contains(WidgetState.pressed)) {
-              return ZegaTheme.primaryNavy.withValues(alpha: 0.12);
-            }
-            if (states.contains(WidgetState.hovered)) {
-              return ZegaTheme.primaryNavy.withValues(alpha: 0.08);
-            }
-            return null;
-          }),
-        ),
+        style:
+            OutlinedButton.styleFrom(
+              foregroundColor: ZegaTheme.primaryNavy,
+              disabledForegroundColor: ZegaTheme.secondaryText.withValues(
+                alpha: 0.5,
+              ),
+              side: const BorderSide(color: ZegaTheme.primaryNavy, width: 1.5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(ZegaTheme.radiusLarge),
+              ),
+              padding: EdgeInsets.zero,
+            ).copyWith(
+              overlayColor: WidgetStateProperty.resolveWith<Color?>((states) {
+                if (states.contains(WidgetState.pressed)) {
+                  return ZegaTheme.primaryNavy.withValues(alpha: 0.12);
+                }
+                if (states.contains(WidgetState.hovered)) {
+                  return ZegaTheme.primaryNavy.withValues(alpha: 0.08);
+                }
+                return null;
+              }),
+            ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
@@ -483,30 +521,35 @@ class ZegaTextButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextButton(
       onPressed: isEnabled ? onPressed : null,
-      style: TextButton.styleFrom(
-        foregroundColor: color ?? ZegaTheme.secondaryBlue,
-        disabledForegroundColor: ZegaTheme.secondaryText.withValues(alpha: 0.5),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        minimumSize: Size.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ).copyWith(
-        overlayColor: WidgetStateProperty.resolveWith<Color?>((states) {
-          final baseColor = color ?? ZegaTheme.secondaryBlue;
-          if (states.contains(WidgetState.pressed)) {
-            return baseColor.withValues(alpha: 0.12);
-          }
-          if (states.contains(WidgetState.hovered)) {
-            return baseColor.withValues(alpha: 0.08);
-          }
-          return null;
-        }),
-      ),
+      style:
+          TextButton.styleFrom(
+            foregroundColor: color ?? ZegaTheme.secondaryBlue,
+            disabledForegroundColor: ZegaTheme.secondaryText.withValues(
+              alpha: 0.5,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ).copyWith(
+            overlayColor: WidgetStateProperty.resolveWith<Color?>((states) {
+              final baseColor = color ?? ZegaTheme.secondaryBlue;
+              if (states.contains(WidgetState.pressed)) {
+                return baseColor.withValues(alpha: 0.12);
+              }
+              if (states.contains(WidgetState.hovered)) {
+                return baseColor.withValues(alpha: 0.08);
+              }
+              return null;
+            }),
+          ),
       child: Text(
         label,
-        style: style ?? ZegaTheme.labelLarge.copyWith(
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.2,
-        ),
+        style:
+            style ??
+            ZegaTheme.labelLarge.copyWith(
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
+            ),
       ),
     );
   }
@@ -537,16 +580,20 @@ class ZegaAuthNavigation extends StatelessWidget {
       children: [
         Text(
           label,
-          style: labelStyle ?? ZegaTheme.bodyMedium.copyWith(color: ZegaTheme.secondaryText),
+          style:
+              labelStyle ??
+              ZegaTheme.bodyMedium.copyWith(color: ZegaTheme.secondaryText),
         ),
         const SizedBox(width: 4),
         ZegaTextButton(
           label: actionLabel,
           onPressed: onActionPressed,
-          style: actionStyle ?? ZegaTheme.labelLarge.copyWith(
-            fontWeight: FontWeight.w600,
-            color: ZegaTheme.secondaryBlue,
-          ),
+          style:
+              actionStyle ??
+              ZegaTheme.labelLarge.copyWith(
+                fontWeight: FontWeight.w600,
+                color: ZegaTheme.secondaryBlue,
+              ),
         ),
       ],
     );
@@ -607,7 +654,8 @@ class ZegaAuthHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveLogo = logo ??
+    final effectiveLogo =
+        logo ??
         Container(
           width: 64,
           height: 64,
@@ -662,9 +710,7 @@ class ZegaAuthHeader extends StatelessWidget {
         const SizedBox(height: ZegaTheme.space24),
         Text(
           title,
-          style: ZegaTheme.headlineSmall.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
+          style: ZegaTheme.headlineSmall.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: ZegaTheme.space8),
         Text(
@@ -696,7 +742,8 @@ class ZegaAuthCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: margin ?? const EdgeInsets.symmetric(horizontal: ZegaTheme.space24),
+      margin:
+          margin ?? const EdgeInsets.symmetric(horizontal: ZegaTheme.space24),
       padding: padding ?? const EdgeInsets.all(ZegaTheme.space24),
       decoration: BoxDecoration(
         color: ZegaTheme.white,
@@ -862,7 +909,9 @@ class _ZegaPasswordFieldState extends State<ZegaPasswordField> {
         ),
         suffixIcon: IconButton(
           icon: Icon(
-            _obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+            _obscureText
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
             size: 22,
             color: _hasFocus ? ZegaTheme.primaryNavy : ZegaTheme.secondaryText,
           ),
@@ -887,7 +936,7 @@ class ZegaAuthScreen extends StatelessWidget {
   const ZegaAuthScreen({
     super.key,
     required this.child,
-    this.backgroundColor = ZegaTheme.background,
+    this.backgroundColor = ZegaTheme.primaryNavy,
     this.appBar,
     this.resizeToAvoidBottomInset = true,
     this.extendBodyBehindAppBar = false,
@@ -895,30 +944,22 @@ class ZegaAuthScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: backgroundColor,
-      appBar: appBar,
-      resizeToAvoidBottomInset: resizeToAvoidBottomInset,
-      extendBodyBehindAppBar: extendBodyBehindAppBar,
-      body: SafeArea(
-        top: !extendBodyBehindAppBar,
-        bottom: true,
-        child: SingleChildScrollView(
-          physics: const ClampingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(
-            horizontal: ZegaTheme.space24,
-            vertical: ZegaTheme.space24,
-          ),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: MediaQuery.of(context).size.height -
-                  MediaQuery.of(context).padding.top -
-                  MediaQuery.of(context).padding.bottom -
-                  kToolbarHeight -
-                  ZegaTheme.space48,
-            ),
-            child: IntrinsicHeight(child: child),
-          ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: ZegaTheme.primaryNavy,
+        statusBarIconBrightness: Brightness.light,
+        systemNavigationBarColor: ZegaTheme.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: backgroundColor,
+        appBar: appBar,
+        resizeToAvoidBottomInset: resizeToAvoidBottomInset,
+        extendBodyBehindAppBar: extendBodyBehindAppBar,
+        body: SafeArea(
+          top: !extendBodyBehindAppBar,
+          bottom: false,
+          child: child,
         ),
       ),
     );
@@ -934,17 +975,7 @@ class ZegaAuthBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            ZegaTheme.background,
-            ZegaTheme.white,
-          ],
-          stops: [0.0, 0.6],
-        ),
-      ),
+      decoration: const BoxDecoration(color: ZegaTheme.primaryNavy),
       child: child,
     );
   }
@@ -966,13 +997,10 @@ class ZegaAuthTransition extends StatelessWidget {
     return FadeTransition(
       opacity: animation,
       child: SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0, 0.1),
-          end: Offset.zero,
-        ).animate(CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOutCubic,
-        )),
+        position: Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero)
+            .animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+            ),
         child: child,
       ),
     );

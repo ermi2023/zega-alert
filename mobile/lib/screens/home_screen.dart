@@ -1,30 +1,26 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api.dart';
 import '../services/database_service.dart';
 import '../services/socket_service.dart';
 import '../widgets/auth_gate.dart';
 import '../widgets/fullscreen_image_viewer.dart';
-import '../widgets/pod_actions.dart';
-import '../widgets/sos_dialog.dart';
 import '../widgets/translatable_text.dart';
-import 'announcement_detail_screen.dart';
 import 'missing_report_screen.dart';
 import 'person_detail_screen.dart';
-import 'report_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.searchQuery = ''});
+
+  final String searchQuery;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<dynamic> _announcements = [];
   List<dynamic> _missing = [];
   List<dynamic> _wanted = [];
   String? _loadError;
@@ -78,10 +74,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _offline = false;
     });
     try {
-      final ann = await Api.get('/announcements');
       final missing = await Api.get('/persons/missing');
       final wanted = await Api.get('/persons/wanted');
-      await DatabaseService.cacheList('announcements', ann);
       await DatabaseService.cacheList('missing_persons', missing);
       await DatabaseService.cacheList('wanted_persons', wanted);
 
@@ -98,17 +92,14 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       setState(() {
-        _announcements = ann is List ? ann : [];
         _missing = missing is List ? missing : [];
         _wanted = wanted is List ? wanted : [];
       });
     } catch (e) {
-      final ann = await DatabaseService.getCachedList('announcements');
       final missing = await DatabaseService.getCachedList('missing_persons');
       final wanted = await DatabaseService.getCachedList('wanted_persons');
-      if (ann.isNotEmpty || missing.isNotEmpty || wanted.isNotEmpty) {
+      if (missing.isNotEmpty || wanted.isNotEmpty) {
         setState(() {
-          _announcements = ann;
           _missing = missing;
           _wanted = wanted;
           _offline = true;
@@ -119,13 +110,6 @@ class _HomeScreenState extends State<HomeScreen> {
     } finally {
       setState(() => _loading = false);
     }
-  }
-
-  Future<void> _callHotline(String number) async {
-    final uri = Uri.parse('tel:$number');
-    try {
-      if (await canLaunchUrl(uri)) await launchUrl(uri);
-    } catch (_) {}
   }
 
   Future<void> _toggleLike(String entityType, String entityId) async {
@@ -239,19 +223,33 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  bool _matchesSearch(Map<String, dynamic> person) {
+    final query = widget.searchQuery.trim().toLowerCase();
+    if (query.isEmpty) return true;
+    return [
+      person['name'],
+      person['case_code'],
+      person['last_seen_address'],
+      person['description'],
+      person['crime_description'],
+    ].any((value) => value?.toString().toLowerCase().contains(query) ?? false);
+  }
+
   List<Map<String, dynamic>> _filteredList() {
     final list = <Map<String, dynamic>>[];
 
     if (_selectedFilter == 'All' || _selectedFilter == 'Wanted') {
       for (final w in _wanted) {
-        if (w['status'] == 'wanted' || w['status'] == null) {
+        if ((w['status'] == 'wanted' || w['status'] == null) &&
+            _matchesSearch(Map<String, dynamic>.from(w as Map))) {
           list.add({'item': w, 'kind': 'wanted'});
         }
       }
     }
     if (_selectedFilter == 'All' || _selectedFilter == 'Missing') {
       for (final m in _missing) {
-        if (m['status'] == 'missing' || m['status'] == null) {
+        if ((m['status'] == 'missing' || m['status'] == null) &&
+            _matchesSearch(Map<String, dynamic>.from(m as Map))) {
           list.add({'item': m, 'kind': 'missing'});
         }
       }
@@ -361,135 +359,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<Widget> _buildHomeSectionWidgets(AppLocalizations loc) {
     return [
-      Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(loc.appTitle, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            Text(loc.appSubtitle, style: const TextStyle(color: Colors.grey)),
-          ],
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Semantics(
-          button: true,
-          label: 'SOS Emergency button. Double tap to send emergency alert with your GPS location.',
-          child: SizedBox(
-            height: 96,
-            child: FilledButton(
-              onPressed: () => triggerEmergencySos(context),
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.red.shade600,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.sos, size: 32, color: Colors.white),
-                  const SizedBox(height: 4),
-                  Text(loc.sosEmergency, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _callHotline('991'),
-                icon: const Icon(Icons.phone, color: Color(0xFF1E40AF), size: 18),
-                label: const Text('Police 991', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _callHotline('907'),
-                icon: const Icon(Icons.emergency, color: Color(0xFFDC2626), size: 18),
-                label: const Text('Rescue 907', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16),
-        child: Card(
-          child: Padding(
-            padding: EdgeInsets.all(14),
-            child: PodActions(),
-          ),
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Card(
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
-              child: Icon(Icons.edit_note, color: Theme.of(context).colorScheme.primary),
-            ),
-            title: const Text('Report a crime', style: TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: const Text('Attach photos, video, audio, a web link or a file'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () async {
-              if (!await ensureAuthed(context, reason: 'Sign in to file a crime report.')) return;
-              if (!mounted) return;
-              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CrimeReportScreen()));
-            },
-          ),
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Text(loc.announcements, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-      ),
-      if (_announcements.isEmpty)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(loc.nothingHereYet, style: const TextStyle(color: Colors.grey)),
-        )
-      else
-        ..._announcements.take(3).map((a) => Semantics(
-          label: 'Announcement: ${a['title']}. ${a['body']}',
-          child: Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            child: ListTile(
-              leading: Icon(a['category'] == 'warning' ? Icons.warning_amber : Icons.campaign, color: a['category'] == 'warning' ? Colors.amber : Colors.green),
-              title: Text(a['title']),
-              subtitle: Text(a['body'], maxLines: 2, overflow: TextOverflow.ellipsis),
-              onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => AnnouncementDetailScreen(item: Map<String, dynamic>.from(a as Map)),
-              )),
-              trailing: Semantics(
-                button: true,
-                label: loc.shareAnnouncement(a['title']),
-                child: IconButton(
-                  icon: const Icon(Icons.share, size: 20),
-                  tooltip: loc.share,
-                  onPressed: () async {
-                    final r = await Share.share('${a['title']}\n\n${a['body']}\n\nShared via ZEGA-ALERT');
-                    await Api.recordShare('announcement', a['id']?.toString(), platform: Api.platformFromRaw(r.raw));
-                  },
-                ),
-              ),
-            ),
-          ),
-        )),
       Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [

@@ -297,6 +297,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         const SizedBox(height: 4),
         if (!_loggedIn) _guestBanner(loc),
+        _category('Help & accessibility', Icons.accessible_forward, [
+          Semantics(
+            label: 'People of Determination actions. Request a direct call or record a sign language video.',
+            child: const PodActions(),
+          ),
+          const SizedBox(height: 8),
+          Semantics(
+            label: 'Police and rescue emergency contacts. Police 991, rescue 907.',
+            child: ListTile(
+              leading: const Icon(Icons.local_police_outlined),
+              title: const Text('Police and rescue contacts'),
+              subtitle: const Text('Police 991 · Ambulance / rescue 907'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: _contact,
+            ),
+          ),
+        ]),
         if (_loggedIn) ...[
           _profileHeader(),
           _category('Personal information', Icons.person_outline, [
@@ -538,13 +555,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onTap: _about,
                 ),
                 ListTile(
-                  leading: const Icon(Icons.support_agent),
-                  title: const Text('Contact us'),
-                  subtitle: const Text('Hotlines 991 and 907'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: _contact,
-                ),
-                ListTile(
                   leading: const Icon(Icons.description_outlined),
                   title: const Text('Terms & Conditions'),
                   trailing: const Icon(Icons.chevron_right),
@@ -695,10 +705,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
               ),
-            ),
-            Semantics(
-              label: 'People of Determination actions. Request a direct call or record a sign language video.',
-              child: const PodActions(showHeading: false),
             ),
           ],
         ]),

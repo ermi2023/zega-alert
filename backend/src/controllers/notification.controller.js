@@ -95,15 +95,17 @@ export const getUnreadCount = async (req, res) => {
   const { rows } = await query(
     `SELECT
        COUNT(*)::int AS count,
+       COUNT(*) FILTER (WHERE metadata->>'type' = 'announcement')::int AS news_updates,
        COUNT(*) FILTER (
-         WHERE metadata->>'type' IN ('announcement', 'missing_person', 'wanted_person')
-       )::int AS content_updates
+         WHERE metadata->>'type' IN ('missing_person', 'wanted_person')
+       )::int AS person_updates
      FROM notifications
      WHERE user_id = $1 AND is_read = false`,
     [req.user.id],
   );
   ok(res, {
     count: rows[0]?.count || 0,
-    contentUpdates: rows[0]?.content_updates || 0,
+    newsUpdates: rows[0]?.news_updates || 0,
+    personUpdates: rows[0]?.person_updates || 0,
   });
 };

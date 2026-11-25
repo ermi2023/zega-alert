@@ -3,6 +3,7 @@ import 'package:flutter/material.dart' show MaterialPageRoute, ScaffoldMessenger
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../screens/callbacks_screen.dart';
 import '../screens/news_screen.dart';
+import 'notification_state.dart';
 import '../main.dart' show navigatorKey;
 import 'api.dart';
 
@@ -69,6 +70,7 @@ class NotificationService {
   }
 
   static void _handleForegroundMessage(RemoteMessage message) {
+    NotificationState.notifyChanged();
     final notification = message.notification;
     if (notification == null) return;
     final context = navigatorKey.currentContext;
@@ -82,6 +84,7 @@ class NotificationService {
   }
 
   static void _handleMessageTap(RemoteMessage message) {
+    NotificationState.notifyChanged();
     final nav = navigatorKey.currentState;
     if (nav == null) return;
     final data = message.data;

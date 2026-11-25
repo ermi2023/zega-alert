@@ -307,10 +307,10 @@ class _MainShellState extends State<MainShell> {
     try {
       final res = await Api.get('/notifications/unread-count');
       if (!mounted) return;
-      final contentUpdates = res is Map
-          ? (res['contentUpdates'] as num?)?.toInt() ?? 0
+      final newsUpdates = res is Map
+          ? (res['newsUpdates'] as num?)?.toInt() ?? 0
           : 0;
-      setState(() => _newsUnread = contentUpdates);
+      setState(() => _newsUnread = newsUpdates);
     } catch (_) {}
   }
 
@@ -422,16 +422,18 @@ class _MainShellState extends State<MainShell> {
             ),
           ),
         ),
-        title: const Text(
-          'ZEGA-ALERT',
-          style: TextStyle(
-            color: Color(0xFF00338D),
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-            letterSpacing: 0.3,
-          ),
-          overflow: TextOverflow.ellipsis,
-        ),
+        title: _index == 0
+            ? const SizedBox.shrink()
+            : const Text(
+                'ZEGA-ALERT',
+                style: TextStyle(
+                  color: Color(0xFF00338D),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  letterSpacing: 0.3,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
         actions: [
           IconButton(
             tooltip: 'Profile',
@@ -598,11 +600,11 @@ class _NotificationBellState extends State<_NotificationBell> {
       final res = await Api.get('/notifications/unread-count');
       if (!mounted) return;
       final total = res is Map ? (res['count'] as num?)?.toInt() ?? 0 : 0;
-      final contentUpdates = res is Map
-          ? (res['contentUpdates'] as num?)?.toInt() ?? 0
+      final newsUpdates = res is Map
+          ? (res['newsUpdates'] as num?)?.toInt() ?? 0
           : 0;
       setState(
-        () => _unread = (total - contentUpdates).clamp(0, total).toInt(),
+        () => _unread = (total - newsUpdates).clamp(0, total).toInt(),
       );
     } catch (_) {}
   }

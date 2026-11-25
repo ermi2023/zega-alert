@@ -43,6 +43,7 @@ class SyncService {
     _flushing = true;
     try {
       if (!await ConnectivityService.isConnected()) return;
+      await Api.flushPendingLogout();
       final items = await DatabaseService.getOutbox();
       for (final item in items) {
         final id = item['id'] as int;

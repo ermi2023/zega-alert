@@ -25,6 +25,8 @@ class _ReportScreenState extends State<ReportScreen> with SingleTickerProviderSt
   String? _loadError;
   bool _loading = true;
   bool _offline = false;
+  String _query = '';
+  String _filter = 'all';
 
   @override
   void initState() {
@@ -72,6 +74,8 @@ class _ReportScreenState extends State<ReportScreen> with SingleTickerProviderSt
   }
 
   Future<void> _rate(dynamic r) async {
+    final id = r['id']?.toString();
+    if (id == null || id.isEmpty) return;
     final loc = AppLocalizations.of(context);
     final comment = TextEditingController();
     int rating = 5;
@@ -102,7 +106,7 @@ class _ReportScreenState extends State<ReportScreen> with SingleTickerProviderSt
     );
     if (submitted != true) return;
     try {
-      await Api.post('/feedback/${r['id']}/feedback', {
+      await Api.post('/feedback/$id/feedback', {
         'rating': rating,
         'comment': comment.text.trim(),
       });
@@ -128,6 +132,21 @@ class _ReportScreenState extends State<ReportScreen> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final query = _query.trim().toLowerCase();
+    final filtered = _mine.where((r) {
+      final status = (r['status'] ?? '').toString();
+      final matchesFilter = switch (_filter) {
+        'draft' => status == 'draft',
+        'active' => ['pending', 'submitted', 'under_review', 'assigned', 'in_progress'].contains(status),
+        'resolved' => ['resolved', 'closed'].contains(status),
+        _ => true,
+      };
+      if (!matchesFilter) return false;
+      if (query.isEmpty) return true;
+      final title = (r['title'] ?? '').toString().toLowerCase();
+      final category = (r['category'] ?? '').toString().toLowerCase();
+      return title.contains(query) || category.contains(query) || status.contains(query);
+    }).toList();
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: PreferredSize(
@@ -171,7 +190,6 @@ class _ReportScreenState extends State<ReportScreen> with SingleTickerProviderSt
       body: TabBarView(
         controller: _tabs,
         children: [
-          // Tab 1: Crime & Incident Reports
           RefreshIndicator(
             onRefresh: _load,
             child: ListView(
@@ -225,29 +243,84 @@ class _ReportScreenState extends State<ReportScreen> with SingleTickerProviderSt
                     ),
                   ),
                 if (_loading) const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
-                const SizedBox(height: 20),
                 Text(loc.myReports, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                if (_mine.isEmpty && !_loading)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: Center(child: Text(loc.noReportsYet, style: const TextStyle(color: Colors.grey))),
+                TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search reports',
+                    prefixIcon: const Icon(Icons.search),
+                    isDense: true,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                ..._mine.map((r) => Card(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  elevation: 1,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  child: ListTile(
-                    leading: Icon(Icons.assignment_outlined, color: _statusColor(r['status'] ?? '')),
-                    title: Text(r['title'] ?? 'Untitled', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text('${r['category'] ?? ''} • ${_statusLabel(r['status'] ?? '')}'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ReportDetailScreen(id: r['id']))),
+                  onChanged: (value) => setState(() => _query = value),
+                ),
+                const SizedBox(height: 8),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      for (final entry in const [
+                        ('all', 'All'),
+                        ('active', 'Active'),
+                        ('resolved', 'Resolved'),
+                        ('draft', 'Drafts'),
+                      ])
+                        Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: ChoiceChip(
+                            label: Text(entry.$2),
+                            selected: _filter == entry.$1,
+                            onSelected: (_) => setState(() => _filter = entry.$1),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                if (filtered.isEmpty)
+                  Padding(padding: const EdgeInsets.symmetric(vertical: 24), child: Center(child: Text(_mine.isEmpty ? loc.noReportsYet : 'No reports match this filter.', style: const TextStyle(color: Colors.grey)))),
+                ...filtered.take(20).map((r) => Semantics(
+                  label: 'Report: ${r['title'] ?? 'Untitled'}. Category: ${r['category'] ?? 'unknown'}. Status: ${_statusLabel((r['status'] ?? '').toString())}.',
+                  child: Card(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ListTile(
+                          leading: Icon(Icons.assignment_outlined, color: _statusColor((r['status'] ?? '').toString())),
+                          title: Text(r['title'] ?? 'Untitled'),
+                          subtitle: Text('${r['category'] ?? ''} · ${_shortDate(r['reported_at']?.toString())}'),
+                          trailing: Text(_statusLabel((r['status'] ?? '').toString()), style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _statusColor((r['status'] ?? '').toString()))),
+                          onTap: () {
+                            final id = r['id']?.toString();
+                            if (id != null && id.isNotEmpty) {
+                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => ReportDetailScreen(id: id)));
+                            }
+                          },
+                        ),
+                        if (r['status'] == 'resolved')
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Semantics(
+                                button: true,
+                                label: 'Rate response for report: ${r['title'] ?? "Untitled"}',
+                                child: TextButton.icon(
+                                  onPressed: () => _rate(r),
+                                  icon: const Icon(Icons.star_outline, size: 18),
+                                  label: Text(loc.rateThisResponse),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 )),
               ],
             ),
           ),
+
 
           // Tab 2: Follow-up with Admin (Chat / Message System)
           const CommunicationScreen(),
@@ -310,7 +383,7 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
     return '${l.year}-${l.month.toString().padLeft(2, '0')}-${l.day.toString().padLeft(2, '0')} ${l.hour.toString().padLeft(2, '0')}:${l.minute.toString().padLeft(2, '0')}';
   }
 
-  Future<void> _submit() async {
+  Future<void> _submit({bool draft = false}) async {
     if (!_form.currentState!.validate()) return;
     setState(() { _busy = true; _status = null; });
     try {
@@ -340,6 +413,7 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
       final result = await Api.postOrQueue('/reports', {
         'category': _category,
         'severity': _severity,
+        'status': draft ? 'draft' : 'pending',
         'title': _title.text.trim(),
         'description': _desc.text.trim(),
         'incident_at': _incidentAt.toUtc().toIso8601String(),
@@ -352,8 +426,8 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
         'evidence': _evidence,
       });
       setState(() => _status = result['queued'] == true
-          ? 'You are offline. Report saved and will be submitted automatically when back online.'
-          : 'Report submitted. Thank you.');
+          ? 'You are offline. ${draft ? 'Draft' : 'Report'} saved and will be synced automatically when back online.'
+          : (draft ? 'Draft saved. You can submit it later from My Reports.' : 'Report submitted. Thank you.'));
   _title.clear();
   _desc.clear();
   _manualAddress.clear();
@@ -365,8 +439,10 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
       final queued = result['queued'] == true;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(queued
-            ? 'Saved offline. Your report will be submitted automatically when you are back online.'
-            : 'Report submitted successfully. Thank you for helping keep your community safe.'),
+            ? 'Saved offline. ${draft ? 'Your draft' : 'Your report'} will sync automatically when you are back online.'
+            : (draft
+                ? 'Draft saved. You can finish and submit it from My Reports.'
+                : 'Report submitted successfully. Thank you for helping keep your community safe.')),
       ));
       Navigator.of(context).pop();
     } catch (e) {
@@ -536,8 +612,8 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
                 Semantics(
                   label: 'Crime category dropdown. Currently set to $_category.',
                   child: DropdownButtonFormField<String>(
-                    value: _category,
-                    decoration: InputDecoration(labelText: 'Crime category', border: const OutlineInputBorder()),
+                    initialValue: _category,
+                    decoration: const InputDecoration(labelText: 'Crime category', border: OutlineInputBorder()),
                     items: _categories
                         .map((c) => DropdownMenuItem(value: c.value, child: Text(c.label)))
                         .toList(),
@@ -554,9 +630,9 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
                     subtitle: Text(_fmtDt(_incidentAt)),
                     onTap: () async {
                       final d = await showDatePicker(context: context, initialDate: _incidentAt, firstDate: DateTime(2020), lastDate: DateTime.now().add(const Duration(days: 1)));
-                      if (d == null) return;
+                      if (d == null || !context.mounted) return;
                       final t = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(_incidentAt));
-                      if (t == null) return;
+                      if (t == null || !context.mounted) return;
                       setState(() => _incidentAt = DateTime(d.year, d.month, d.day, t.hour, t.minute));
                     },
                   ),
@@ -583,7 +659,7 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
                 Semantics(
                   label: 'Severity dropdown. Currently set to $_severity.',
                   child: DropdownButtonFormField<String>(
-                    value: _severity,
+                    initialValue: _severity,
                     decoration: InputDecoration(labelText: loc.severity, border: const OutlineInputBorder()),
                     items: ['low', 'medium', 'high', 'critical'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                     onChanged: (v) => setState(() => _severity = v!),
@@ -631,6 +707,12 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
                   button: true,
                   label: _busy ? 'Submitting report' : 'Submit report. Double tap to send your crime report.',
                   child: FilledButton(onPressed: _busy ? null : _submit, child: Text(_busy ? loc.submitting : loc.submitReport)),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _busy ? null : () => _submit(draft: true),
+                  icon: const Icon(Icons.save_outlined),
+                  label: const Text('Save as draft'),
                 ),
               ],
             ),

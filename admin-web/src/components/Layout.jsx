@@ -8,10 +8,10 @@ import { io } from 'socket.io-client';
 
 const LANGUAGES = [
   { code: 'en', label: 'English' },
-  { code: 'amh', label: 'አማርኛ (Amharic)' },
-  { code: 'oro', label: 'Afaan Oromoo (Oromifa)' },
-  { code: 'tigir', label: 'ትግርኛ (Tigrinya)' },
-  { code: 'soma', label: 'Soomaali (Ethio Somali)' },
+  { code: 'am', label: 'አማርኛ (Amharic)' },
+  { code: 'om', label: 'Afaan Oromoo (Oromifa)' },
+  { code: 'ti', label: 'ትግርኛ (Tigrinya)' },
+  { code: 'so', label: 'Soomaali (Ethio Somali)' },
 ];
 
 export default function Layout({ children }) {

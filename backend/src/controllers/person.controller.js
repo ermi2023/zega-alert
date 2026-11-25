@@ -36,6 +36,12 @@ const WANTED_EDIT_FIELDS = [
   'name', 'age', 'gender', 'photo_url', 'crime_description', 'danger_level',
 ];
 
+const deleteEntityDependents = async (entityType, entityId) => {
+  await query('DELETE FROM person_photos WHERE entity_type = $1 AND entity_id = $2', [entityType, entityId]);
+  await query('DELETE FROM post_likes WHERE entity_type = $1 AND entity_id = $2', [entityType, entityId]);
+  await query('DELETE FROM post_comments WHERE entity_type = $1 AND entity_id = $2', [entityType, entityId]);
+};
+
 export const getMissingStats = async (req, res) => {
   const { rows } = await query(`
     SELECT
@@ -192,7 +198,7 @@ export const publishMissing = async (req, res) => {
 
 export const unpublishMissing = async (req, res) => {
   const { rows } = await query(
-    `UPDATE missing_persons SET is_approved = false, approved_by = NULL, approved_at = NULL
+    `UPDATE missing_persons SET is_approved = false, approved_by = NULL, approved_at = NULL, rejection_reason = NULL
      WHERE id = $1 RETURNING *`,
     [req.params.id],
   );
@@ -283,6 +289,7 @@ export const deleteMissing = async (req, res) => {
     [req.params.id],
   );
   if (!rows[0]) return fail(res, 'Not found', 404);
+  await deleteEntityDependents('missing_person', rows[0].id);
   await query(
     `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'delete_missing_person','missing_persons',$2)`,
     [req.user.id, rows[0].id],
@@ -448,6 +455,7 @@ export const deleteWanted = async (req, res) => {
     [req.params.id],
   );
   if (!rows[0]) return fail(res, 'Not found', 404);
+  await deleteEntityDependents('wanted_person', rows[0].id);
   await query(
     `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES ($1,'delete_wanted_person','wanted_persons',$2)`,
     [req.user.id, rows[0].id],
@@ -501,7 +509,7 @@ export const publishWanted = async (req, res) => {
 
 export const unpublishWanted = async (req, res) => {
   const { rows } = await query(
-    `UPDATE wanted_persons SET is_approved = false, approved_by = NULL, approved_at = NULL
+    `UPDATE wanted_persons SET is_approved = false, approved_by = NULL, approved_at = NULL, rejection_reason = NULL
      WHERE id = $1 RETURNING *`,
     [req.params.id],
   );

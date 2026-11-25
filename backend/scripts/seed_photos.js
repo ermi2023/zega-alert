@@ -7,7 +7,7 @@ async function seedPhotos() {
   const dawit = await query("SELECT id FROM wanted_persons WHERE name ILIKE '%Dawit Bekele%' LIMIT 1");
   if (dawit.rows.length > 0) {
     const id = dawit.rows[0].id;
-    await query("DELETE FROM person_photos WHERE entity_id = $1", [id]);
+    await query("DELETE FROM person_photos WHERE entity_type = 'wanted_person' AND entity_id = $1", [id]);
     await query(`
       INSERT INTO person_photos (entity_type, entity_id, photo_url, sort_order)
       VALUES 
@@ -22,7 +22,7 @@ async function seedPhotos() {
   const sara = await query("SELECT id FROM missing_persons WHERE name ILIKE '%Sara Tadesse%' LIMIT 1");
   if (sara.rows.length > 0) {
     const id = sara.rows[0].id;
-    await query("DELETE FROM person_photos WHERE entity_id = $1", [id]);
+    await query("DELETE FROM person_photos WHERE entity_type = 'missing_person' AND entity_id = $1", [id]);
     await query(`
       INSERT INTO person_photos (entity_type, entity_id, photo_url, sort_order)
       VALUES 
@@ -36,7 +36,7 @@ async function seedPhotos() {
   const mulugeta = await query("SELECT id FROM wanted_persons WHERE name ILIKE '%Mulugeta Haile%' LIMIT 1");
   if (mulugeta.rows.length > 0) {
     const id = mulugeta.rows[0].id;
-    await query("DELETE FROM person_photos WHERE entity_id = $1", [id]);
+    await query("DELETE FROM person_photos WHERE entity_type = 'wanted_person' AND entity_id = $1", [id]);
     await query(`
       INSERT INTO person_photos (entity_type, entity_id, photo_url, sort_order)
       VALUES 

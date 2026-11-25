@@ -24,6 +24,26 @@ export const authenticate = async (req, res, next) => {
   }
 };
 
+// Attaches req.user when a valid token is present, but never blocks guests.
+export const optionalAuthenticate = async (req, res, next) => {
+  const header = req.headers.authorization || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+  if (!token) return next();
+  try {
+    const payload = verifyToken(token);
+    const { rows } = await query(
+      'SELECT id, full_name, phone, email, role, region, sub_city, woreda, is_active, token_version FROM users WHERE id = $1',
+      [payload.sub],
+    );
+    if (rows[0]?.is_active && (payload.ver ?? 0) === (rows[0].token_version ?? 0)) {
+      req.user = rows[0];
+    }
+  } catch (_) {
+    // Invalid tokens are treated as guests on public endpoints.
+  }
+  next();
+};
+
 export const requireRole = (...roles) => (req, res, next) => {
   if (!req.user) return fail(res, 'Authentication required', 401);
   if (!roles.includes(req.user.role)) return fail(res, 'Forbidden: insufficient role', 403);

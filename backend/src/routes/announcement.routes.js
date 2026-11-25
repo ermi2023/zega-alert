@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate, requireRole } from '../middleware/auth.js';
+import { authenticate, optionalAuthenticate, requireRole } from '../middleware/auth.js';
 import {
   createAnnouncement, listAnnouncements, getAnnouncement, updateAnnouncement, deleteAnnouncement,
   retranslateAnnouncement, getPodcastFeed, getAnnouncementAudio,
@@ -13,8 +13,8 @@ router.get('/feed/podcast.xml', getPodcastFeed);
 router.get('/:id/audio', getAnnouncementAudio);
 
 // Public (guest) read access so people can browse without an account.
-router.get('/', listAnnouncements);
-router.get('/:id', getAnnouncement);
+router.get('/', optionalAuthenticate, listAnnouncements);
+router.get('/:id', optionalAuthenticate, getAnnouncement);
 
 // Writes require an authenticated account.
 router.post('/', authenticate, requireRole('police', 'regional_admin', 'system_admin'), createAnnouncement);

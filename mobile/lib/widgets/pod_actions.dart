@@ -61,6 +61,7 @@ class _PodActionsState extends State<PodActions> {
           return;
         }
       }
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(loc.callingNumber(stationPhone ?? '0911'))),
       );

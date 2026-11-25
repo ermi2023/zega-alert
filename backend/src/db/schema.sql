@@ -33,7 +33,7 @@ BEGIN
     CREATE TYPE translation_lang AS ENUM ('en', 'am', 'om', 'ti');
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'message_type') THEN
-    CREATE TYPE message_type AS ENUM ('text', 'image', 'audio', 'location');
+    CREATE TYPE message_type AS ENUM ('text', 'image', 'audio', 'video', 'file', 'attachment', 'location');
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'conversation_type') THEN
     CREATE TYPE conversation_type AS ENUM ('direct', 'group');
@@ -86,6 +86,8 @@ CREATE TABLE IF NOT EXISTS users (
   is_verified        BOOLEAN DEFAULT FALSE,
   is_active          BOOLEAN DEFAULT TRUE,
   token_version      INTEGER NOT NULL DEFAULT 0,
+  failed_login_attempts INTEGER NOT NULL DEFAULT 0,
+  locked_until       TIMESTAMPTZ,
   last_login_at      TIMESTAMPTZ,
   created_at         TIMESTAMPTZ DEFAULT now(),
   updated_at         TIMESTAMPTZ DEFAULT now()
@@ -120,6 +122,7 @@ CREATE TABLE IF NOT EXISTS reports (
   latitude        DOUBLE PRECISION,
   longitude       DOUBLE PRECISION,
   address_text    VARCHAR(300),
+  incident_at     TIMESTAMPTZ,
   region          VARCHAR(100),
   sub_city        VARCHAR(100),
   woreda          VARCHAR(100),
@@ -279,6 +282,8 @@ CREATE TABLE IF NOT EXISTS announcements (
   language     VARCHAR(10) DEFAULT 'en',
   region       VARCHAR(100),
   sub_city     VARCHAR(100),
+  latitude     NUMERIC(10,7),
+  longitude    NUMERIC(10,7),
   author_id    UUID REFERENCES users(id) ON DELETE SET NULL,
   is_published BOOLEAN DEFAULT TRUE,
   published_at TIMESTAMPTZ DEFAULT now(),
@@ -311,6 +316,7 @@ CREATE TABLE IF NOT EXISTS legal_content (
   body          TEXT NOT NULL,
   category      VARCHAR(80),
   language      VARCHAR(10) DEFAULT 'en',
+  translations  JSONB DEFAULT '{}'::jsonb,
   is_published  BOOLEAN DEFAULT TRUE,
   review_status VARCHAR(20) NOT NULL DEFAULT 'published',
   reviewed_by   UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -406,6 +412,7 @@ CREATE INDEX IF NOT EXISTS idx_share_events_created ON share_events(created_at);
 CREATE TABLE IF NOT EXISTS geofences (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name        VARCHAR(150) NOT NULL,
+  label       VARCHAR(150),
   type        VARCHAR(50) NOT NULL DEFAULT 'zone',
   region      VARCHAR(100),
   sub_city    VARCHAR(100),
@@ -446,6 +453,7 @@ CREATE TABLE IF NOT EXISTS messages (
   body            TEXT,
   message_type    message_type NOT NULL DEFAULT 'text',
   attachment_url  TEXT,
+  attachment_type VARCHAR(20),
   latitude        DOUBLE PRECISION,
   longitude       DOUBLE PRECISION,
   created_at      TIMESTAMPTZ DEFAULT now()
@@ -521,9 +529,13 @@ CREATE TABLE IF NOT EXISTS callback_requests (
   citizen_id     UUID REFERENCES users(id) ON DELETE CASCADE,
   officer_id     UUID REFERENCES users(id) ON DELETE SET NULL,
   requested_slot TIMESTAMPTZ,
+  proposed_slot  TIMESTAMPTZ,
   mode           VARCHAR(20) NOT NULL DEFAULT 'voice',
   status         VARCHAR(20) NOT NULL DEFAULT 'pending',
   notes          TEXT,
+  reminder_sent_at    TIMESTAMPTZ,
+  session_id          UUID,
+  session_started_at  TIMESTAMPTZ,
   created_at     TIMESTAMPTZ DEFAULT now(),
   responded_at   TIMESTAMPTZ
 );

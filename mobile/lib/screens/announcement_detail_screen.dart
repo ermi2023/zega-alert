@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../services/api.dart';
 import '../widgets/translatable_text.dart';
 
@@ -133,6 +135,56 @@ class AnnouncementDetailScreen extends StatelessWidget {
               style: const TextStyle(fontSize: 16, height: 1.55),
             ),
           ),
+          if (_category == 'road_closure' && item['latitude'] != null && item['longitude'] != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.traffic, size: 18, color: scheme.primary),
+                      const SizedBox(width: 6),
+                      const Text('Affected area', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: SizedBox(
+                      height: 220,
+                      child: FlutterMap(
+                        options: MapOptions(
+                          initialCenter: LatLng(
+                            (item['latitude'] as num).toDouble(),
+                            (item['longitude'] as num).toDouble(),
+                          ),
+                          initialZoom: 15,
+                        ),
+                        children: [
+                          TileLayer(
+                            urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            subdomains: const ['a', 'b', 'c'],
+                            userAgentPackageName: 'com.zega.alert',
+                          ),
+                          MarkerLayer(markers: [
+                            Marker(
+                              point: LatLng(
+                                (item['latitude'] as num).toDouble(),
+                                (item['longitude'] as num).toDouble(),
+                              ),
+                              width: 44,
+                              height: 44,
+                              child: const Icon(Icons.location_on, color: Colors.red, size: 44),
+                            ),
+                          ]),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           if (translations is List && translations.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),

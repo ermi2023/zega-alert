@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import {
   requestCallback, respondToCallback, listCallbacks, listCallbacksForOfficer,
+  startCallbackSession,
 } from '../controllers/callback.controller.js';
 
 const router = Router();
@@ -11,5 +12,6 @@ router.post('/', requireRole('police', 'dispatcher', 'regional_admin', 'system_a
 router.get('/mine', listCallbacks);
 router.get('/officer', requireRole('police', 'dispatcher', 'regional_admin', 'system_admin'), listCallbacksForOfficer);
 router.patch('/:id', respondToCallback);
+router.post('/:id/session', startCallbackSession);
 
 export default router;

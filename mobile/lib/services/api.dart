@@ -1,10 +1,12 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart'
     show kIsWeb, kDebugMode, TargetPlatform, defaultTargetPlatform;
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
 import 'database_service.dart';
 import 'net_info_stub.dart' if (dart.library.io) 'net_info_io.dart' as netinfo;
 
@@ -15,6 +17,8 @@ class Api {
   /// `flutter build apk --dart-define=ZEGA_API_BASE=https://api.example.et`.
   /// Empty in normal local builds (falls back to LAN auto-detect).
   static const String _envBase = String.fromEnvironment('ZEGA_API_BASE');
+
+  static const String appVersion = '1.0.2';
 
   /// User-set backend base URL (e.g. a public HTTPS tunnel), persisted from the
   /// Settings screen. Takes precedence over everything else when present.
@@ -120,8 +124,10 @@ class Api {
       final end = start + batchSize - 1 > 254 ? 254 : start + batchSize - 1;
       final futures = <Future<String?>>[
         for (var h = start; h <= end; h++)
-          _hostAlive('$subnet.$h', ms: 900)
-              .then((ok) => ok ? '$subnet.$h' : null),
+          _hostAlive(
+            '$subnet.$h',
+            ms: 900,
+          ).then((ok) => ok ? '$subnet.$h' : null),
       ];
       final results = await Future.wait(futures);
       for (final r in results) {
@@ -166,7 +172,8 @@ class Api {
     final u = url.trim();
     if (u.startsWith('http://') ||
         u.startsWith('https://') ||
-        u.startsWith('data:')) return u;
+        u.startsWith('data:'))
+      return u;
     return '$baseUrl${u.startsWith('/') ? '' : '/'}$u';
   }
 
@@ -176,6 +183,7 @@ class Api {
   static String? _region;
   static String? _subCity;
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
+  static String? _role;
   static String? get token => _token;
   static String? get userId => _userId;
   static String? get refreshToken => _refreshToken;
@@ -187,15 +195,21 @@ class Api {
   /// missing-person submissions). Null when the user has not set a location.
   static String? get region => _region;
   static String? get subCity => _subCity;
+  static String? get role => _role;
 
   /// Cache the region/sub-city from a user object (login or /auth/me).
   static Future<void> setProfile(Map<String, dynamic>? user) async {
     if (user == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    final role = (user['role'] as String?)?.trim();
+    if (role != null && role.isNotEmpty) {
+      _role = role;
+      await prefs.setString('role', role);
+    }
     final r = (user['region'] as String?)?.trim();
     final s = (user['sub_city'] as String?)?.trim();
     _region = (r != null && r.isNotEmpty) ? r : _region;
     _subCity = (s != null && s.isNotEmpty) ? s : _subCity;
-    final prefs = await SharedPreferences.getInstance();
     if (_region != null) await prefs.setString('region', _region!);
     if (_subCity != null) await prefs.setString('sub_city', _subCity!);
   }
@@ -257,11 +271,14 @@ class Api {
     if (_refreshToken == null && legacyRefreshToken != null) {
       _refreshToken = legacyRefreshToken;
       await _secureStorage.write(
-          key: 'refreshToken', value: legacyRefreshToken);
+        key: 'refreshToken',
+        value: legacyRefreshToken,
+      );
     }
     await prefs.remove('refreshToken');
     _region = prefs.getString('region');
     _subCity = prefs.getString('sub_city');
+    _role = prefs.getString('role');
   }
 
   /// Exchange the stored refresh token for a fresh access token.
@@ -269,8 +286,9 @@ class Api {
   static Future<bool> refreshSession() async {
     if (_refreshToken == null) return false;
     try {
-      final data =
-          await _send('POST', '/auth/refresh', {'refreshToken': _refreshToken});
+      final data = await _send('POST', '/auth/refresh', {
+        'refreshToken': _refreshToken,
+      });
       await setToken(data['accessToken'], userId: _userId);
       if (data['refreshToken'] != null)
         await setRefreshToken(data['refreshToken']);
@@ -286,6 +304,7 @@ class Api {
     _refreshToken = null;
     _region = null;
     _subCity = null;
+    _role = null;
     final prefs = await SharedPreferences.getInstance();
     if (kIsWeb) {
       await prefs.remove('token');
@@ -302,10 +321,36 @@ class Api {
     await prefs.remove('refreshToken');
     await prefs.remove('region');
     await prefs.remove('sub_city');
+    await prefs.remove('role');
   }
 
-  static Future<dynamic> _send(String method, String path,
-      [Map<String, dynamic>? body]) async {
+  /// Preserve the refresh token when logout happens offline so it can be
+  /// revoked on the server once connectivity returns.
+  static Future<void> queuePendingLogout(String? refreshToken) async {
+    if (refreshToken == null || refreshToken.isEmpty) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('pendingRefreshRevoke', refreshToken);
+  }
+
+  static Future<void> flushPendingLogout() async {
+    final prefs = await SharedPreferences.getInstance();
+    final pending = prefs.getString('pendingRefreshRevoke');
+    if (pending == null || pending.isEmpty) return;
+    try {
+      await _send('POST', '/auth/logout', {'refreshToken': pending});
+      await prefs.remove('pendingRefreshRevoke');
+    } on ApiException {
+      await prefs.remove('pendingRefreshRevoke');
+    } catch (_) {
+      // Still offline; retry on the next connectivity event.
+    }
+  }
+
+  static Future<dynamic> _send(
+    String method,
+    String path, [
+    Map<String, dynamic>? body,
+  ]) async {
     final uri = Uri.parse('$baseUrl/api$path');
     final headers = <String, String>{'Content-Type': 'application/json'};
     if (_token != null) headers['Authorization'] = 'Bearer $_token';
@@ -323,7 +368,8 @@ class Api {
     if (res.statusCode >= 400) {
       final message = data is Map ? data['message'] : null;
       throw ApiException(
-          message?.toString() ?? 'Request failed (${res.statusCode})');
+        message?.toString() ?? 'Request failed (${res.statusCode})',
+      );
     }
     return data is Map ? data['data'] : null;
   }
@@ -333,15 +379,19 @@ class Api {
       _send('POST', path, body);
 
   /// Public raw request used by the offline sync service.
-  static Future<dynamic> request(String method, String path,
-          [Map<String, dynamic>? body]) =>
-      _send(method, path, body);
+  static Future<dynamic> request(
+    String method,
+    String path, [
+    Map<String, dynamic>? body,
+  ]) => _send(method, path, body);
 
   /// Try to POST immediately; if the device is offline (network error rather
   /// than a rejected request) queue it in the local outbox for later sync.
   /// Returns {'queued': true} when queued, otherwise {'queued': false, 'data': ...}.
   static Future<Map<String, dynamic>> postOrQueue(
-      String path, Map<String, dynamic> body) async {
+    String path,
+    Map<String, dynamic> body,
+  ) async {
     try {
       final data = await _send('POST', path, body);
       return {'queued': false, 'data': data};
@@ -357,8 +407,11 @@ class Api {
   }
 
   /// UC-11: record a social-share analytics event. Best-effort (never throws).
-  static Future<void> recordShare(String contentType, String? contentId,
-      {String platform = 'other'}) async {
+  static Future<void> recordShare(
+    String contentType,
+    String? contentId, {
+    String platform = 'other',
+  }) async {
     try {
       await _send('POST', '/share', {
         'content_type': contentType,
@@ -389,10 +442,13 @@ class Api {
   static Future<dynamic> getReport(String id) => _send('GET', '/reports/$id');
 
   // Social endpoints
-  static Future<dynamic> toggleLike(String entityType, String entityId,
-          {String reaction = 'like'}) =>
-      _send(
-          'POST', '/social/$entityType/$entityId/like', {'reaction': reaction});
+  static Future<dynamic> toggleLike(
+    String entityType,
+    String entityId, {
+    String reaction = 'like',
+  }) => _send('POST', '/social/$entityType/$entityId/like', {
+    'reaction': reaction,
+  });
 
   static Future<dynamic> getSocialCounts(String entityType, String entityId) =>
       _send('GET', '/social/$entityType/$entityId/counts');
@@ -401,32 +457,41 @@ class Api {
       _send('GET', '/social/$entityType/$entityId/comments');
 
   static Future<dynamic> addComment(
-          String entityType, String entityId, String body) =>
-      _send('POST', '/social/$entityType/$entityId/comments', {'body': body});
+    String entityType,
+    String entityId,
+    String body,
+  ) => _send('POST', '/social/$entityType/$entityId/comments', {'body': body});
 
   static Future<dynamic> getPhotos(String entityType, String entityId) =>
       _send('GET', '/social/$entityType/$entityId/photos');
 
   static Future<dynamic> addPhotos(
-          String entityType, String entityId, List<String> photos) =>
+    String entityType,
+    String entityId,
+    List<String> photos,
+  ) =>
       _send('POST', '/social/$entityType/$entityId/photos', {'photos': photos});
 
   // On-demand translation (news + missing/wanted descriptions).
   // Returns { text, source, target, cached? } on success.
   static Future<Map<String, dynamic>> translate(
-      String text, String targetLanguage,
-      {String sourceLanguage = 'en'}) async {
+    String text,
+    String targetLanguage, {
+    String sourceLanguage = 'en',
+  }) async {
     try {
       final data = await _send('POST', '/translate', {
         'text': text,
         'target': targetLanguage,
         'source': sourceLanguage,
       });
-      final result =
-          (data is Map) ? Map<String, dynamic>.from(data) : <String, dynamic>{};
+      final result = (data is Map)
+          ? Map<String, dynamic>.from(data)
+          : <String, dynamic>{};
       final translated = result['text']?.toString() ?? '';
       final source = result['source']?.toString() ?? '';
-      final placeholder = source == 'placeholder' ||
+      final placeholder =
+          source == 'placeholder' ||
           translated.startsWith('[Amharic]') ||
           translated.startsWith('[Oromifa]') ||
           translated.startsWith('[Tigrigna]') ||
@@ -436,17 +501,13 @@ class Api {
       // Old deployed servers may not have the /translate route yet.
     }
 
-    final uri = Uri.https(
-      'translate.googleapis.com',
-      '/translate_a/single',
-      {
-        'client': 'gtx',
-        'sl': sourceLanguage,
-        'tl': targetLanguage,
-        'dt': 't',
-        'q': text,
-      },
-    );
+    final uri = Uri.https('translate.googleapis.com', '/translate_a/single', {
+      'client': 'gtx',
+      'sl': sourceLanguage,
+      'tl': targetLanguage,
+      'dt': 't',
+      'q': text,
+    });
     final response = await http.get(uri).timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) {
       throw ApiException('Translation unavailable (${response.statusCode})');
@@ -474,8 +535,10 @@ class Api {
   }
 
   static Future<dynamic> upload(
-      String path, List<MapEntry<String, String>> files,
-      {Map<String, String>? fields}) async {
+    String path,
+    List<MapEntry<String, String>> files, {
+    Map<String, String>? fields,
+  }) async {
     final uri = Uri.parse('$baseUrl/api$path');
     final req = http.MultipartRequest('POST', uri);
     if (_token != null) req.headers['Authorization'] = 'Bearer $_token';
@@ -491,8 +554,9 @@ class Api {
         // For now, we'll handle it by checking if it's a web path (blob: or data:)
         // and throw a more helpful error.
         throw UnsupportedError(
-            'File upload on web requires passing XFile/bytes, not file paths. '
-            'Use uploadBytes() for web uploads.');
+          'File upload on web requires passing XFile/bytes, not file paths. '
+          'Use uploadBytes() for web uploads.',
+        );
       } else {
         req.files.add(await http.MultipartFile.fromPath(f.key, f.value));
       }
@@ -509,7 +573,8 @@ class Api {
     if (res.statusCode >= 400) {
       final message = data is Map ? data['message'] : null;
       throw ApiException(
-          message?.toString() ?? 'Upload failed (${res.statusCode})');
+        message?.toString() ?? 'Upload failed (${res.statusCode})',
+      );
     }
     return data is Map ? data['data'] : null;
   }
@@ -517,10 +582,12 @@ class Api {
   /// Upload files on web using bytes (XFile.readAsBytes()).
   /// Callers should pass MapEntry<String, List<int>> for file data.
   static Future<dynamic> uploadBytes(
-      String path, List<MapEntry<String, List<int>>> files,
-      {Map<String, String>? fields,
-      Map<String, String>? filenames,
-      Map<String, String>? contentTypes}) async {
+    String path,
+    List<MapEntry<String, List<int>>> files, {
+    Map<String, String>? fields,
+    Map<String, String>? filenames,
+    Map<String, String>? contentTypes,
+  }) async {
     final uri = Uri.parse('$baseUrl/api$path');
     final req = http.MultipartRequest('POST', uri);
     if (_token != null) req.headers['Authorization'] = 'Bearer $_token';
@@ -530,12 +597,14 @@ class Api {
       final filename = filenames?[f.key] ?? 'file';
       final contentType = contentTypes?[f.key] ?? 'application/octet-stream';
       final parts = contentType.split('/');
-      req.files.add(http.MultipartFile.fromBytes(
-        f.key,
-        f.value,
-        filename: filename,
-        contentType: MediaType(parts[0], parts.length > 1 ? parts[1] : '*'),
-      ));
+      req.files.add(
+        http.MultipartFile.fromBytes(
+          f.key,
+          f.value,
+          filename: filename,
+          contentType: MediaType(parts[0], parts.length > 1 ? parts[1] : '*'),
+        ),
+      );
     }
     final streamed = await req.send().timeout(const Duration(seconds: 120));
     final res = await http.Response.fromStream(streamed)
@@ -549,7 +618,8 @@ class Api {
     if (res.statusCode >= 400) {
       final message = data is Map ? data['message'] : null;
       throw ApiException(
-          message?.toString() ?? 'Upload failed (${res.statusCode})');
+        message?.toString() ?? 'Upload failed (${res.statusCode})',
+      );
     }
     return data is Map ? data['data'] : null;
   }

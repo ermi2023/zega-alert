@@ -57,6 +57,7 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
     SocketService.joinConversation(id);
     final data = await Api.get('/chat/conversations/$id/messages');
     if (mounted && _active == id) setState(() => _messages = data);
+    Api.patch('/chat/conversations/$id/read').catchError((_) => null);
   }
 
   Future<void> _pickAttachment(String kind) async {
@@ -117,7 +118,7 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
       'body': _input.text.trim(),
       if (_pendingAttachment != null) 'attachment_url': _pendingAttachment,
       if (_pendingAttachment != null) 'attachment_type': _pendingType,
-      'message_type': _pendingAttachment != null ? 'attachment' : 'text',
+      'message_type': _pendingAttachment != null ? (_pendingType ?? 'file') : 'text',
     };
     final msg = await Api.post('/chat/conversations/$_active/messages', body);
     final exists = _messages.any((m) => m['id'] == msg['id']);
@@ -159,6 +160,7 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
     );
     if (phone == null || phone.isEmpty) return;
     final users = await Api.get('/auth/staff?q=$phone');
+    if (!mounted) return;
     if (users.isEmpty) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(loc.userNotFound))); return; }
     final conv = await Api.post('/chat/conversations', {'participant_ids': [users.first['id']]});
     _loadConversations();

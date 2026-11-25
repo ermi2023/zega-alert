@@ -32,12 +32,14 @@ i18n.use(initReactI18next).init({
   returnEmptyString: false,
 });
 
+const originalChangeLanguage = i18n.changeLanguage.bind(i18n);
+
 // Load a non-bundled language: try localStorage cache, then the backend.
 // On success, registers it as an i18n resource and switches to it. On failure,
 // logs and falls back to English so the UI never blocks.
 export async function loadRemoteLanguage(lang) {
   if (!lang || STATIC_LANGS.has(lang)) {
-    await i18n.changeLanguage(lang);
+    await originalChangeLanguage(lang);
     return;
   }
 
@@ -47,7 +49,7 @@ export async function loadRemoteLanguage(lang) {
     try {
       const strings = JSON.parse(cached);
       i18n.addResourceBundle(lang, 'translation', strings, true, true);
-      await i18n.changeLanguage(lang);
+      await originalChangeLanguage(lang);
       return;
     } catch { /* corrupt cache — fall through to fetch */ }
   }
@@ -64,19 +66,18 @@ export async function loadRemoteLanguage(lang) {
     if (strings && typeof strings === 'object') {
       i18n.addResourceBundle(lang, 'translation', strings, true, true);
       try { localStorage.setItem(cacheKey(lang), JSON.stringify(strings)); } catch { /* quota */ }
-      await i18n.changeLanguage(lang);
+      await originalChangeLanguage(lang);
       return;
     }
   } catch (err) {
     // Provider failed — keep English so the UI renders.
     console.warn(`[i18n] Could not load language "${lang}":`, err.message);
   }
-  await i18n.changeLanguage(lang); // falls back to fallbackLng ('en')
+  await originalChangeLanguage(lang); // falls back to fallbackLng ('en')
 }
 
 // Wrap changeLanguage so anywhere that calls i18n.changeLanguage directly
 // (e.g. Layout.jsx's language picker) transparently handles remote languages.
-const originalChangeLanguage = i18n.changeLanguage.bind(i18n);
 i18n.changeLanguage = async (lang) => {
   if (lang && !STATIC_LANGS.has(lang)) {
     await loadRemoteLanguage(lang);

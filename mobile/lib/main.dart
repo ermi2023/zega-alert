@@ -4,8 +4,11 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+
 import 'firebase_options.dart';
+
 import 'package:geolocator/geolocator.dart';
+
 import 'l10n/app_localizations.dart';
 import 'l10n/fallback_localizations.dart';
 import 'screens/login_screen.dart';
@@ -23,7 +26,9 @@ import 'services/api.dart';
 import 'services/socket_service.dart';
 import 'services/notification_service.dart';
 import 'services/officer_position_service.dart';
+
 import 'package:workmanager/workmanager.dart';
+
 import 'services/sync_service.dart';
 import 'widgets/auth_gate.dart';
 import 'widgets/sos_dialog.dart';
@@ -33,9 +38,13 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
-    // Background sync of the offline outbox. Runs even when the app is closed.
+    // Background work that runs even when the app is closed.
     try {
-      await SyncService.flushInBackground();
+      if (task == 'zega-officer-position') {
+        await OfficerPositionService.reportInBackground();
+      } else {
+        await SyncService.flushInBackground();
+      }
     } catch (_) {}
     return true;
   });
@@ -45,7 +54,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (!kIsWeb) {
     try {
-      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
     } catch (_) {}
     try {
@@ -53,6 +64,12 @@ void main() async {
       await Workmanager().registerPeriodicTask(
         'zega-outbox-sync',
         'zega-outbox-sync',
+        frequency: const Duration(minutes: 15),
+        constraints: Constraints(networkType: NetworkType.connected),
+      );
+      await Workmanager().registerPeriodicTask(
+        'zega-officer-position',
+        'zega-officer-position',
         frequency: const Duration(minutes: 15),
         constraints: Constraints(networkType: NetworkType.connected),
       );
@@ -83,11 +100,20 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
   final savedLanguage = prefs.getString('languageCode') ?? 'en';
   final onboardingDone = prefs.getBool('onboarding_done') ?? false;
-  runApp(ZegaAlertApp(initialLanguage: savedLanguage, onboardingDone: onboardingDone));
+  runApp(
+    ZegaAlertApp(
+      initialLanguage: savedLanguage,
+      onboardingDone: onboardingDone,
+    ),
+  );
 }
 
 class ZegaAlertApp extends StatefulWidget {
-  const ZegaAlertApp({super.key, this.initialLanguage = 'en', this.onboardingDone = false});
+  const ZegaAlertApp({
+    super.key,
+    this.initialLanguage = 'en',
+    this.onboardingDone = false,
+  });
 
   final String initialLanguage;
   final bool onboardingDone;
@@ -115,7 +141,8 @@ class ZegaAlertAppState extends State<ZegaAlertApp> {
   }
 
   void toggleDarkMode(bool value) => setState(() => _darkMode = value);
-  void toggleAccessibility(bool value) => setState(() => _accessibility = value);
+  void toggleAccessibility(bool value) =>
+      setState(() => _accessibility = value);
 
   void setLanguage(String code) {
     setState(() => _languageCode = code);
@@ -152,7 +179,11 @@ class ZegaAlertAppState extends State<ZegaAlertApp> {
           );
 
     final darkScheme = _accessibility
-        ? ColorScheme.fromSeed(seedColor: const Color(0xFF90EE90), brightness: Brightness.dark, surface: const Color(0xFF1A1A1A))
+        ? ColorScheme.fromSeed(
+            seedColor: const Color(0xFF90EE90),
+            brightness: Brightness.dark,
+            surface: const Color(0xFF1A1A1A),
+          )
         : ColorScheme.fromSeed(
             seedColor: const Color(0xFF1E40AF),
             brightness: Brightness.dark,
@@ -177,7 +208,8 @@ class ZegaAlertAppState extends State<ZegaAlertApp> {
       builder: (context, child) => Semantics(
         label: 'ZEGA-ALERT application. Safety companion for emergency and crime reporting.',
         child: MediaQuery(
-          data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: TextScaler.linear(textScale)),
           child: child!,
         ),
       ),
@@ -206,13 +238,12 @@ class ZegaAlertAppState extends State<ZegaAlertApp> {
           surfaceTintColor: Colors.transparent,
         ),
       ),
-      darkTheme: ThemeData(
-        colorScheme: darkScheme,
-        useMaterial3: true,
-      ),
+      darkTheme: ThemeData(colorScheme: darkScheme, useMaterial3: true),
       themeMode: _darkMode ? ThemeMode.dark : ThemeMode.light,
       home: !_onboardingDone
-          ? OnboardingScreen(onDone: () => setState(() => _onboardingDone = true))
+          ? OnboardingScreen(
+              onDone: () => setState(() => _onboardingDone = true),
+            )
           : (Api.token == null ? const LoginScreen() : const MainShell()),
     );
   }
@@ -270,20 +301,24 @@ class _MainShellState extends State<MainShell> {
     if (!mounted) return;
     final loc = AppLocalizations.of(context);
     final title = cb['report_title'] ?? '';
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(loc.newCallbackRequest(title)),
-      action: SnackBarAction(
-        label: loc.open,
-        onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CallbacksScreen())),
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(loc.newCallbackRequest(title)),
+        action: SnackBarAction(
+          label: loc.open,
+          onPressed: () => Navigator.of(context)
+              .push(MaterialPageRoute(builder: (_) => const CallbacksScreen())),
+        ),
       ),
-    ));
+    );
   }
 
   void _onSosStatus(JsonMap data) {
     if (!mounted) return;
     final loc = AppLocalizations.of(context);
     final status = (data['status'] ?? 'updated').toString().toUpperCase();
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(loc.sosUpdated(status))));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(loc.sosUpdated(status))));
   }
 
   void _onIncomingCall(dynamic data) {
@@ -293,7 +328,9 @@ class _MainShellState extends State<MainShell> {
     final callerId = data['callerId'] ?? '';
     final callType = data['callType'] ?? 'video';
     final roomId = data['roomId'] ?? '';
-    final offer = data['offer'] is Map ? Map<String, dynamic>.from(data['offer'] as Map) : null;
+    final offer = data['offer'] is Map
+        ? Map<String, dynamic>.from(data['offer'] as Map)
+        : null;
 
     showDialog(
       context: context,
@@ -321,7 +358,10 @@ class _MainShellState extends State<MainShell> {
                 ),
               );
             },
-            child: Text(loc.accept, style: const TextStyle(color: Colors.green)),
+            child: Text(
+              loc.accept,
+              style: const TextStyle(color: Colors.green),
+            ),
           ),
         ],
       ),
@@ -346,20 +386,27 @@ class _MainShellState extends State<MainShell> {
               height: 38,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFF00338D).withOpacity(0.2), width: 1.5),
+                border: Border.all(
+                  color: const Color(0xFF00338D).withOpacity(0.2),
+                  width: 1.5,
+                ),
               ),
               child: ClipOval(
                 child: Image.asset(
                   'assets/images/logo.png',
                   fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const Icon(Icons.shield, color: Color(0xFF00338D), size: 22),
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.shield,
+                    color: Color(0xFF00338D),
+                    size: 22,
+                  ),
                 ),
               ),
             ),
           ),
         ),
         title: const Text(
-          'Zega-alert',
+          'ZEGA-ALERT',
           style: TextStyle(
             color: Color(0xFF00338D),
             fontWeight: FontWeight.bold,
@@ -420,7 +467,10 @@ class _MainShellState extends State<MainShell> {
           children: [
             if (isSelected)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 3,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF00338D),
                   borderRadius: BorderRadius.circular(14),
@@ -435,7 +485,9 @@ class _MainShellState extends State<MainShell> {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected ? const Color(0xFF1E3A8A) : const Color(0xFF64748B),
+                color: isSelected
+                    ? const Color(0xFF1E3A8A)
+                    : const Color(0xFF64748B),
               ),
             ),
           ],
@@ -465,7 +517,11 @@ class _MainShellState extends State<MainShell> {
                 ),
               ],
             ),
-            child: const Icon(Icons.emergency_share, color: Colors.white, size: 20),
+            child: const Icon(
+              Icons.emergency_share,
+              color: Colors.white,
+              size: 20,
+            ),
           ),
           const SizedBox(height: 2),
           const Text(
@@ -503,8 +559,14 @@ class _NotificationBellState extends State<_NotificationBell> {
     try {
       final res = await Api.get('/notifications?limit=20');
       if (!mounted) return;
-      final List list = res is List ? res : (res is Map && res['notifications'] is List ? res['notifications'] : []);
-      final unread = list.where((n) => n is Map && n['is_read'] == false).length;
+      final List list = res is List
+          ? res
+          : (res is Map && res['notifications'] is List
+                ? res['notifications']
+                : []);
+      final unread = list
+          .where((n) => n is Map && n['is_read'] == false)
+          .length;
       setState(() => _unread = unread);
     } catch (_) {}
   }
@@ -519,9 +581,9 @@ class _NotificationBellState extends State<_NotificationBell> {
         child: const Icon(Icons.notifications_outlined),
       ),
       onPressed: () async {
-        await Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-        );
+        await Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const NotificationsScreen()));
         _fetchUnread();
       },
     );

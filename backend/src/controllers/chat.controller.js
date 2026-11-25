@@ -56,11 +56,15 @@ export const getMessages = async (req, res) => {
      WHERE m.conversation_id = $1 ORDER BY m.created_at ASC`,
     [req.params.id],
   );
+  await query(
+    'UPDATE conversation_participants SET last_read_at = now() WHERE conversation_id = $1 AND user_id = $2',
+    [req.params.id, req.user.id],
+  );
   ok(res, rows);
 };
 
 export const sendMessage = async (req, res) => {
-  const { body, message_type = 'text', attachment_url, latitude, longitude } = req.body;
+  const { body, message_type = 'text', attachment_url, attachment_type, latitude, longitude } = req.body;
   if (!body && message_type === 'text') return fail(res, 'message body required');
   const isMember = await query(
     'SELECT 1 FROM conversation_participants WHERE conversation_id = $1 AND user_id = $2',
@@ -68,10 +72,10 @@ export const sendMessage = async (req, res) => {
   );
   if (!isMember.rows.length) return fail(res, 'Not a participant', 403);
   const { rows } = await query(
-    `INSERT INTO messages (conversation_id, sender_id, body, message_type, attachment_url, latitude, longitude)
-     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+    `INSERT INTO messages (conversation_id, sender_id, body, message_type, attachment_url, attachment_type, latitude, longitude)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
     [req.params.id, req.user.id, body || null, message_type, attachment_url || null,
-      latitude || null, longitude || null],
+      attachment_type || null, latitude || null, longitude || null],
   );
   const msg = rows[0];
   const participants = await query(
@@ -125,4 +129,26 @@ export const rateConversation = async (req, res) => {
     [req.params.id, req.user.id, ratingNum, comment || null],
   );
   ok(res, rows[0], 'Thanks for your feedback');
+};
+
+export const getUnreadCount = async (req, res) => {
+  const { rows } = await query(
+    `SELECT COUNT(*)::int AS count
+     FROM messages m
+     JOIN conversation_participants p ON p.conversation_id = m.conversation_id
+     WHERE p.user_id = $1
+       AND m.sender_id IS DISTINCT FROM $1
+       AND (p.last_read_at IS NULL OR m.created_at > p.last_read_at)`,
+    [req.user.id],
+  );
+  ok(res, { count: rows[0]?.count || 0 });
+};
+
+export const markConversationRead = async (req, res) => {
+  await query(
+    `UPDATE conversation_participants SET last_read_at = now()
+     WHERE conversation_id = $1 AND user_id = $2`,
+    [req.params.id, req.user.id],
+  );
+  ok(res, null, 'Conversation marked read');
 };

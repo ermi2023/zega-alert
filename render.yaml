@@ -4,7 +4,7 @@
 # 1. Push this repo to GitHub.
 # 2. Render dashboard -> New -> Blueprint -> pick the repo.
 # 3. Paste values for the `sync: false` env vars when prompted
-#    (Firebase service account JSON, Fayda keys, Africa's Talking keys).
+#    (Firebase service account JSON, Google Translation key, Fayda keys, Africa's Talking keys).
 # 4. After the API is live, set the admin static site's VITE_API_URL to the
 #    API URL, e.g. https://zega-alert-api.onrender.com
 

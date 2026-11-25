@@ -138,40 +138,40 @@ async function callLibre(text, source, target) {
   } finally {
     clearTimeout(timer);
   }
+}
 
-  /**
-   * No-key fallback for deployments that have not configured Google credentials.
-   * Uses Google's public translation web endpoint. It is rate-limited and is only
-   * a fallback; Google Cloud credentials are preferred by callGoogle().
-   */
-  async function callGooglePublic(text, source, target) {
-    const params = new URLSearchParams({
-      client: 'gtx',
-      sl: ENGINE_CODE[source] || source,
-      tl: ENGINE_CODE[target] || target,
-      dt: 't',
-      q: text,
+/**
+ * No-key fallback for deployments that have not configured Google credentials.
+ * Uses Google's public translation web endpoint. It is rate-limited and is only
+ * a fallback; Google Cloud credentials are preferred by callGoogle().
+ */
+async function callGooglePublic(text, source, target) {
+  const params = new URLSearchParams({
+    client: 'gtx',
+    sl: ENGINE_CODE[source] || source,
+    tl: ENGINE_CODE[target] || target,
+    dt: 't',
+    q: text,
+  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
+    const resp = await fetch(`https://translate.googleapis.com/translate_a/single?${params}`, {
+      headers: { 'User-Agent': 'ZEGA-ALERT/1.0' },
+      signal: controller.signal,
     });
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
-    try {
-      const resp = await fetch(`https://translate.googleapis.com/translate_a/single?${params}`, {
-        headers: { 'User-Agent': 'ZEGA-ALERT/1.0' },
-        signal: controller.signal,
-      });
-      if (!resp.ok) throw new Error(`google_public_http_${resp.status}`);
-      const data = await resp.json();
-      if (!Array.isArray(data) || !Array.isArray(data[0])) {
-        throw new Error('google_public_empty_response');
-      }
-      const translated = data[0]
-        .map((part) => (Array.isArray(part) ? part[0] : ''))
-        .join('');
-      if (!translated.trim()) throw new Error('google_public_empty_response');
-      return decodeEntities(translated);
-    } finally {
-      clearTimeout(timer);
+    if (!resp.ok) throw new Error(`google_public_http_${resp.status}`);
+    const data = await resp.json();
+    if (!Array.isArray(data) || !Array.isArray(data[0])) {
+      throw new Error('google_public_empty_response');
     }
+    const translated = data[0]
+      .map((part) => (Array.isArray(part) ? part[0] : ''))
+      .join('');
+    if (!translated.trim()) throw new Error('google_public_empty_response');
+    return decodeEntities(translated);
+  } finally {
+    clearTimeout(timer);
   }
 }
 

@@ -1,4 +1,6 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:zega_alert_mobile/models/models.dart';
 import 'package:zega_alert_mobile/services/api.dart';
 
@@ -33,6 +35,58 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
     }
   }
 
+  bool _busy = false;
+
+  Future<void> _attachEvidence() async {
+    final device = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(leading: const Icon(Icons.photo), title: const Text('Photo / video'), onTap: () => Navigator.pop(ctx, 'media')),
+          ListTile(leading: const Icon(Icons.attach_file), title: const Text('Document / audio'), onTap: () => Navigator.pop(ctx, 'file')),
+        ]),
+      ),
+    );
+    if (device == null) return;
+    String? path;
+    String type = 'file';
+    if (device == 'media') {
+      final f = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 80);
+      path = f?.path;
+      type = 'image';
+    } else {
+      final r = await FilePicker.platform.pickFiles(type: FileType.any);
+      path = r?.files.single.path;
+    }
+    if (path == null) return;
+    setState(() => _busy = true);
+    try {
+      final upload = await Api.upload('/upload/single', [MapEntry('file', path)]);
+      final url = upload['url'] as String?;
+      if (url == null) throw 'Upload failed';
+      await Api.post('/reports/${widget.id}/evidence', {'type': type, 'value': Api.assetUrl(url)});
+      await _load();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Evidence attached.')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not attach evidence: $e')));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _submitDraft() async {
+    setState(() => _busy = true);
+    try {
+      await Api.patch('/reports/${widget.id}', {'status': 'pending'});
+      await _load();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Report submitted for review.')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not submit: $e')));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   String _fmt(String? iso) {
     if (iso == null) return '—';
     final d = DateTime.tryParse(iso);
@@ -64,11 +118,32 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                         const SizedBox(height: 8),
                         Wrap(spacing: 8, runSpacing: 8, children: [
                           Chip(label: Text(_report!.category)),
-                          Chip(label: Text(_report!.status.toUpperCase()), backgroundColor: _statusColor(_report!.status).withOpacity(0.15)),
+                          Chip(label: Text(_report!.status.toUpperCase()), backgroundColor: _statusColor(_report!.status).withValues(alpha: 0.15)),
                           Chip(label: Text(_report!.severity)),
                         ]),
                         const SizedBox(height: 12),
                         if (_report!.description != null) Text(_report!.description!, style: const TextStyle(fontSize: 15)),
+                        if (!['resolved', 'closed', 'rejected'].contains(_report!.status)) ...[
+                          const SizedBox(height: 12),
+                          Row(children: [
+                            if (_report!.status == 'draft')
+                              Expanded(
+                                child: FilledButton.icon(
+                                  onPressed: _busy ? null : _submitDraft,
+                                  icon: const Icon(Icons.send_outlined),
+                                  label: const Text('Submit report'),
+                                ),
+                              ),
+                            if (_report!.status == 'draft') const SizedBox(width: 8),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: _busy ? null : _attachEvidence,
+                                icon: const Icon(Icons.attach_file),
+                                label: Text(_busy ? 'Working…' : 'Attach evidence'),
+                              ),
+                            ),
+                          ]),
+                        ],
                         const SizedBox(height: 12),
                         Card(
                           child: Padding(
@@ -104,7 +179,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                           ..._report!.history.map((h) => Card(
                                 child: ListTile(
                                   leading: Icon(Icons.history, color: _statusColor(h.status ?? '')),
-                                  title: Text('${h.status ?? '—'}'.toUpperCase()),
+                                  title: Text((h.status ?? '—').toUpperCase()),
                                   subtitle: Text('${_fmt(h.changedAt)}${h.changedBy != null ? ' · by ${h.changedBy}' : ''}${h.notes != null && h.notes!.isNotEmpty ? '\n${h.notes}' : ''}'),
                                   isThreeLine: true,
                                 ),

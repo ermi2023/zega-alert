@@ -98,40 +98,81 @@ const translateOneGoogle = async (text, target) => {
   // array holds sentence segments; concatenate all [0] entries to get the
   // full translation (Google splits long source strings into multiple segments).
   const segs = json?.[0] || [];
-  return segs.map((s) => s?.[0]).filter(Boolean).join('') || text;
+  const translated = segs.map((s) => s?.[0]).filter(Boolean).join('');
+  if (!translated) throw new Error('Google translate empty response');
+  return translated;
 };
 
 const translateBatchGoogle = async (flat, target) => {
   const keys = Object.keys(flat);
-  const CONCURRENCY = 8; // parallel requests — high enough to be fast, low enough to avoid rate limits
+  const failed = [];
+  const CONCURRENCY = 8;
   let cursor = 0;
-  const workers = Array.from({ length: CONCURRENCY }, async () => {
+  const workers = Array.from({ length: Math.min(CONCURRENCY, keys.length) }, async () => {
     while (cursor < keys.length) {
       const k = keys[cursor++];
       try {
         flat[k] = await translateOneGoogle(flat[k], target);
-      } catch { /* leave original — caller falls back to MyMemory */ }
+      } catch {
+        failed.push(k);
+      }
     }
   });
   await Promise.all(workers);
-  return flat;
+  return { strings: flat, failed };
 };
 
 // Keyless MyMemory fallback. Translates one string at a time (no batching),
 // so only used when Google is blocked / rate-limited. Capped at a handful of
 // strings per request to avoid hammering the free quota.
 const translateBatchMyMemory = async (flat, target) => {
-  const keys = Object.keys(flat).slice(0, 40); // protect the free quota
-  await Promise.all(keys.map(async (k) => {
-    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(flat[k])}&langpair=en|${encodeURIComponent(target)}`;
-    try {
-      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-      const json = await res.json();
-      const t = json?.responseData?.translatedText;
-      if (t && !/MYMEMORY WARNING/i.test(t)) flat[k] = String(t);
-    } catch { /* leave original */ }
-  }));
-  return flat;
+  const keys = Object.keys(flat);
+  const failed = [];
+  const CONCURRENCY = 8;
+  let cursor = 0;
+  const workers = Array.from({ length: Math.min(CONCURRENCY, keys.length) }, async () => {
+    while (cursor < keys.length) {
+      const k = keys[cursor++];
+      const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(flat[k])}&langpair=en|${encodeURIComponent(target)}`;
+      try {
+        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        const json = await res.json();
+        const t = json?.responseData?.translatedText;
+        if (!t || /MYMEMORY WARNING/i.test(t)) {
+          failed.push(k);
+          continue;
+        }
+        flat[k] = String(t);
+      } catch {
+        failed.push(k);
+      }
+    }
+  });
+  await Promise.all(workers);
+  return { strings: flat, failed };
+};
+
+const safeBatch = async (batch, input, target) => {
+  try {
+    return await batch({ ...input }, target);
+  } catch {
+    return { strings: { ...input }, failed: Object.keys(input) };
+  }
+};
+
+const translateWithFallback = async (input, target) => {
+  const google = await safeBatch(translateBatchGoogle, input, target);
+  const strings = { ...google.strings };
+  let failed = google.failed;
+  if (failed.length) {
+    const fallbackInput = Object.fromEntries(failed.map((k) => [k, input[k]]));
+    const myMemory = await safeBatch(translateBatchMyMemory, fallbackInput, target);
+    for (const k of failed) {
+      if (!myMemory.failed.includes(k)) strings[k] = myMemory.strings[k];
+    }
+    failed = myMemory.failed;
+  }
+  return { strings, failed };
 };
 
 export const getUiBundle = async (req, res) => {
@@ -153,23 +194,14 @@ export const getUiBundle = async (req, res) => {
   const en = await loadEnBundle();
   const flat = flatten(en);
 
-  // Try Google first, fall back to MyMemory, fall back to English.
-  let translated;
-  try {
-    translated = await translateBatchGoogle({ ...flat }, lang);
-  } catch (googleErr) {
-    try {
-      translated = await translateBatchMyMemory({ ...flat }, lang);
-    } catch (mmErr) {
-      // Both providers failed — return the English bundle so the UI still
-      // renders; the caller treats this as "translation unavailable".
-      return ok(res, { lang, bundled: false, source: 'fallback-en',
-        strings: unflatten(flat), version: BUNDLE_VERSION,
-        warning: 'Translation providers unavailable; showing English.' });
-    }
+  const translated = await translateWithFallback(flat, lang);
+  if (translated.failed.length) {
+    return ok(res, { lang, bundled: false, source: 'fallback-en',
+      strings: unflatten(flat), version: BUNDLE_VERSION,
+      warning: 'Translation providers unavailable; showing English.' });
   }
 
-  const nested = unflatten(translated);
+  const nested = unflatten(translated.strings);
   cache.set(cacheKey, nested);
   ok(res, { lang, bundled: false, source: 'translate',
     strings: nested, version: BUNDLE_VERSION });
@@ -198,18 +230,18 @@ export const translateStrings = async (req, res) => {
   // Normalize values to strings; preserve non-string as-is in the response.
   const flat = {};
   for (const k of keys) flat[k] = String(strings[k]);
+  if (keys.length === 0) return ok(res, { target, source: 'translate', strings: {} });
 
-  let translated;
-  try {
-    translated = await translateBatchGoogle({ ...flat }, target);
-  } catch (googleErr) {
-    try {
-      translated = await translateBatchMyMemory({ ...flat }, target);
-    } catch (mmErr) {
-      return fail(res, 'Translation providers unavailable. Try again later.', 502);
-    }
+  const translated = await translateWithFallback(flat, target);
+  if (translated.failed.length === keys.length) {
+    return fail(res, 'Translation providers unavailable. Try again later.', 502);
   }
-  ok(res, { target, source: 'translate', strings: translated });
+  ok(res, {
+    target,
+    source: translated.failed.length ? 'partial' : 'translate',
+    strings: translated.strings,
+    ...(translated.failed.length ? { failed: translated.failed } : {}),
+  });
 };
 
 // List of languages offered in the Settings picker. The four original UI

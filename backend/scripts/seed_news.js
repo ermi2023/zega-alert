@@ -41,7 +41,7 @@ async function seedNews() {
       now() - interval '2 hours',
       'PRESS RELEASE',
       '#1E3A8A',
-      'EFP Media Desk',
+      'ZEGA-ALERT Media Desk',
       'https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=800&auto=format&fit=crop&q=80'
     )
   `);

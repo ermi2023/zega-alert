@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../l10n/app_localizations.dart';
 import '../main.dart';
 import 'auth_screen.dart';
@@ -11,6 +12,7 @@ import '../services/api.dart';
 import '../widgets/auth_gate.dart';
 import '../widgets/pod_actions.dart';
 import 'callbacks_screen.dart';
+import 'geofence_editor_screen.dart';
 import '../config/constants.dart';
 
 const _languages = [
@@ -48,6 +50,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _passwordBusy = false;
   bool _showPasswords = false;
 
+  List<dynamic> _geofences = [];
   List<dynamic> _legal = [];
 
   String? _loadError;
@@ -71,6 +74,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final legal = await Api.get('/legal');
       _legal = legal as List<dynamic>;
+      List<dynamic> geofences = [];
       if (_loggedIn) {
         final me = await Api.get('/auth/me') as Map<String, dynamic>;
         _profile = me;
@@ -80,12 +84,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _language = me['preferred_language'] ?? 'en';
         _region = me['region'] ?? 'Addis Ababa';
         _subCity = me['sub_city'] ?? (subCitiesByRegion[_region]?.first ?? '');
+        final geofenceResult = await Api.get('/geofences');
+        geofences = geofenceResult is List ? geofenceResult : [];
         await Api.setProfile(me);
         if (mounted) ZegaAlertApp.of(context)?.setLanguage(_language);
       } else if (mounted) {
         _language = ZegaAlertApp.of(context)?.languageCode ?? _language;
       }
-      if (mounted) setState(() => _loadError = null);
+      if (mounted) {
+        setState(() {
+          _geofences = geofences;
+          _loadError = null;
+        });
+      }
     } catch (e) {
       if (mounted) setState(() => _loadError = 'Failed to load settings: $e');
     }
@@ -155,11 +166,77 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _logout() async {
+  Future<void> _addGeofence() async {
+    final loc = AppLocalizations.of(context);
+    if (_geofences.length >= 10) {
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Maximum of 10 active safety zones reached. Delete one first.',
+            ),
+          ),
+        );
+      return;
+    }
+    final created = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => const GeofenceEditorScreen()),
+    );
+    if (created == true) {
+      await _load();
+      if (mounted) setState(() => _status = loc.safetyZoneCreated);
+    }
+  }
+
+  Future<void> _editGeofence(Map<String, dynamic> geofence) async {
+    final updated = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => GeofenceEditorScreen(geofence: geofence),
+      ),
+    );
+    if (updated == true) {
+      await _load();
+      if (mounted) setState(() => _status = 'Safety zone updated.');
+    }
+  }
+
+  Map<String, dynamic>? _legalTranslation(dynamic item) {
+    final translations = item['translations'];
+    if (translations is! Map) return null;
+    final localized = translations[_language];
+    return localized is Map ? Map<String, dynamic>.from(localized) : null;
+  }
+
+  Future<void> _deleteGeofence(String id) async {
     try {
-      await Api.post('/auth/logout', {'refreshToken': Api.refreshToken});
+      await Api.delete('/geofences/$id');
+      if (!mounted) return;
+      final loc = AppLocalizations.of(context);
+      setState(() => _status = loc.safetyZoneDeleted);
+    } catch (e) {
+      setState(() => _status = 'Failed: $e');
+    }
+    _load();
+  }
+
+  Future<void> _toggleGeofence(String id, bool active) async {
+    try {
+      await Api.patch('/geofences/$id', {'is_active': active});
+      _load();
+    } catch (e) {
+      if (mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Failed: $e')));
+    }
+  }
+
+  Future<void> _logout() async {
+    final refreshToken = Api.refreshToken;
+    try {
+      await Api.post('/auth/logout', {'refreshToken': refreshToken});
     } catch (_) {
-      // Offline or already-expired session — clear locally regardless.
+      // Offline or already-expired session - revoke when connectivity returns.
+      await Api.queuePendingLogout(refreshToken);
     }
     await Api.clear();
     if (mounted) {
@@ -176,374 +253,464 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text(loc.settingsTitle,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+        Text(
+          loc.settingsTitle,
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+        ),
         Text(loc.settingsSubtitle, style: const TextStyle(color: Colors.grey)),
         const SizedBox(height: 16),
         if (_status != null)
           Card(
-              color: _status!.startsWith('Failed')
-                  ? Colors.red.shade50
-                  : Colors.green.shade50,
-              child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Text(_status!,
-                      style: TextStyle(
-                          color: _status!.startsWith('Failed')
-                              ? Colors.red
-                              : Colors.green)))),
+            color: _status!.startsWith('Failed')
+                ? Colors.red.shade50
+                : Colors.green.shade50,
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Text(
+                _status!,
+                style: TextStyle(
+                  color: _status!.startsWith('Failed')
+                      ? Colors.red
+                      : Colors.green,
+                ),
+              ),
+            ),
+          ),
         if (_loadError != null)
           Card(
-              color: Colors.red.shade50,
-              child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Row(children: [
-                    const Icon(Icons.error_outline, color: Colors.red),
-                    const SizedBox(width: 8),
-                    Expanded(
-                        child: Text(_loadError!,
-                            style: const TextStyle(color: Colors.red)))
-                  ]))),
+            color: Colors.red.shade50,
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _loadError!,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         const SizedBox(height: 4),
         if (!_loggedIn) _guestBanner(loc),
         if (_loggedIn) ...[
           _profileHeader(),
-          _category(
-            'Personal information',
-            Icons.person_outline,
-            [
-              Semantics(
-                label: 'Full name input',
-                child: Form(
-                  key: _form,
-                  child: Column(
-                    children: [
-                      TextFormField(
-                        controller: _name,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: InputDecoration(
-                          labelText: loc.fullName,
-                          prefixIcon: const Icon(Icons.person_outline),
-                          border: const OutlineInputBorder(),
-                        ),
-                        validator: (value) =>
-                            value == null || value.trim().isEmpty
-                                ? loc.required
-                                : null,
+          _category('Personal information', Icons.person_outline, [
+            Semantics(
+              label: 'Full name input',
+              child: Form(
+                key: _form,
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: _name,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: InputDecoration(
+                        labelText: loc.fullName,
+                        prefixIcon: const Icon(Icons.person_outline),
+                        border: const OutlineInputBorder(),
                       ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _email,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: const InputDecoration(
-                          labelText: 'Email address',
-                          prefixIcon: Icon(Icons.email_outlined),
-                          border: OutlineInputBorder(),
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                          ? loc.required
+                          : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _email,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(
+                        labelText: 'Email address',
+                        prefixIcon: Icon(Icons.email_outlined),
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        final email = value?.trim() ?? '';
+                        if (email.isEmpty) return null;
+                        return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+                                .hasMatch(email)
+                            ? null
+                            : 'Enter a valid email address.';
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            _accountDetails(),
+            _section(loc.locationLabel, Icons.location_on_outlined),
+            Semantics(
+              label: 'Region dropdown. Currently set to $_region.',
+              child: DropdownButtonFormField<String>(
+                value: ethiopianRegions.contains(_region) ? _region : null,
+                decoration: InputDecoration(
+                  labelText: loc.regionLabel,
+                  border: const OutlineInputBorder(),
+                ),
+                items: ethiopianRegions
+                    .map((r) => DropdownMenuItem(value: r, child: Text(r)))
+                    .toList(),
+                onChanged: (v) {
+                  if (v != null)
+                    setState(() {
+                      _region = v;
+                      _subCity = subCitiesByRegion[v]?.first ?? '';
+                    });
+                },
+              ),
+            ),
+            if ((subCitiesByRegion[_region] ?? []).isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Semantics(
+                label: 'Sub city dropdown. Currently set to $_subCity.',
+                child: DropdownButtonFormField<String>(
+                  value:
+                      (subCitiesByRegion[_region] ?? const []).contains(
+                        _subCity,
+                      )
+                      ? _subCity
+                      : null,
+                  decoration: InputDecoration(
+                    labelText: loc.subCityLabel,
+                    border: const OutlineInputBorder(),
+                  ),
+                  items: subCitiesByRegion[_region]!
+                      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                      .toList(),
+                  onChanged: (v) => setState(() => _subCity = v ?? ''),
+                ),
+              ),
+            ],
+          ], controller: _profileTileController),
+        ],
+        if (_loggedIn) ...[
+          _category('Security', Icons.lock_outline, [
+            _changePasswordForm(),
+            const SizedBox(height: 12),
+            _identityVerification(loc),
+          ]),
+        ],
+        _category('Preferences', Icons.tune, [
+          _section(loc.languageLabel, Icons.language),
+          Semantics(
+            label: 'Preferred language dropdown. Currently set to $_language.',
+            child: DropdownButtonFormField<String>(
+              value: _language,
+              decoration: InputDecoration(
+                labelText: loc.preferredLanguage,
+                border: const OutlineInputBorder(),
+              ),
+              items: _languages
+                  .map(
+                    (l) =>
+                        DropdownMenuItem(value: l.code, child: Text(l.label)),
+                  )
+                  .toList(),
+              onChanged: (v) {
+                if (v == null) return;
+                setState(() => _language = v);
+                ZegaAlertApp.of(context)?.setLanguage(v);
+                if (_loggedIn) {
+                  Api.put('/auth/me', {
+                    'preferred_language': v,
+                  }).catchError((_) {});
+                }
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+          Semantics(
+            label:
+                'Accessibility mode toggle. ${_accessibility ? "Currently on. Increases text size and contrast for better visibility." : "Currently off."}',
+            child: SwitchListTile(
+              title: Text(loc.accessibilityModePoD),
+              subtitle: Text(loc.accessibilitySubtitle),
+              value: _accessibility,
+              onChanged: (v) {
+                setState(() => _accessibility = v);
+                ZegaAlertApp.of(context)?.toggleAccessibility(v);
+              },
+            ),
+          ),
+          Semantics(
+            label:
+                'Dark mode toggle. ${_darkMode ? "Currently on" : "Currently off"}',
+            child: SwitchListTile(
+              title: Text(loc.darkMode),
+              subtitle: Text(loc.darkModeSubtitle),
+              value: _darkMode,
+              onChanged: (v) {
+                setState(() => _darkMode = v);
+                ZegaAlertApp.of(context)?.toggleDarkMode(v);
+              },
+            ),
+          ),
+        ]),
+        if (_loggedIn)
+          _category(loc.safetyZones, Icons.location_on_outlined, [
+            ..._geofences.map((g) {
+              final zone = Map<String, dynamic>.from(g as Map);
+              final name = zone['label'] ?? zone['name'] ?? 'Zone';
+              return Semantics(
+                label:
+                    'Safety zone: $name. Type: ${zone['type'] ?? 'zone'}. Sensitivity: ${zone['sensitivity'] ?? 'medium'}.',
+                child: Card(
+                  child: ListTile(
+                    dense: true,
+                    onTap: () => _editGeofence(zone),
+                    leading: const Icon(Icons.radar, color: Colors.green),
+                    title: Text(name),
+                    subtitle: Text(
+                      '${zone['type'] ?? 'zone'} · ${zone['sensitivity'] ?? 'medium'} · ${zone['radius_m'] != null ? '${zone['radius_m']}m' : 'radius not set'}',
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Switch(
+                          value: zone['is_active'] != false,
+                          onChanged: (active) =>
+                              _toggleGeofence(zone['id'] as String, active),
                         ),
-                        validator: (value) {
-                          final email = value?.trim() ?? '';
-                          if (email.isEmpty) return null;
-                          return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
-                                  .hasMatch(email)
-                              ? null
-                              : 'Enter a valid email address.';
-                        },
+                        IconButton(
+                          tooltip: 'Delete safety zone: $name',
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () =>
+                              _deleteGeofence(zone['id'] as String),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+            OutlinedButton.icon(
+              onPressed: _addGeofence,
+              icon: const Icon(Icons.add_location_alt_outlined),
+              label: Text(loc.addSafetyZone),
+            ),
+          ]),
+        _category(loc.legalInformation, Icons.gavel, [
+          if (_legal.isEmpty)
+            Text(
+              loc.noLegalContent,
+              style: const TextStyle(color: Colors.grey),
+            ),
+          ..._legal.take(5).map((l) {
+            final translation = _legalTranslation(l);
+            final title = translation?['title'] ?? l['title'] ?? '';
+            final body = translation?['body'] ?? l['body'] ?? '';
+            return Semantics(
+              label:
+                  'Legal information: $title. Category: ${l['category'] ?? ''}. Language: $_language.',
+              child: Card(
+                child: ExpansionTile(
+                  dense: true,
+                  leading: const Icon(Icons.menu_book_outlined),
+                  title: Text(title),
+                  subtitle: Text(
+                    '${l['category'] ?? ''} · ${l['language'] ?? 'en'}',
+                  ),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Text(body),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ]),
+        _category('About & support', Icons.info_outline, [
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.info_outline),
+                  title: const Text('About ZEGA-ALERT'),
+                  subtitle: const Text('Version 1.0.0'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: _about,
+                ),
+                ListTile(
+                  leading: const Icon(Icons.support_agent),
+                  title: const Text('Contact us'),
+                  subtitle: const Text('Hotlines 991 and 907'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: _contact,
+                ),
+                ListTile(
+                  leading: const Icon(Icons.description_outlined),
+                  title: const Text('Terms & Conditions'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: _terms,
+                ),
+                ListTile(
+                  leading: const Icon(Icons.privacy_tip_outlined),
+                  title: const Text('Privacy Policy'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: _privacy,
+                ),
+                ListTile(
+                  leading: const Icon(Icons.star_outline),
+                  title: const Text('Rate ZEGA-ALERT'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: _rateApp,
+                ),
+              ],
+            ),
+          ),
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(
+                    Icons.chat_bubble_outline,
+                    color: Color(0xFF1E40AF),
+                  ),
+                  title: const Text('Chat with Admin'),
+                  subtitle: const Text('Follow up on reports'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const CommunicationScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const Divider(height: 1),
+                Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Leave Feedback',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        maxLines: 3,
+                        decoration: InputDecoration(
+                          hintText: 'Tell us how we can improve...',
+                          hintStyle: TextStyle(
+                            color: Colors.grey.shade400,
+                            fontSize: 13,
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: List.generate(
+                              5,
+                              (i) => Icon(
+                                Icons.star_outline,
+                                size: 20,
+                                color: Colors.grey.shade400,
+                              ),
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Feedback submitted. Thank you!',
+                                  ),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF0F172A),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                            ),
+                            child: const Text(
+                              'Submit',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              _accountDetails(),
-              _section(loc.locationLabel, Icons.location_on_outlined),
-              Semantics(
-                label: 'Region dropdown. Currently set to $_region.',
-                child: DropdownButtonFormField<String>(
-                  value: ethiopianRegions.contains(_region) ? _region : null,
-                  decoration: InputDecoration(
-                      labelText: loc.regionLabel,
-                      border: const OutlineInputBorder()),
-                  items: ethiopianRegions
-                      .map((r) => DropdownMenuItem(value: r, child: Text(r)))
-                      .toList(),
-                  onChanged: (v) {
-                    if (v != null)
-                      setState(() {
-                        _region = v;
-                        _subCity = subCitiesByRegion[v]?.first ?? '';
-                      });
-                  },
-                ),
-              ),
-              if ((subCitiesByRegion[_region] ?? []).isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Semantics(
-                  label: 'Sub city dropdown. Currently set to $_subCity.',
-                  child: DropdownButtonFormField<String>(
-                    value: (subCitiesByRegion[_region] ?? const [])
-                            .contains(_subCity)
-                        ? _subCity
-                        : null,
-                    decoration: InputDecoration(
-                        labelText: loc.subCityLabel,
-                        border: const OutlineInputBorder()),
-                    items: subCitiesByRegion[_region]!
-                        .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                        .toList(),
-                    onChanged: (v) => setState(() => _subCity = v ?? ''),
-                  ),
-                ),
               ],
-            ],
-            controller: _profileTileController,
+            ),
           ),
-        ],
-        if (_loggedIn) ...[
-          _category(
-            'Security',
-            Icons.lock_outline,
-            [
-              _changePasswordForm(),
-              const SizedBox(height: 12),
-              _identityVerification(loc),
-            ],
-          ),
-        ],
-        _category(
-          'Preferences',
-          Icons.tune,
-          [
-            _section(loc.languageLabel, Icons.language),
+          _category('Backend server', Icons.dns_outlined, [
             Semantics(
               label:
-                  'Preferred language dropdown. Currently set to $_language.',
-              child: DropdownButtonFormField<String>(
-                value: _language,
-                decoration: InputDecoration(
-                    labelText: loc.preferredLanguage,
-                    border: const OutlineInputBorder()),
-                items: _languages
-                    .map((l) =>
-                        DropdownMenuItem(value: l.code, child: Text(l.label)))
-                    .toList(),
-                onChanged: (v) {
-                  if (v == null) return;
-                  setState(() => _language = v);
-                  ZegaAlertApp.of(context)?.setLanguage(v);
-                  if (_loggedIn) {
-                    Api.put('/auth/me', {'preferred_language': v})
-                        .catchError((_) {});
-                  }
-                },
+                  'Backend server. Currently ${Api.baseUrl}. Double tap to change.',
+              child: ListTile(
+                leading: const Icon(
+                  Icons.dns_outlined,
+                  color: Colors.deepPurple,
+                ),
+                title: const Text('Backend server'),
+                subtitle: Text(Api.baseUrl),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: _editServerUrl,
               ),
             ),
-            const SizedBox(height: 12),
+          ]),
+          if (_loggedIn) ...[
             Semantics(
-              label:
-                  'Accessibility mode toggle. ${_accessibility ? "Currently on. Increases text size and contrast for better visibility." : "Currently off."}',
-              child: SwitchListTile(
-                title: Text(loc.accessibilityModePoD),
-                subtitle: Text(loc.accessibilitySubtitle),
-                value: _accessibility,
-                onChanged: (v) {
-                  setState(() => _accessibility = v);
-                  ZegaAlertApp.of(context)?.toggleAccessibility(v);
-                },
-              ),
-            ),
-            Semantics(
-              label:
-                  'Dark mode toggle. ${_darkMode ? "Currently on" : "Currently off"}',
-              child: SwitchListTile(
-                title: Text(loc.darkMode),
-                subtitle: Text(loc.darkModeSubtitle),
-                value: _darkMode,
-                onChanged: (v) {
-                  setState(() => _darkMode = v);
-                  ZegaAlertApp.of(context)?.toggleDarkMode(v);
-                },
-              ),
-            ),
-          ],
-        ),
-        _category(
-          loc.legalInformation,
-          Icons.gavel,
-          [
-            if (_legal.isEmpty)
-              Text(loc.noLegalContent,
-                  style: const TextStyle(color: Colors.grey)),
-            ..._legal.take(5).map((l) => Semantics(
-                  label:
-                      'Legal information: ${l['title'] ?? ''}. Category: ${l['category'] ?? ''}. Language: ${l['language'] ?? 'en'}.',
-                  child: Card(
-                    child: ExpansionTile(
-                      dense: true,
-                      leading: const Icon(Icons.menu_book_outlined),
-                      title: Text(l['title'] ?? ''),
-                      subtitle: Text(
-                          '${l['category'] ?? ''} · ${l['language'] ?? 'en'}'),
-                      children: [
-                        Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Text(l['body'] ?? ''))
-                      ],
-                    ),
+              label: 'Callback requests. View police callback requests for your reports.',
+              child: Card(
+                child: ListTile(
+                  leading: const Icon(
+                    Icons.phone_callback_outlined,
+                    color: Colors.indigo,
                   ),
-                )),
-          ],
-        ),
-        _category(
-          'About & support',
-          Icons.info_outline,
-          [
-            Card(
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.info_outline),
-                    title: const Text('About ZEGA-ALERT'),
-                    subtitle: const Text('Version 1.0.0'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: _about,
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.support_agent),
-                    title: const Text('Contact us'),
-                    subtitle: const Text('Hotlines 991 and 907'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: _contact,
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.description_outlined),
-                    title: const Text('Terms & Conditions'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: _terms,
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.privacy_tip_outlined),
-                    title: const Text('Privacy Policy'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: _privacy,
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.star_outline),
-                    title: const Text('Rate ZEGA-ALERT'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: _rateApp,
-                  ),
-                ],
-              ),
-            ),
-            Card(
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.chat_bubble_outline,
-                        color: Color(0xFF1E40AF)),
-                    title: const Text('Chat with Admin'),
-                    subtitle: const Text('Follow up on reports'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => const CommunicationScreen()));
-                    },
-                  ),
-                  const Divider(height: 1),
-                  Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Leave Feedback',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 13)),
-                        const SizedBox(height: 8),
-                        TextField(
-                          maxLines: 3,
-                          decoration: InputDecoration(
-                            hintText: 'Tell us how we can improve...',
-                            hintStyle: TextStyle(
-                                color: Colors.grey.shade400, fontSize: 13),
-                            filled: true,
-                            fillColor: const Color(0xFFF8FAFC),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide:
-                                  BorderSide(color: Colors.grey.shade300),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: List.generate(
-                                5,
-                                (i) => Icon(Icons.star_outline,
-                                    size: 20, color: Colors.grey.shade400),
-                              ),
-                            ),
-                            ElevatedButton(
-                              onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text(
-                                          'Feedback submitted. Thank you!')),
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF0F172A),
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20)),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 8),
-                              ),
-                              child: const Text('Submit',
-                                  style: TextStyle(fontSize: 12)),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (_loggedIn) ...[
-              Semantics(
-                label:
-                    'Callback requests. View police callback requests for your reports.',
-                child: Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.phone_callback_outlined,
-                        color: Colors.indigo),
-                    title: Text(loc.callbackRequests),
-                    subtitle: Text(loc.callbackSubtitle),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                        builder: (_) => const CallbacksScreen())),
+                  title: Text(loc.callbackRequests),
+                  subtitle: Text(loc.callbackSubtitle),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const CallbacksScreen()),
                   ),
                 ),
               ),
-              Semantics(
-                label:
-                    'People of Determination actions. Request a direct call or record a sign language video.',
-                child: const PodActions(showHeading: false),
-              ),
-            ],
+            ),
+            Semantics(
+              label: 'People of Determination actions. Request a direct call or record a sign language video.',
+              child: const PodActions(showHeading: false),
+            ),
           ],
-        ),
+        ]),
         if (_loggedIn) ...[
           const SizedBox(height: 12),
           FilledButton(onPressed: _save, child: Text(loc.saveSettings)),
           const SizedBox(height: 12),
           OutlinedButton.icon(
-              onPressed: _logout,
-              icon: const Icon(Icons.logout),
-              label: Text(loc.logoutLabel)),
+            onPressed: _logout,
+            icon: const Icon(Icons.logout),
+            label: Text(loc.logoutLabel),
+          ),
         ] else
           FilledButton.icon(
             onPressed: () => openAuth(context),
@@ -568,22 +735,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Browsing as guest',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: scheme.onPrimaryContainer)),
+                  Text(
+                    'Browsing as guest',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: scheme.onPrimaryContainer,
+                    ),
+                  ),
                   const SizedBox(height: 2),
                   Text(
-                      'Sign in to file reports, send SOS, message officers and verify your ID.',
-                      style: TextStyle(
-                          fontSize: 12, color: scheme.onPrimaryContainer)),
+                    'Sign in to file reports, send SOS, message officers and verify your ID.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: scheme.onPrimaryContainer,
+                    ),
+                  ),
                 ],
               ),
             ),
             const SizedBox(width: 8),
             FilledButton(
-                onPressed: () => openAuth(context),
-                child: const Text('Sign in')),
+              onPressed: () => openAuth(context),
+              child: const Text('Sign in'),
+            ),
           ],
         ),
       ),
@@ -592,8 +766,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _identityVerification(AppLocalizations loc) {
     return Semantics(
-      label:
-          'Identity verification. Verify your identity with your national ID card.',
+      label: 'Identity verification. Verify your identity with your national ID card.',
       child: Card(
         child: ListTile(
           leading: const Icon(Icons.verified_user_outlined, color: Colors.teal),
@@ -601,7 +774,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           subtitle: Text(loc.faydaVerificationSubtitle),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const IdVerificationScreen())),
+            MaterialPageRoute(builder: (_) => const IdVerificationScreen()),
+          ),
         ),
       ),
     );
@@ -728,16 +902,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _changePasswordForm() {
     InputDecoration decoration(String label) => InputDecoration(
-          labelText: label,
-          prefixIcon: const Icon(Icons.lock_outline),
-          suffixIcon: IconButton(
-            onPressed: () => setState(() => _showPasswords = !_showPasswords),
-            icon: Icon(_showPasswords
-                ? Icons.visibility_off_outlined
-                : Icons.visibility_outlined),
-          ),
-          border: const OutlineInputBorder(),
-        );
+      labelText: label,
+      prefixIcon: const Icon(Icons.lock_outline),
+      suffixIcon: IconButton(
+        onPressed: () => setState(() => _showPasswords = !_showPasswords),
+        icon: Icon(
+          _showPasswords
+              ? Icons.visibility_off_outlined
+              : Icons.visibility_outlined,
+        ),
+      ),
+      border: const OutlineInputBorder(),
+    );
 
     return Card(
       child: Padding(
@@ -810,6 +986,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _editServerUrl() async {
+    final controller = TextEditingController(text: Api.overrideBaseUrl ?? '');
+    final result = await showDialog<String?>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Backend server'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Current: ${Api.baseUrl}',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.url,
+              decoration: const InputDecoration(
+                labelText: 'Server URL',
+                hintText: 'https://zega-api.example.et',
+                helperText: 'Leave blank to auto-detect on the local network.',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, ''),
+            child: const Text('Auto-detect'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, null),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (result == null) return;
+    await Api.setBaseUrl(result);
+    setState(
+      () => _status = result.trim().isEmpty
+          ? 'Backend set to auto-detect on the local network.'
+          : 'Backend server saved: ${Api.baseUrl}',
+    );
+  }
+
   Future<void> _dial(String number) async {
     final uri = Uri(scheme: 'tel', path: number);
     try {
@@ -822,19 +1050,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('ZEGA-ALERT'),
-        content: const SingleChildScrollView(
+        content: SingleChildScrollView(
           child: Text(
             'ZEGA-ALERT is the Ethiopian Federal Police citizen safety app. '
             'It connects you to emergency dispatch, crime reporting, missing and '
             'wanted persons, official announcements and two-way communication '
             'with officers — in English, Amharic, Oromifa, Tigrinya and Ethio Somali.\n\n'
-            'Version 1.0.0',
+            'Version ${Api.appVersion}',
             style: TextStyle(height: 1.4),
           ),
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Close'))
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
         ],
       ),
     );
@@ -866,14 +1096,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: const Text('support@zega-alert.et'),
               onTap: () async {
                 await launchUrl(
-                    Uri(scheme: 'mailto', path: 'support@zega-alert.et'));
+                  Uri(scheme: 'mailto', path: 'support@zega-alert.et'),
+                );
               },
             ),
           ],
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Close'))
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
         ],
       ),
     );
@@ -901,7 +1134,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Close'))
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
         ],
       ),
     );
@@ -929,15 +1164,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Close'))
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
         ],
       ),
     );
   }
 
   Future<void> _rateApp() async {
-    final uri =
-        Uri.parse('https://play.google.com/store/search?q=ZEGA-ALERT&c=apps');
+    final uri = Uri.parse(
+      'https://play.google.com/store/search?q=ZEGA-ALERT&c=apps',
+    );
     try {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -947,8 +1185,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content:
-                Text('Search for ZEGA-ALERT in your app store to rate us.')),
+          content: Text('Search for ZEGA-ALERT in your app store to rate us.'),
+        ),
       );
     }
   }
@@ -960,9 +1198,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 8),
-          Text(title,
-              style:
-                  const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
         ],
       ),
     );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../config/constants.dart';
 import '../l10n/app_localizations.dart';
 import 'forgot_password_screen.dart';
@@ -53,15 +54,25 @@ class _AuthScreenState extends State<AuthScreen> {
       final idValid = isEmail
           ? RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(identifier)
           : _normalizePhone(identifier).length == 10 &&
-              _normalizePhone(identifier).startsWith('0');
+                _normalizePhone(identifier).startsWith('0');
       return idValid && _password.text.isNotEmpty;
     }
     return _name.text.trim().isNotEmpty &&
         _normalizePhone(_phone.text).length == 10 &&
         _normalizePhone(_phone.text).startsWith('0') &&
-        _password.text.length >= 6 &&
+        _registrationPasswordError(_password.text) == null &&
         _acceptedTerms &&
         _region != null;
+  }
+
+  String? _registrationPasswordError(String? value) {
+    if (value == null || value.length < 8) return 'Use at least 8 characters';
+    if (!RegExp(r'[A-Z]').hasMatch(value) ||
+        !RegExp(r'[0-9]').hasMatch(value) ||
+        !RegExp(r'[^A-Za-z0-9]').hasMatch(value)) {
+      return 'Include an uppercase letter, number and symbol';
+    }
+    return null;
   }
 
   @override
@@ -76,7 +87,10 @@ class _AuthScreenState extends State<AuthScreen> {
       final r = await Api.get('/app/version');
       final latest = r['version']?.toString() ?? '';
       final url = r['url']?.toString();
-      if (latest != '1.0.0' && url != null && mounted) {
+      if (latest.isNotEmpty &&
+          latest != Api.appVersion &&
+          url != null &&
+          mounted) {
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
@@ -84,15 +98,19 @@ class _AuthScreenState extends State<AuthScreen> {
             content: Text('Version $latest is available. Update now?'),
             actions: [
               TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Later')),
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Later'),
+              ),
               FilledButton(
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    launchUrl(Uri.parse(url),
-                        mode: LaunchMode.externalApplication);
-                  },
-                  child: const Text('Download')),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  launchUrl(
+                    Uri.parse(url),
+                    mode: LaunchMode.externalApplication,
+                  );
+                },
+                child: const Text('Download'),
+              ),
             ],
           ),
         );
@@ -130,13 +148,15 @@ class _AuthScreenState extends State<AuthScreen> {
       }
       final refreshed = await Api.refreshSession();
       if (!refreshed) {
-        setState(() =>
-            _error = 'Session expired. Please sign in with your password.');
+        setState(
+          () => _error = 'Session expired. Please sign in with your password.',
+        );
         return;
       }
       if (mounted)
-        Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const MainShell()));
+        Navigator.of(
+          context,
+        ).pushReplacement(MaterialPageRoute(builder: (_) => const MainShell()));
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -206,19 +226,29 @@ class _AuthScreenState extends State<AuthScreen> {
           final otp = await _askOtp();
           if (otp != null && otp.isNotEmpty) {
             try {
-              await Api.post('/auth/verify-otp',
-                  {'contact': phone, 'code': otp, 'purpose': 'verify_phone'});
-            } catch (_) {/* verification is optional; continue to sign-in */}
+              await Api.post('/auth/verify-otp', {
+                'contact': phone,
+                'code': otp,
+                'purpose': 'verify_phone',
+              });
+            } catch (_) {
+              /* verification is optional; continue to sign-in */
+            }
           }
         } else {
           try {
-            await Api.post('/auth/verify-otp',
-                {'contact': phone, 'code': devOtp, 'purpose': 'verify_phone'});
+            await Api.post('/auth/verify-otp', {
+              'contact': phone,
+              'code': devOtp,
+              'purpose': 'verify_phone',
+            });
           } catch (_) {}
         }
 
-        final data = await Api.post(
-            '/auth/login', {'phone': phone, 'password': _password.text});
+        final data = await Api.post('/auth/login', {
+          'phone': phone,
+          'password': _password.text,
+        });
         await _persistSession(data);
         await _goHome();
         return;
@@ -239,8 +269,10 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Future<void> _persistSession(dynamic data) async {
-    await Api.setToken(data['accessToken'],
-        userId: data['user']['id'] as String);
+    await Api.setToken(
+      data['accessToken'],
+      userId: data['user']['id'] as String,
+    );
     await Api.setRefreshToken(data['refreshToken']);
     await Api.setProfile(data['user'] as Map<String, dynamic>?);
   }
@@ -280,8 +312,10 @@ class _AuthScreenState extends State<AuthScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Current: ${Api.baseUrl}',
-                style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            Text(
+              'Current: ${Api.baseUrl}',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
             const SizedBox(height: 12),
             TextField(
               controller: controller,
@@ -297,14 +331,17 @@ class _AuthScreenState extends State<AuthScreen> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, ''),
-              child: const Text('Auto-detect')),
+            onPressed: () => Navigator.pop(ctx, ''),
+            child: const Text('Auto-detect'),
+          ),
           TextButton(
-              onPressed: () => Navigator.pop(ctx, null),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx, null),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, controller.text),
-              child: const Text('Save')),
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            child: const Text('Save'),
+          ),
         ],
       ),
     );
@@ -321,16 +358,19 @@ class _AuthScreenState extends State<AuthScreen> {
       builder: (ctx) => AlertDialog(
         title: Text(loc.enterOtp),
         content: TextField(
-            controller: controller,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(hintText: loc.checkOtpHint)),
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(hintText: loc.checkOtpHint),
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Not now')),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Not now'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-              child: Text(loc.verify)),
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: Text(loc.verify),
+          ),
         ],
       ),
     );
@@ -367,13 +407,16 @@ class _AuthScreenState extends State<AuthScreen> {
                   ),
                   TextButton.icon(
                     onPressed: _busy ? null : _editServerUrl,
-                    style:
-                        TextButton.styleFrom(foregroundColor: Colors.white70),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.white70,
+                    ),
                     icon: const Icon(Icons.dns_outlined, size: 16),
-                    label: Text('Server: ${Api.baseUrl}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 11)),
+                    label: Text(
+                      'Server: ${Api.baseUrl}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 11),
+                    ),
                   ),
                   SizedBox(height: bottomPad),
                 ],
@@ -404,18 +447,18 @@ class _AuthScreenState extends State<AuthScreen> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset('assets/images/logo.png',
-              fit: BoxFit.none, scale: 3.2, alignment: Alignment.center),
+          Image.asset(
+            'assets/images/logo.png',
+            fit: BoxFit.none,
+            scale: 3.2,
+            alignment: Alignment.center,
+          ),
           DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  _brandNavyAlpha78,
-                  _brandNavyAlpha92,
-                  _ink,
-                ],
+                colors: [_brandNavyAlpha78, _brandNavyAlpha92, _ink],
                 stops: const [0.0, 0.58, 1.0],
               ),
             ),
@@ -456,7 +499,10 @@ class _AuthScreenState extends State<AuthScreen> {
                   const Text(
                     'Your Safety, Our Priority.',
                     style: TextStyle(
-                        color: Colors.white, fontSize: 14, height: 1.4),
+                      color: Colors.white,
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
                   ),
                 ],
               ),
@@ -477,10 +523,11 @@ class _AuthScreenState extends State<AuthScreen> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-              color: Colors.white,
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 2),
+            color: Colors.white,
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 2,
+          ),
         ),
         const SizedBox(height: 9),
         ClipRRect(
@@ -530,9 +577,10 @@ class _AuthScreenState extends State<AuthScreen> {
         border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.38),
-              blurRadius: 38,
-              offset: const Offset(0, 18)),
+            color: Colors.black.withValues(alpha: 0.38),
+            blurRadius: 38,
+            offset: const Offset(0, 18),
+          ),
         ],
       ),
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
@@ -558,10 +606,7 @@ class _AuthScreenState extends State<AuthScreen> {
               _register
                   ? 'Join ZEGA-ALERT to help keep your community safe.'
                   : 'Sign in to access your account and stay connected.',
-              style: const TextStyle(
-                color: Color(0xFF64748B),
-                height: 1.4,
-              ),
+              style: const TextStyle(color: Color(0xFF64748B), height: 1.4),
             ),
             const SizedBox(height: 18),
             if (_register) ...[
@@ -569,9 +614,10 @@ class _AuthScreenState extends State<AuthScreen> {
                 controller: _name,
                 textInputAction: TextInputAction.next,
                 decoration: InputDecoration(
-                    labelText: loc.fullName,
-                    prefixIcon: const Icon(Icons.person_outline),
-                    border: const OutlineInputBorder()),
+                  labelText: loc.fullName,
+                  prefixIcon: const Icon(Icons.person_outline),
+                  border: const OutlineInputBorder(),
+                ),
                 validator: (v) =>
                     (v == null || v.trim().isEmpty) ? loc.required : null,
               ),
@@ -602,23 +648,28 @@ class _AuthScreenState extends State<AuthScreen> {
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
                 decoration: const InputDecoration(
-                    labelText: 'Email (optional)',
-                    helperText: 'Add an email so you can also sign in with it',
-                    prefixIcon: Icon(Icons.email_outlined),
-                    border: OutlineInputBorder()),
+                  labelText: 'Email (optional)',
+                  helperText: 'Add an email so you can also sign in with it',
+                  prefixIcon: Icon(Icons.email_outlined),
+                  border: OutlineInputBorder(),
+                ),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _region,
+                initialValue: _region,
                 isExpanded: true,
                 decoration: InputDecoration(
-                    labelText: loc.regionLabel,
-                    prefixIcon: const Icon(Icons.location_on_outlined),
-                    border: const OutlineInputBorder()),
+                  labelText: loc.regionLabel,
+                  prefixIcon: const Icon(Icons.location_on_outlined),
+                  border: const OutlineInputBorder(),
+                ),
                 items: ethiopianRegions
-                    .map((r) => DropdownMenuItem(
+                    .map(
+                      (r) => DropdownMenuItem(
                         value: r,
-                        child: Text(r, overflow: TextOverflow.ellipsis)))
+                        child: Text(r, overflow: TextOverflow.ellipsis),
+                      ),
+                    )
                     .toList(),
                 onChanged: (v) => setState(() {
                   _region = v;
@@ -628,16 +679,20 @@ class _AuthScreenState extends State<AuthScreen> {
               if ((subCitiesByRegion[_region] ?? []).isNotEmpty) ...[
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: _subCity,
+                  initialValue: _subCity,
                   isExpanded: true,
                   decoration: InputDecoration(
-                      labelText: loc.subCityLabel,
-                      prefixIcon: const Icon(Icons.location_city_outlined),
-                      border: const OutlineInputBorder()),
+                    labelText: loc.subCityLabel,
+                    prefixIcon: const Icon(Icons.location_city_outlined),
+                    border: const OutlineInputBorder(),
+                  ),
                   items: subCitiesByRegion[_region]!
-                      .map((s) => DropdownMenuItem(
+                      .map(
+                        (s) => DropdownMenuItem(
                           value: s,
-                          child: Text(s, overflow: TextOverflow.ellipsis)))
+                          child: Text(s, overflow: TextOverflow.ellipsis),
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) => setState(() => _subCity = v),
                 ),
@@ -649,10 +704,11 @@ class _AuthScreenState extends State<AuthScreen> {
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
                 decoration: const InputDecoration(
-                    labelText: 'Phone number or email',
-                    hintText: 'e.g. +251 911 234 567',
-                    prefixIcon: Icon(Icons.phone_outlined),
-                    border: OutlineInputBorder()),
+                  labelText: 'Phone number or email',
+                  hintText: 'e.g. +251 911 234 567',
+                  prefixIcon: Icon(Icons.phone_outlined),
+                  border: OutlineInputBorder(),
+                ),
                 validator: (value) {
                   final id = value?.trim() ?? '';
                   if (id.isEmpty) return loc.required;
@@ -674,8 +730,9 @@ class _AuthScreenState extends State<AuthScreen> {
                 children: [
                   Checkbox(
                     value: _acceptedTerms,
-                    activeColor:
-                        const Color(0xFF1E40AF), // Police Blue when checked
+                    activeColor: const Color(
+                      0xFF1E40AF,
+                    ), // Police Blue when checked
                     checkColor: Colors.white,
                     onChanged: (bool? value) {
                       setState(() {
@@ -706,21 +763,20 @@ class _AuthScreenState extends State<AuthScreen> {
               decoration: InputDecoration(
                 labelText: loc.password,
                 helperText: _register
-                    ? 'At least 6 characters. A 6-digit PIN is fine.'
+                    ? 'At least 8 characters with an uppercase letter, number and symbol.'
                     : null,
                 prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
                   icon: Icon(
-                      _showPassword ? Icons.visibility_off : Icons.visibility),
+                    _showPassword ? Icons.visibility_off : Icons.visibility,
+                  ),
                   onPressed: () =>
                       setState(() => _showPassword = !_showPassword),
                 ),
                 border: const OutlineInputBorder(),
               ),
               validator: _register
-                  ? (v) => (v == null || v.length < 6)
-                      ? 'Use at least 6 characters or a 6-digit PIN'
-                      : null
+                  ? _registrationPasswordError
                   : (v) => (v == null || v.isEmpty) ? loc.required : null,
             ),
             if (!_register)
@@ -736,8 +792,11 @@ class _AuthScreenState extends State<AuthScreen> {
                 padding: const EdgeInsets.only(top: 12),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline,
-                        color: Colors.red, size: 18),
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 18,
+                    ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
@@ -758,10 +817,17 @@ class _AuthScreenState extends State<AuthScreen> {
                         height: 22,
                         width: 22,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
-                    : Text(_register ? 'Sign Up' : loc.signingIn,
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(
+                        _register ? 'Sign Up' : loc.signingIn,
                         style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w600)),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
               ),
             ),
             if (_canBioLogin && !_register) ...[
@@ -777,17 +843,17 @@ class _AuthScreenState extends State<AuthScreen> {
               const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.verified_user_outlined,
-                      color: Color(0xFF0D9488), size: 16),
+                  Icon(
+                    Icons.verified_user_outlined,
+                    color: Color(0xFF0D9488),
+                    size: 16,
+                  ),
                   SizedBox(width: 7),
                   Expanded(
                     child: Text(
                       'Your information is protected.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Color(0xFF64748B),
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
                     ),
                   ),
                 ],
@@ -809,11 +875,19 @@ class _AuthScreenState extends State<AuthScreen> {
       child: Row(
         children: [
           Expanded(
-              child: _toggleButton('Sign in', !_register,
-                  () => setState(() => _register = false))),
+            child: _toggleButton(
+              'Sign in',
+              !_register,
+              () => setState(() => _register = false),
+            ),
+          ),
           Expanded(
-              child: _toggleButton('Create account', _register,
-                  () => setState(() => _register = true))),
+            child: _toggleButton(
+              'Create account',
+              _register,
+              () => setState(() => _register = true),
+            ),
+          ),
         ],
       ),
     );

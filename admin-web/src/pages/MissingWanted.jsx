@@ -233,6 +233,7 @@ export default function MissingWanted() {
   const [wantedPending, setWantedPending] = useState([]);
   const [sightings, setSightings] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [newKind, setNewKind] = useState('missing');
   const [editing, setEditing] = useState(null); // {kind, ...row}
   const [msg, setMsg] = useState({ type: '', text: '' });
   const [viewMode, setViewMode] = useState('cards');
@@ -295,6 +296,7 @@ export default function MissingWanted() {
   };
   const newCase = (kind) => {
     setEditing(null);
+    setNewKind(kind);
     setShowForm(true);
   };
 
@@ -617,7 +619,7 @@ export default function MissingWanted() {
       {/* Edit / create dialog */}
       <PersonFormDialog
         open={showForm || editing !== null}
-        initial={editing || emptyForm('missing')}
+        initial={editing || emptyForm(newKind)}
         onClose={() => { setShowForm(false); setEditing(null); }}
         onSaved={(text) => { flash('ok', text); load(); }}
       />

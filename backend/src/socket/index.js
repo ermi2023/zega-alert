@@ -35,7 +35,7 @@ export function setupSocket() {
       }
     });
 
-    socket.on('chat:send', async ({ conversationId, body, message_type = 'text', attachment_url }, ack) => {
+    socket.on('chat:send', async ({ conversationId, body, message_type = 'text', attachment_url, attachment_type }, ack) => {
       try {
         // Membership check: only conversation participants may send.
         const { rows: part } = await query(
@@ -47,9 +47,10 @@ export function setupSocket() {
           return;
         }
         const { rows } = await query(
-          `INSERT INTO messages (conversation_id, sender_id, body, message_type, attachment_url)
-           VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-          [conversationId, socket.user.id, body || null, message_type, attachment_url || null],
+          `INSERT INTO messages (conversation_id, sender_id, body, message_type, attachment_url, attachment_type)
+           VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+          [conversationId, socket.user.id, body || null, message_type, attachment_url || null,
+            attachment_type || null],
         );
         const msg = rows[0];
         io.to(`conversation:${conversationId}`).emit('chat:message', msg);

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import {
   createReport, listReports, getReport, updateReportStatus, myReports, getReportHistory,
+  updateOwnReport, addReportEvidence,
 } from '../controllers/report.controller.js';
 
 const router = Router();
@@ -11,6 +12,8 @@ router.post('/', createReport);
 router.get('/mine', myReports);
 router.get('/', listReports);
 router.get('/:id', getReport);
+router.patch('/:id', updateOwnReport);
+router.post('/:id/evidence', addReportEvidence);
 router.get('/:id/history', getReportHistory);
 router.patch('/:id/status', requireRole('police', 'dispatcher', 'regional_admin', 'system_admin'), updateReportStatus);
 

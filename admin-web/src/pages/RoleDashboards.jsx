@@ -86,6 +86,31 @@ const badgeSos = (v) => ({ triggered: 'red', acknowledged: 'amber', dispatched: 
 const LANG_OPTIONS = ['English', 'አማርኛ (Amharic)', 'Afaan Oromoo', 'ትግርኛ (Tigrigna)'];
 const countBy = (rows, name) => rows?.find((r) => r.status === name)?.n || 0;
 
+const timeAgo = (value) => {
+  if (!value) return '';
+  const seconds = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 1000));
+  if (seconds < 60) return `${seconds}s ago`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  return `${Math.floor(seconds / 86400)}d ago`;
+};
+
+const activityIcon = (action = '') => {
+  if (action.includes('sos')) return 'sos';
+  if (action.includes('login') || action.includes('user')) return 'users';
+  if (action.includes('delete') || action.includes('reject')) return 'warning';
+  return 'check';
+};
+
+const formatUptime = (seconds = 0) => {
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  if (days) return `${days}d ${hours}h`;
+  if (hours) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+};
+
 const statCards = (stats, t) => (
   <div className="cards kpi-grid">
     <div className="card kpi">
@@ -94,7 +119,7 @@ const statCards = (stats, t) => (
         <span className="kpi-label">{t('dashboard.users')}</span>
       </div>
       <div className="kpi-value">{stats.users?.total ?? 0}</div>
-      <div className="kpi-meta">{stats.users?.citizens ?? 0} {t('dashboard.citizens')} · {stats.users?.staff ?? 0} staff</div>
+      <div className="kpi-meta">{stats.users?.citizens ?? 0} {t('dashboard.citizens')} - {stats.users?.staff ?? 0} staff</div>
     </div>
     <div className="card kpi">
       <div className="kpi-top">
@@ -110,7 +135,7 @@ const statCards = (stats, t) => (
         <span className="kpi-label">{t('dashboard.activeSos')}</span>
       </div>
       <div className="kpi-value">{countBy(stats.sos, 'triggered')}</div>
-      <div className="kpi-meta">{countBy(stats.sos, 'dispatched')} dispatched · {countBy(stats.sos, 'acknowledged')} ack</div>
+      <div className="kpi-meta">{countBy(stats.sos, 'dispatched')} dispatched - {countBy(stats.sos, 'acknowledged')} ack</div>
     </div>
     <div className="card kpi">
       <div className="kpi-top">
@@ -155,26 +180,29 @@ export function SystemAdminDashboard() {
     loadData();
   }, []);
 
-  const totalUsersCount = stats?.users?.total || 14284;
-  const activeOfficersCount = stats?.users?.active_officers || 412;
-  const openCasesCount = stats?.openCases || 86;
-  const sosTodayCount = stats?.sosToday || 24;
+  const [analytics, setAnalytics] = useState(null);
+  useEffect(() => { api.get('/admin/analytics').then(setAnalytics).catch(() => {}); }, []);
 
-  const monthlyData = stats?.monthlyTrend || [
-    { label: 'Jan', value: 12 }, { label: 'Feb', value: 19 }, { label: 'Mar', value: 15 },
-    { label: 'Apr', value: 24 }, { label: 'May', value: 18 }, { label: 'Jun', value: 22 },
-  ];
-  const weeklyData = [
-    { label: 'Mon', value: 4 }, { label: 'Tue', value: 7 }, { label: 'Wed', value: 5 },
-    { label: 'Thu', value: 9 }, { label: 'Fri', value: 8 }, { label: 'Sat', value: 3 }, { label: 'Sun', value: 6 },
-  ];
+  const totalUsersCount = stats?.users?.total ?? 0;
+  const activeOfficersCount = stats?.users?.active_officers ?? 0;
+  const openCasesCount = stats?.openCases ?? 0;
+  const sosTodayCount = stats?.sosToday ?? 0;
 
-  const reportStatusData = [
-    { label: 'Submitted', value: 35, color: '#38bdf8' },
-    { label: 'Under Review', value: 25, color: '#f59e0b' },
-    { label: 'In Progress', value: 20, color: '#a855f7' },
-    { label: 'Resolved', value: 20, color: '#22c55e' },
-  ];
+  const monthlyData = stats?.monthlyTrend || [];
+  const weeklyData = (analytics?.weekly_trend || []).map((d) => ({
+    label: new Date(d.date).toLocaleDateString(undefined, { weekday: 'short' }),
+    value: d.count,
+  }));
+  const STATUS_COLORS = {
+    submitted: '#38bdf8', pending: '#38bdf8', under_review: '#f59e0b', assigned: '#a855f7',
+    in_progress: '#a855f7', resolved: '#22c55e', rejected: '#ef4444', closed: '#64748b',
+  };
+  const reportStatusData = (stats?.reports || []).map((r) => ({
+    label: (r.status || '').replace('_', ' '),
+    value: r.n,
+    color: STATUS_COLORS[r.status] || '#64748b',
+  }));
+  const reportTotal = reportStatusData.reduce((sum, r) => sum + r.value, 0);
 
   return (
     <div>
@@ -196,10 +224,9 @@ export function SystemAdminDashboard() {
           <div className="kpi-top">
             <span className="kpi-icon indigo"><Icon name="users" size={18} /></span>
             <span className="kpi-label">Total Users</span>
-            <span className="badge green" style={{ marginLeft: 'auto', fontSize: 11 }}>+12% ↑</span>
           </div>
           <div className="kpi-value">{totalUsersCount.toLocaleString()}</div>
-          <div className="kpi-meta">{stats?.users?.citizens ?? 0} citizens · {stats?.users?.staff ?? 0} staff</div>
+          <div className="kpi-meta">{stats?.users?.citizens ?? 0} citizens - {stats?.users?.staff ?? 0} staff</div>
         </div>
 
         <div className="card kpi">
@@ -250,7 +277,7 @@ export function SystemAdminDashboard() {
           <div className="section-head">
             <h2>Reports by Status<small>distribution</small></h2>
           </div>
-          <DonutChart data={reportStatusData} total={1240} size={150} />
+          <DonutChart data={reportStatusData} total={reportTotal} size={150} />
         </div>
       </div>
 
@@ -262,94 +289,65 @@ export function SystemAdminDashboard() {
             <a className="btn small ghost" href="/audit">View All →</a>
           </div>
           <div className="activity-feed">
-            <div className="activity-item" style={{ borderLeft: '3px solid #ef4444' }}>
-              <div className="activity-icon" style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' }}>
-                <Icon name="sos" size={16} />
-              </div>
-              <div className="activity-body">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <h4 className="activity-title" style={{ color: '#ef4444' }}>SOS Triggered: Addis Ababa Sector 4</h4>
-                  <span className="activity-time">2 mins ago</span>
+            {audit.length === 0 && (
+              <p style={{ color: 'var(--muted)', fontSize: 13 }}>No recorded activity yet.</p>
+            )}
+            {audit.map((a) => {
+              const icon = activityIcon(a.action);
+              const color = icon === 'sos' ? '#ef4444' : icon === 'warning' ? '#f59e0b' : icon === 'users' ? '#38bdf8' : '#22c55e';
+              return (
+                <div className="activity-item" key={a.id} style={{ borderLeft: '3px solid ' + color }}>
+                  <div className="activity-icon" style={{ background: color + '26', color }}>
+                    <Icon name={icon} size={16} />
+                  </div>
+                  <div className="activity-body">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                      <h4 className="activity-title">{String(a.action || 'activity').replaceAll('_', ' ')}</h4>
+                      <span className="activity-time">{timeAgo(a.created_at)}</span>
+                    </div>
+                    <p className="activity-subtitle">
+                      {a.full_name || 'System'} - {a.entity || 'system'}
+                      {a.entity_id ? ' - ' + String(a.entity_id).slice(0, 8) : ''}
+                    </p>
+                  </div>
                 </div>
-                <p className="activity-subtitle">አስቸኳይ ሁኔታ ተከስቷል (Bole Subcity GPS verified)</p>
-                <div style={{ marginTop: 8, display: 'flex', gap: 6 }}>
-                  <a className="btn small" href="/sos" style={{ padding: '3px 10px', fontSize: 11 }}>Dispatch</a>
-                  <button className="btn small ghost" style={{ padding: '3px 10px', fontSize: 11 }}>Ignore</button>
-                </div>
-              </div>
-            </div>
-
-            <div className="activity-item">
-              <div className="activity-icon" style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
-                <Icon name="users" size={16} />
-              </div>
-              <div className="activity-body">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <h4 className="activity-title">New Officer Onboarded</h4>
-                  <span className="activity-time">15 mins ago</span>
-                </div>
-                <p className="activity-subtitle">Abebe Balcha (Badge #1921) has been verified and added to the roster.</p>
-              </div>
-            </div>
-
-            <div className="activity-item">
-              <div className="activity-icon" style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e' }}>
-                <Icon name="check" size={16} />
-              </div>
-              <div className="activity-body">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <h4 className="activity-title">Case #5512 Resolved</h4>
-                  <span className="activity-time">1 hour ago</span>
-                </div>
-                <p className="activity-subtitle">ሪፖርት ቁጥር #5512 በተሳካ ሁኔታ ተጠናቋል</p>
-              </div>
-            </div>
-
-            <div className="activity-item" style={{ borderLeft: '3px solid #f59e0b' }}>
-              <div className="activity-icon" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' }}>
-                <Icon name="warning" size={16} />
-              </div>
-              <div className="activity-body">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <h4 className="activity-title" style={{ color: '#f59e0b' }}>High Crime Density Alert</h4>
-                  <span className="activity-time">3 hours ago</span>
-                </div>
-                <p className="activity-subtitle">Unusual reporting spike detected in Bole Subcity.</p>
-              </div>
-            </div>
+              );
+            })}
           </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="panel">
             <div className="section-head">
-              <h2>System Health<small>platform telemetry</small></h2>
+              <h2>System Health<small>live platform telemetry</small></h2>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--panel2)', borderRadius: 'var(--r-sm)' }}>
-                <span style={{ fontSize: 13, color: 'var(--muted)' }}>API Uptime</span>
-                <b style={{ color: '#4ade80' }}>99.5%</b>
+                <span style={{ fontSize: 13, color: 'var(--muted)' }}>API Process</span>
+                <b style={{ color: '#4ade80' }}>{stats ? 'Operational' : 'Loading'} - {formatUptime(stats?.system?.uptime_seconds || 0)}</b>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--panel2)', borderRadius: 'var(--r-sm)' }}>
-                <span style={{ fontSize: 13, color: 'var(--muted)' }}>Database Status</span>
-                <span className="badge green">Optimized</span>
+                <span style={{ fontSize: 13, color: 'var(--muted)' }}>Database</span>
+                <span className="badge green">{stats ? 'Healthy' : 'Checking'} - {stats?.system?.db_latency_ms ?? 0} ms</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--panel2)', borderRadius: 'var(--r-sm)' }}>
                 <span style={{ fontSize: 13, color: 'var(--muted)' }}>WebSocket Pulse</span>
-                <span style={{ color: '#38bdf8', fontSize: 13, fontWeight: 600 }}>● Stable</span>
+                <span style={{ color: '#38bdf8', fontSize: 13, fontWeight: 600 }}>{stats?.system?.websocket_clients ?? 0} connected</span>
               </div>
             </div>
           </div>
 
           <div className="panel" style={{ background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9))' }}>
             <div className="section-head">
-              <h2>Regional Focus<small>active sector coverage</small></h2>
-              <span className="pill" style={{ color: '#38bdf8' }}>Live Grid Active</span>
+              <h2>Regional Coverage<small>registered users and geofences</small></h2>
+              <span className="pill" style={{ color: '#38bdf8' }}>{stats?.regions?.length || 0} regions</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
               <div>
-                <b style={{ fontSize: 16 }}>Dire Dawa &amp; Addis Ababa Metropolis</b>
-                <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--muted)' }}>5 patrol zones · 14 sub-cities connected</p>
+                <b style={{ fontSize: 16 }}>{stats?.regions?.[0]?.region || 'No users yet'}</b>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--muted)' }}>
+                  {stats?.regions?.[0]?.n ?? 0} users - {stats?.geofences?.active ?? 0} active geofences
+                </p>
               </div>
               <a href="/geofences" className="btn small" style={{ borderRadius: '50%', width: 36, height: 36, padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>+</a>
             </div>
@@ -465,7 +463,7 @@ export function RegionalAdminDashboard() {
               <span className="kpi-icon red" style={{ width: 28, height: 28 }}><Icon name="star" size={14} /></span>
               <span className="kpi-label" style={{ fontSize: 11 }}>ACTIVE CASES</span>
             </div>
-            <div className="kpi-value" style={{ fontSize: 28, color: '#fb7185' }}>{missingStats?.active_cases || 24}</div>
+            <div className="kpi-value" style={{ fontSize: 28, color: '#fb7185' }}>{missingStats?.active_cases ?? 0}</div>
           </div>
 
           <div className="card kpi" style={{ padding: '14px 16px' }}>
@@ -473,7 +471,7 @@ export function RegionalAdminDashboard() {
               <span className="kpi-icon green" style={{ width: 28, height: 28 }}><Icon name="check" size={14} /></span>
               <span className="kpi-label" style={{ fontSize: 11 }}>FOUND THIS MONTH</span>
             </div>
-            <div className="kpi-value" style={{ fontSize: 28, color: '#4ade80' }}>{missingStats?.found_this_month || 12}</div>
+            <div className="kpi-value" style={{ fontSize: 28, color: '#4ade80' }}>{missingStats?.found_this_month ?? 0}</div>
           </div>
 
           <div className="card kpi" style={{ padding: '14px 16px' }}>
@@ -481,7 +479,7 @@ export function RegionalAdminDashboard() {
               <span className="kpi-icon amber" style={{ width: 28, height: 28 }}><Icon name="clock" size={14} /></span>
               <span className="kpi-label" style={{ fontSize: 11 }}>NEW REPORTS (24H)</span>
             </div>
-            <div className="kpi-value" style={{ fontSize: 28, color: '#fbbf24' }}>{String(missingStats?.new_reports_24h || 3).padStart(2, '0')}</div>
+            <div className="kpi-value" style={{ fontSize: 28, color: '#fbbf24' }}>{String(missingStats?.new_reports_24h ?? 0).padStart(2, '0')}</div>
           </div>
 
           <div className="card kpi" style={{ padding: '14px 16px' }}>
@@ -489,7 +487,7 @@ export function RegionalAdminDashboard() {
               <span className="kpi-icon blue" style={{ width: 28, height: 28 }}><Icon name="chart" size={14} /></span>
               <span className="kpi-label" style={{ fontSize: 11 }}>SUCCESS RATE</span>
             </div>
-            <div className="kpi-value" style={{ fontSize: 28, color: '#38bdf8' }}>{missingStats?.success_rate || 82}%</div>
+            <div className="kpi-value" style={{ fontSize: 28, color: '#38bdf8' }}>{missingStats?.success_rate ?? 0}%</div>
           </div>
         </div>
 
@@ -525,13 +523,11 @@ export function RegionalAdminDashboard() {
         </div>
 
         {/* Cards Grid (Figure 30) */}
+        {filteredMissing.length === 0 && (
+          <p style={{ color: 'var(--muted)', fontSize: 13, padding: '12px 0' }}>No missing person reports match this view.</p>
+        )}
         <div className="person-card-grid">
-          {(filteredMissing.length > 0 ? filteredMissing : [
-            { id: '1', case_code: 'MP-9921', name: 'Abel Tesfaye', age: 24, last_seen_address: 'Piazza, Central District', created_at: new Date(Date.now() - 48 * 3600 * 1000).toISOString(), status: 'missing', photo_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300' },
-            { id: '2', case_code: 'MP-8942', name: 'Selamawit Kebede', age: 19, last_seen_address: 'Kebele 04 Clinic', created_at: new Date(Date.now() - 120 * 3600 * 1000).toISOString(), status: 'found', photo_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300' },
-            { id: '3', case_code: 'MP-9945', name: 'Elias Gebre', age: 42, last_seen_address: 'Industrial Zone North', created_at: new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString(), status: 'missing', photo_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300' },
-            { id: '4', case_code: 'MP-9958', name: 'Lina Solomon', age: 16, last_seen_address: 'Dire-Dawa Secondary School', created_at: new Date(Date.now() - 12 * 3600 * 1000).toISOString(), status: 'missing', photo_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300' },
-          ]).slice(0, 4).map((person) => (
+          {filteredMissing.slice(0, 4).map((person) => (
             <div key={person.id} className="person-card">
               <div className="person-card-header">
                 {person.photo_url ? (
@@ -574,14 +570,7 @@ export function RegionalAdminDashboard() {
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, fontSize: 13, color: 'var(--muted)' }}>
-          <span>Showing {Math.min(4, filteredMissing.length || 4)} of {filteredMissing.length || 24} missing person records</span>
-          <div style={{ display: 'flex', gap: 4 }}>
-            <button className="btn ghost small" style={{ padding: '3px 9px' }}>&lt;</button>
-            <button className="btn small" style={{ padding: '3px 9px' }}>1</button>
-            <button className="btn ghost small" style={{ padding: '3px 9px' }}>2</button>
-            <button className="btn ghost small" style={{ padding: '3px 9px' }}>3</button>
-            <button className="btn ghost small" style={{ padding: '3px 9px' }}>&gt;</button>
-          </div>
+          <span>Showing {Math.min(4, filteredMissing.length)} of {filteredMissing.length} missing person records</span>
         </div>
       </div>
 
@@ -987,7 +976,7 @@ export function PoliceDashboard() {
             <tbody>
               {mine.map((r) => (
                 <tr key={r.id}>
-                  <td>{r.title}<div style={{ color: 'var(--muted)', fontSize: 12 }}>{r.region || '—'} · {r.sub_city || '—'}</div></td>
+                  <td>{r.title}<div style={{ color: 'var(--muted)', fontSize: 12 }}>{r.region || '—'} - {r.sub_city || '—'}</div></td>
                   <td><span className={`badge ${r.severity === 'critical' ? 'red' : r.severity === 'high' ? 'amber' : 'blue'}`}>{r.severity}</span></td>
                   <td><span className={`badge ${badge(r.status)}`}>{r.status}</span></td>
                   <td>

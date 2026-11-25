@@ -43,4 +43,30 @@ class OfficerPositionService {
       // Silent fail — will retry next cycle
     }
   }
+
+  /// WorkManager entry point: reports a position even when the app is closed.
+  /// Best-effort because OS background-location limits vary by device.
+  static Future<void> reportInBackground() async {
+    try {
+      await Api.loadToken();
+      final role = Api.role;
+      if (Api.token == null || (role != 'police' && role != 'dispatcher')) return;
+      final permission = await Geolocator.checkPermission();
+      if (permission != LocationPermission.always && permission != LocationPermission.whileInUse) return;
+      if (!await Geolocator.isLocationServiceEnabled()) return;
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 20),
+      ).timeout(const Duration(seconds: 25));
+      await Api.post('/position/report', {
+        'latitude': pos.latitude,
+        'longitude': pos.longitude,
+        'heading': pos.heading,
+        'speed': pos.speed,
+        'background': true,
+      });
+    } catch (_) {
+      // Best-effort; the foreground timer resumes when the app reopens.
+    }
+  }
 }

@@ -8,6 +8,10 @@ import '../widgets/fullscreen_image_viewer.dart';
 import '../widgets/road_closure_map_widget.dart';
 import '../widgets/translatable_text.dart';
 import '../services/database_service.dart';
+import 'announcement_detail_screen.dart';
+import 'id_verification_screen.dart';
+import 'missing_report_screen.dart';
+import 'person_detail_screen.dart';
 
 class NewsScreen extends StatefulWidget {
   const NewsScreen({super.key});
@@ -16,12 +20,19 @@ class NewsScreen extends StatefulWidget {
   State<NewsScreen> createState() => _NewsScreenState();
 }
 
-class _NewsScreenState extends State<NewsScreen> {
+class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabs;
   List<dynamic> _items = [];
+  List<dynamic> _legal = [];
+  List<dynamic> _missing = [];
+  List<dynamic> _wanted = [];
+  List<dynamic> _sightings = [];
+  String? _legalCategory;
+  String? _legalLang;
+  String _newsFilter = 'all';
   bool _loading = true;
   String? _loadError;
   bool _offline = false;
-  String _selectedTab = 'all'; // 'all' or 'road_closures'
 
   // Social interactions state: entityKey -> reaction ('like' / 'dislike' / null)
   final Map<String, String?> _userReactions = {};
@@ -38,6 +49,7 @@ class _NewsScreenState extends State<NewsScreen> {
   @override
   void initState() {
     super.initState();
+    _tabs = TabController(length: 6, vsync: this);
     _loadNews();
   }
 
@@ -46,6 +58,7 @@ class _NewsScreenState extends State<NewsScreen> {
     for (final c in _commentControllers.values) {
       c.dispose();
     }
+    _tabs.dispose();
     super.dispose();
   }
 
@@ -63,12 +76,19 @@ class _NewsScreenState extends State<NewsScreen> {
       _offline = false;
     });
     try {
-      final data = await Api.get('/announcements');
+      final results = await Future.wait([
+        Api.get('/announcements'),
+        Api.get('/legal'),
+        Api.get('/persons/missing'),
+        Api.get('/persons/wanted'),
+        Api.get('/persons/sightings'),
+      ]);
       if (mounted) {
-        final list = data is List ? data : [];
+        final list = results[0] is List ? results[0] : [];
         await DatabaseService.cacheList('announcements', list);
         for (final item in list) {
-          final id = item['id'] as String;
+          final id = item['id']?.toString();
+          if (id == null || id.isEmpty) continue;
           final key = 'announcement_$id';
           _likeCounts[key] = (item['like_count'] as num?)?.toInt() ?? 0;
           _dislikeCounts[key] = (item['dislike_count'] as num?)?.toInt() ?? 0;
@@ -76,6 +96,10 @@ class _NewsScreenState extends State<NewsScreen> {
         }
         setState(() {
           _items = list;
+          _legal = results[1] is List ? results[1] : [];
+          _missing = results[2] is List ? results[2] : [];
+          _wanted = results[3] is List ? results[3] : [];
+          _sightings = results[4] is List ? results[4] : [];
           _loading = false;
         });
       }
@@ -104,6 +128,19 @@ class _NewsScreenState extends State<NewsScreen> {
           });
         }
       }
+    }
+  }
+
+  Future<void> _loadLegal() async {
+    final params = <String>[];
+    if (_legalCategory != null && _legalCategory!.isNotEmpty) params.add('category=$_legalCategory');
+    if (_legalLang != null && _legalLang!.isNotEmpty) params.add('language=$_legalLang');
+    final path = params.isEmpty ? '/legal' : '/legal?${params.join('&')}';
+    try {
+      final data = await Api.get(path);
+      if (mounted) setState(() => _legal = data is List ? data : []);
+    } catch (e) {
+      if (mounted) setState(() => _loadError = 'Failed to load: $e');
     }
   }
 
@@ -225,17 +262,9 @@ class _NewsScreenState extends State<NewsScreen> {
     }
   }
 
-  List<dynamic> _getFilteredItems() {
-    if (_selectedTab == 'road_closures') {
-      return _items.where((i) => i['category'] == 'road_closure').toList();
-    }
-    return _items;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final filtered = _getFilteredItems();
-
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       body: Column(
@@ -246,58 +275,81 @@ class _NewsScreenState extends State<NewsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               color: const Color(0xFFFFF7ED),
               child: Text(
-                AppLocalizations.of(context).offlineMode,
+                loc.offlineMode,
                 style: const TextStyle(color: Color(0xFF9A3412), fontSize: 12),
               ),
             ),
-          // Filter Tabs (All Updates / Road Closures)
-          _buildFilterTabs(),
-
-          // Feed Content
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(loc.newsAndInformation, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                      Text('News, road closures, wanted & missing persons, and lost items',
+                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Scan Fayda ID',
+                  onPressed: () async {
+                    if (!await ensureAuthed(context, reason: 'Sign in to verify your Fayda National ID.')) return;
+                    if (!context.mounted) return;
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const IdVerificationScreen()));
+                  },
+                  icon: const Icon(Icons.qr_code_scanner),
+                ),
+                IconButton(
+                  tooltip: 'Refresh',
+                  onPressed: _loading ? null : _loadNews,
+                  icon: _loading
+                      ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.refresh),
+                ),
+              ],
+            ),
+          ),
+          if (_loadError != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Card(
+                color: Colors.red.shade50,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(children: [
+                    const Icon(Icons.error_outline, color: Colors.red),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(_loadError!, style: const TextStyle(color: Colors.red))),
+                  ]),
+                ),
+              ),
+            ),
+          TabBar(
+            controller: _tabs,
+            isScrollable: true,
+            tabs: [
+              Tab(text: loc.announcementsTab),
+              Tab(text: loc.missingTab),
+              Tab(text: loc.wantedPersons),
+              const Tab(text: 'Lost & found'),
+              Tab(text: loc.legalTab),
+              Tab(text: loc.sightingsTab),
+            ],
+          ),
           Expanded(
-            child: RefreshIndicator(
-              onRefresh: _loadNews,
-              color: const Color(0xFF0F172A),
-              child: _loading && _items.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
-                  : _loadError != null && _items.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.error_outline,
-                                  size: 48, color: Colors.red),
-                              const SizedBox(height: 12),
-                              Text(_loadError!),
-                              const SizedBox(height: 12),
-                              ElevatedButton(
-                                  onPressed: _loadNews,
-                                  child: const Text('Retry')),
-                            ],
-                          ),
-                        )
-                      : filtered.isEmpty
-                          ? Center(
-                              child: Text(
-                                _selectedTab == 'road_closures'
-                                    ? 'No active road closures.'
-                                    : 'No updates at the moment.',
-                                style: TextStyle(
-                                    color: Colors.grey.shade600, fontSize: 15),
-                              ),
-                            )
-                          : ListView.separated(
-                              padding:
-                                  const EdgeInsets.only(top: 8, bottom: 24),
-                              itemCount: filtered.length,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 12),
-                              itemBuilder: (context, index) {
-                                final item =
-                                    filtered[index] as Map<String, dynamic>;
-                                return _buildNewsCard(context, item);
-                              },
-                            ),
+            child: TabBarView(
+              controller: _tabs,
+              children: [
+                _newsTab(),
+                _missingTab(),
+                _wantedTab(),
+                _itemsTab(),
+                _legalTab(),
+                _sightingsTab(),
+              ],
             ),
           ),
         ],
@@ -305,103 +357,394 @@ class _NewsScreenState extends State<NewsScreen> {
     );
   }
 
-  Widget _buildFilterTabs() {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          // All Updates
-          InkWell(
-            onTap: () => setState(() => _selectedTab = 'all'),
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: _selectedTab == 'all'
-                    ? const Color(0xFF00338D)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: _selectedTab == 'all'
-                      ? const Color(0xFF00338D)
-                      : Colors.grey.shade300,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.newspaper,
-                    size: 16,
-                    color: _selectedTab == 'all'
-                        ? Colors.white
-                        : const Color(0xFF334155),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'All Updates',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: _selectedTab == 'all'
-                          ? Colors.white
-                          : const Color(0xFF334155),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
+  static const _newsFilters = <({String value, String label})>[
+    (value: 'all', label: 'All'),
+    (value: 'news', label: 'News'),
+    (value: 'warning', label: 'Alerts'),
+    (value: 'road_closure', label: 'Road closures'),
+    (value: 'event', label: 'Events'),
+  ];
 
-          // Road Closures
-          InkWell(
-            onTap: () => setState(() => _selectedTab = 'road_closures'),
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: _selectedTab == 'road_closures'
-                    ? const Color(0xFF00338D)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: _selectedTab == 'road_closures'
-                      ? const Color(0xFF00338D)
-                      : Colors.grey.shade300,
+  Widget _newsTab() {
+    final items = _newsFilter == 'all'
+        ? _items.where((a) => a['category'] != 'missing_item').toList()
+        : _items.where((a) => a['category'] == _newsFilter).toList();
+    return Column(
+      children: [
+        SizedBox(
+          height: 52,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            children: _newsFilters
+                .map((f) => Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(f.label),
+                        selected: _newsFilter == f.value,
+                        onSelected: (_) => setState(() => _newsFilter = f.value),
+                      ),
+                    ))
+                .toList(),
+          ),
+        ),
+        Expanded(
+          child: _loading && _items.isEmpty
+              ? const Center(child: CircularProgressIndicator())
+              : items.isEmpty
+                  ? _empty(AppLocalizations.of(context).nothingHereYet)
+                  : RefreshIndicator(
+                      onRefresh: _loadNews,
+                      color: const Color(0xFF0F172A),
+                      child: ListView.separated(
+                        padding: const EdgeInsets.only(top: 8, bottom: 24),
+                        itemCount: items.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (_, i) => _buildNewsCard(
+                          context,
+                          Map<String, dynamic>.from(items[i] as Map),
+                        ),
+                      ),
+                    ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _openMissingReport() async {
+    if (!await ensureAuthed(context, reason: 'Sign in to report a missing person.')) return;
+    if (!mounted) return;
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => MissingReportScreen(onDone: _loadNews)));
+  }
+
+  Future<void> _openSighting(dynamic person, {String? wantedId}) async {
+    if (!await ensureAuthed(context, reason: 'Sign in to report a sighting.')) return;
+    if (!mounted) return;
+    await Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => SightingReportScreen(
+        missingPersonId: person['id']?.toString(),
+        wantedPersonId: wantedId,
+        onDone: _loadNews,
+      ),
+    ));
+  }
+
+  Widget _missingTab() {
+    final loc = AppLocalizations.of(context);
+    return RefreshIndicator(
+      onRefresh: _loadNews,
+      child: ListView.builder(
+        padding: const EdgeInsets.only(bottom: 16),
+        itemCount: _missing.isEmpty ? 2 : _missing.length + 1,
+        itemBuilder: (_, i) {
+          if (i == 0) {
+            return Padding(
+              padding: const EdgeInsets.all(12),
+              child: FilledButton.icon(
+                onPressed: _openMissingReport,
+                icon: const Icon(Icons.person_add_alt_1),
+                label: Text(loc.reportAMissingPerson),
+              ),
+            );
+          }
+          if (_missing.isEmpty) return _empty(loc.nothingHereYet);
+          final m = _missing[i - 1];
+          final found = m['status'] != 'missing';
+          return _personCard(
+            m,
+            'missing',
+            active: !found,
+            subtitle: found
+                ? '${m['case_code'] != null ? '[${m['case_code']}] ' : ''}Found'
+                : '${m['case_code'] != null ? '[${m['case_code']}] ' : ''}${loc.lastSeen(m['last_seen_address'] ?? loc.unknownLocation)}',
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _wantedTab() {
+    final loc = AppLocalizations.of(context);
+    if (_wanted.isEmpty) return _empty(loc.nothingHereYet);
+    return RefreshIndicator(
+      onRefresh: _loadNews,
+      child: ListView.builder(
+        padding: const EdgeInsets.only(bottom: 16),
+        itemCount: _wanted.length,
+        itemBuilder: (_, i) => _personCard(
+          _wanted[i],
+          'wanted',
+          active: _wanted[i]['status'] == 'wanted',
+          subtitle: '#${_wanted[i]['danger_level'] ?? 'low'} risk · ${_wanted[i]['crime_description'] ?? ''}',
+        ),
+      ),
+    );
+  }
+
+  Widget _personCard(dynamic person, String kind, {required bool active, required String subtitle}) {
+    final loc = AppLocalizations.of(context);
+    final wanted = kind == 'wanted';
+    final name = (person['name'] ?? 'Unknown').toString();
+    final photo = Api.assetUrl(person['photo_url']?.toString());
+    final scheme = Theme.of(context).colorScheme;
+    return Card(
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: wanted ? Colors.red.shade50 : Colors.orange.shade50,
+          foregroundImage: (photo != null && photo.isNotEmpty) ? NetworkImage(photo) : null,
+          child: Text(name.isNotEmpty ? name.substring(0, 1).toUpperCase() : '?',
+              style: TextStyle(color: wanted ? Colors.red.shade700 : Colors.orange.shade800, fontWeight: FontWeight.bold)),
+        ),
+        title: Row(
+          children: [
+            Flexible(child: Text(name)),
+            if (wanted && person['danger_level'] != null) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: (person['danger_level'] == 'high' || person['danger_level'] == 'critical')
+                      ? Colors.red.shade50
+                      : Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  (person['danger_level'] ?? '').toString().toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    color: (person['danger_level'] == 'high' || person['danger_level'] == 'critical')
+                        ? Colors.red
+                        : Colors.amber.shade900,
+                  ),
                 ),
               ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.traffic,
-                    size: 16,
-                    color: _selectedTab == 'road_closures'
-                        ? Colors.white
-                        : const Color(0xFFDC2626),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Road Closures',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: _selectedTab == 'road_closures'
-                          ? Colors.white
-                          : const Color(0xFF334155),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            ],
+          ],
+        ),
+        subtitle: Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
+        trailing: IconButton(
+          icon: Icon(active ? Icons.visibility : Icons.check_circle_outline,
+              color: active ? scheme.primary : Colors.green),
+          tooltip: active ? loc.reportSighting : 'Resolved',
+          onPressed: active
+              ? () => _openSighting(person, wantedId: wanted ? person['id']?.toString() : null)
+              : null,
+        ),
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => PersonDetailScreen(
+            person: Map<String, dynamic>.from(person as Map),
+            kind: kind,
+            onChanged: _loadNews,
           ),
-        ],
+        )),
+      ),
+    );
+  }
+
+  Widget _itemsTab() {
+    final items = _items.where((a) => a['category'] == 'missing_item').toList();
+    if (items.isEmpty) {
+      return _empty('No lost or recovered items reported yet.');
+    }
+    return RefreshIndicator(
+      onRefresh: _loadNews,
+      child: ListView.builder(
+        padding: const EdgeInsets.only(bottom: 16),
+        itemCount: items.length,
+        itemBuilder: (_, i) => _announcementCard(items[i]),
+      ),
+    );
+  }
+
+  Widget _announcementCard(dynamic a) {
+    final loc = AppLocalizations.of(context);
+    final category = (a['category'] ?? 'news').toString();
+    return Card(
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: _categoryColor(category).withValues(alpha: 0.12),
+          child: Icon(_categoryIcon(category), color: _categoryColor(category), size: 20),
+        ),
+        title: Text((a['title'] ?? '').toString()),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text((a['body'] ?? '').toString(), maxLines: 3, overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 4),
+            Text(_categoryLabel(category).toUpperCase(),
+                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _categoryColor(category))),
+          ],
+        ),
+        isThreeLine: true,
+        trailing: IconButton(
+          icon: const Icon(Icons.share, size: 20),
+          tooltip: loc.share,
+          onPressed: () async {
+            final r = await Share.share(
+                '${a['title']}\n\n${a['body']}\n\nShared via ZEGA-ALERT\n#ZEGAALERT #EthiopianFederalPolice');
+            await Api.recordShare('announcement', a['id']?.toString(), platform: Api.platformFromRaw(r.raw));
+          },
+        ),
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => AnnouncementDetailScreen(item: Map<String, dynamic>.from(a as Map)),
+        )),
+      ),
+    );
+  }
+
+  String _categoryLabel(String category) => switch (category) {
+        'warning' => 'Alert',
+        'road_closure' => 'Road closure',
+        'missing_item' => 'Lost & found',
+        'wanted' => 'Wanted',
+        'missing' => 'Missing person',
+        'legal' => 'Legal',
+        'event' => 'Event',
+        _ => 'News',
+      };
+
+  Color _categoryColor(String category) => switch (category) {
+        'warning' => Colors.amber.shade800,
+        'road_closure' => Colors.deepOrange,
+        'missing_item' => Colors.teal,
+        'wanted' => Colors.red,
+        'missing' => Colors.orange,
+        'legal' => Colors.indigo,
+        'event' => Colors.purple,
+        _ => Colors.blue,
+      };
+
+  IconData _categoryIcon(String category) => switch (category) {
+        'warning' => Icons.warning_amber,
+        'road_closure' => Icons.traffic,
+        'missing_item' => Icons.inventory_2_outlined,
+        'wanted' => Icons.gavel,
+        'missing' => Icons.person_search,
+        'legal' => Icons.gavel,
+        'event' => Icons.event,
+        _ => Icons.article,
+      };
+
+  Widget _legalTab() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  initialValue: _legalCategory,
+                  decoration: const InputDecoration(labelText: 'Category', border: OutlineInputBorder(), isDense: true),
+                  items: [null, 'rights', 'duties', 'penalties', 'procedures', 'other']
+                      .map((c) => DropdownMenuItem(value: c, child: Text(c ?? 'All')))
+                      .toList(),
+                  onChanged: (v) {
+                    setState(() => _legalCategory = v);
+                    _loadLegal();
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  initialValue: _legalLang,
+                  decoration: const InputDecoration(labelText: 'Language', border: OutlineInputBorder(), isDense: true),
+                  items: [null, 'en', 'am', 'om', 'ti']
+                      .map((l) => DropdownMenuItem(value: l, child: Text(l ?? 'All')))
+                      .toList(),
+                  onChanged: (v) {
+                    setState(() => _legalLang = v);
+                    _loadLegal();
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _legal.isEmpty
+              ? _empty(AppLocalizations.of(context).nothingHereYet)
+              : RefreshIndicator(
+                  onRefresh: _loadLegal,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    itemCount: _legal.length,
+                    itemBuilder: (_, i) {
+                      final l = _legal[i];
+                      return Card(
+                        child: ExpansionTile(
+                          leading: const Icon(Icons.menu_book_outlined),
+                          title: Text(l['title'] ?? ''),
+                          subtitle: Text('${l['category']} · ${l['language']}'),
+                          trailing: (l['review_status'] == 'under_review')
+                              ? const Chip(label: Text('Under Review', style: TextStyle(fontSize: 11)))
+                              : null,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(l['body'] ?? '', style: const TextStyle(height: 1.4)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _sightingsTab() {
+    final loc = AppLocalizations.of(context);
+    if (_sightings.isEmpty) return _empty(loc.nothingHereYet);
+    return RefreshIndicator(
+      onRefresh: _loadNews,
+      child: ListView.builder(
+        itemCount: _sightings.length + 1,
+        itemBuilder: (_, i) {
+          if (i == 0) {
+            return Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(loc.citizenSightingsInfo, style: const TextStyle(color: Colors.grey)),
+            );
+          }
+          final s = _sightings[i - 1];
+          return Card(
+            child: ListTile(
+              leading: const Icon(Icons.place, color: Colors.green),
+              title: Text(s['address_text'] ?? loc.unknownLocation),
+              subtitle: Text(s['description'] ?? ''),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _empty(String text) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.inbox_outlined, size: 42, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            const SizedBox(height: 8),
+            Text(text, textAlign: TextAlign.center, style: const TextStyle(color: Colors.grey)),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildNewsCard(BuildContext context, Map<String, dynamic> item) {
-    final id = item['id'] as String;
+    final id = item['id']?.toString() ?? '';
     final key = 'announcement_$id';
     final category = item['category'] as String? ?? 'news';
     final isRoadClosure = category == 'road_closure';
@@ -409,8 +752,8 @@ class _NewsScreenState extends State<NewsScreen> {
     final title = item['title'] as String? ?? 'Announcement';
     final body = item['body'] as String? ?? '';
     final sourceLanguage = (item['language'] as String?) ?? 'en';
-    final imageUrl = item['image_url'] as String?;
-    final sourceLabel = item['source_label'] as String? ?? 'EFP Media Desk';
+    final imageUrl = Api.assetUrl(item['image_url']?.toString());
+    final sourceLabel = item['source_label'] as String? ?? 'ZEGA-ALERT Media Desk';
     final badgeLabel = item['badge_label'] as String? ??
         (isRoadClosure
             ? 'TRAFFIC ALERT'
@@ -743,7 +1086,7 @@ class _NewsScreenState extends State<NewsScreen> {
                     InkWell(
                       onTap: () async {
                         final r = await Share.share(
-                            '$title\n\n$body\n\nShared via EthioShield');
+                            '$title\n\n$body\n\nShared via ZEGA-ALERT');
                         await Api.recordShare('announcement', id,
                             platform: Api.platformFromRaw(r.raw));
                       },

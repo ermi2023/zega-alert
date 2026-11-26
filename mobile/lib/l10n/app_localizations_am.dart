@@ -153,6 +153,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get safetyZones => 'የደህንነት ቀጠናዎች (ጂኦፌንስ)';
 
   @override
+  String get safetyZonesTab => 'ዞኖች';
+
+  @override
   String get safetyZonesHomeDescription =>
       'የደህንነት ዞን ለውጦችና በዞን ውስጥ የተከሰቱ ድንገተኛ ክስተቶች በማሳወቂያ ሳጥንዎ ውስጥ ይታያሉ፤ የመሣሪያ ማሳወቂያዎች ከተነቁ የግፊት ማሳወቂያ ይላካል። ካርታውንና ወሰኑን ለማየት ከታች አካባቢ ይምረጡ። የአካባቢ ባለሥልጣናትን መመሪያ ይከተሉ፤ ዞኑ ደህንነትን አያረጋግጥም።';
 

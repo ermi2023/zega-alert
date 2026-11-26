@@ -386,6 +386,12 @@ abstract class AppLocalizations {
   /// **'Safety zones (geofences)'**
   String get safetyZones;
 
+  /// No description provided for @safetyZonesTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Zones'**
+  String get safetyZonesTab;
+
   /// No description provided for @safetyZonesHomeDescription.
   ///
   /// In en, this message translates to:

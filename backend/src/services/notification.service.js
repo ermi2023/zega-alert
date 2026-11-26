@@ -24,8 +24,8 @@ export async function sendFcmPush(token, title, body, data = {}) {
   if (!token) return { ok: false, reason: 'no_token' };
 
   if (!firebaseEnabled()) {
-    console.log(`[FCM DEV] Push to ${token.slice(0, 12)}… — ${title}: ${body}`);
-    return { ok: true, dev: true };
+    console.warn('[FCM DISABLED] Configure FIREBASE_SERVICE_ACCOUNT_JSON to send push notifications');
+    return { ok: false, reason: 'firebase_not_configured' };
   }
 
   const stringData = Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v)]));

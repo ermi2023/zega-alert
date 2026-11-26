@@ -153,6 +153,9 @@ class AppLocalizationsOm extends AppLocalizations {
   String get safetyZones => 'Naannoo nageenya';
 
   @override
+  String get safetyZonesTab => 'Naannoo';
+
+  @override
   String get safetyZonesHomeDescription =>
       'Jijjiiramoonni naannoo nageenyaa fi balaa tasaa naannoo sana keessatti mudatan sanduuqa beeksisaa keessatti galmaa\'u; beeksisni bilbilaa yoo hayyamame ni ergama. Kaartaa fi daangaa isaa ilaaluuf naannoo armaan gadii filadhu. Qajeelfama mootummaa naannoo hordofi; naannoon sun nageenya hin mirkaneessu.';
 

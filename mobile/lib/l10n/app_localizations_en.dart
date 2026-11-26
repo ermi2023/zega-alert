@@ -154,6 +154,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get safetyZones => 'Safety zones (geofences)';
 
   @override
+  String get safetyZonesTab => 'Zones';
+
+  @override
   String get safetyZonesHomeDescription =>
       'Safety-zone updates and emergency incidents inside a zone are added to your notification inbox and sent as push alerts when notifications are enabled. Select an area below to see its map and boundary. Follow local instructions; a zone does not guarantee safety.';
 

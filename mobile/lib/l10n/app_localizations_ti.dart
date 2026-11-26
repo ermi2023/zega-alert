@@ -153,6 +153,9 @@ class AppLocalizationsTi extends AppLocalizations {
   String get safetyZones => 'ዞባታት ድሕነት (ጂኦፌንስ)';
 
   @override
+  String get safetyZonesTab => 'ዞባታት';
+
+  @override
   String get safetyZonesHomeDescription =>
       'ለውጢ ዞባታት ድሕነትን ኣብ ውሽጢ ዞባ ዘጋጥሙ ህጹጽ ኩነታትን ኣብ ሳጹን ምልክታኹም ይውሰኹ፤ ምልክታታት እንተተፈቒዶም ብግፊት ይለኣኹ። ካርታን ዶብን ንምርኣይ ኣብ ታሕቲ ዘሎ ቦታ ምረጹ። መምርሒ ኣካባቢ ባለስልጣናት ስዓቡ፤ እቲ ዞባ ድሕንነት ኣየረጋግጽን።';
 

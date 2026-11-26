@@ -114,7 +114,7 @@ The API base URL is `http://10.0.2.2:5000` (Android emulator → host). Change i
 
 A safety zone is a mapped area officially published by authorized staff. Publishing, changing, pausing, or removing a zone adds a notice to the inbox of active citizens in its region/sub-city/Woreda; an SOS inside an active zone also creates an incident notice for citizens in the matching area. Push alerts are sent when Firebase Messaging is configured and device notifications are enabled. The app does not track citizens continuously, and a zone does not guarantee that an area is safe.
 
-- **Citizens:** See **Safety zones** on the mobile Home screen or open **Settings → Safety zones**; tap an area to view its map and boundary. Open the notification bell to read safety-zone notices.
+- **Citizens:** See **Safety zones** on the mobile Home screen or the bottom **Zones** tab; tap an area to view its map and boundary. Open the notification bell to read safety-zone notices.
 - **Authorized staff:** Open **Geofences** in the admin portal to publish, pause, or update an area.
 - **Boundary logic:** A zone is either a circle (center point plus radius of at least 50 m) or a drawn boundary with at least three points. If a drawn boundary is saved, it alone defines the zone; the map and SOS checks use that same boundary. Paused areas are not used for SOS context or warnings.
 

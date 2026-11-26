@@ -4,15 +4,16 @@
 
 ## Overview
 
-This is the citizen-facing mobile app for the ZEGA-ALERT system. It provides a 5-tab UI for citizens to report crimes, send SOS emergencies, view news and missing persons, chat with staff, and manage settings.
+This is the citizen-facing mobile app for the ZEGA-ALERT system. It provides Home, Report, SOS, News, and Safety Zones in the bottom navigation; Settings is available from the top bar.
 
 ## Features
 
-- **Home**: SOS emergency button with GPS, announcements, missing/wanted persons lists
+- **Home**: SOS emergency button with GPS, announcements, missing/wanted persons lists, and a visible Safety Zones card
 - **Report**: Submit crime reports with category, severity, evidence (photo/video/audio), anonymous option
 - **News**: 4-tab view — Announcements, Legal articles, Missing persons, Sightings
 - **Messages**: Real-time chat with staff via Socket.io
-- **Settings**: Account management, region/city selection, language, safety zones, accessibility, dark mode, callbacks
+- **Safety Zones**: View official local zones and open each mapped boundary; updates and incidents appear in Notifications
+- **Settings**: Account management, profile, region/city selection, language, accessibility, dark mode, callbacks
 - **Registration**: Phone OTP is entered on screen; in development, the temporary OTP is displayed in the app when SMS is unavailable
 - **Identity**: In Settings, verify with a 16-digit FAN or scan the original ID QR; only the FAN is checked against admin-managed mock records
 

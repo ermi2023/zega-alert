@@ -36,6 +36,22 @@ git push origin main
 | `OTP_SCREEN_FALLBACK` | Set to `true` only for a controlled demo to show an undelivered OTP in the app; keep `false` for public production |
 | `VITE_API_URL` (admin site) | `https://zega-alert-api.onrender.com` |
 
+### Push notification setup
+
+For Android push alerts while the app is in the background or closed:
+
+1. In Firebase Console, enable Firebase Cloud Messaging for project `zega-alert`
+   and register the Android package `com.example.zega_alert_mobile`.
+2. Keep the matching `google-services.json` at
+   `mobile/android/app/google-services.json` when building the app. It is
+   intentionally git-ignored; do not commit it.
+3. In the backend hosting environment, set `FIREBASE_SERVICE_ACCOUNT_JSON` to
+   the full Firebase Admin service-account JSON as one line. Keep it private
+   and use the same Firebase project as the Android app.
+4. Install the rebuilt app and allow its notification permission. The app
+   registers its FCM device token after sign-in. If the backend credential is
+   missing or invalid, the server logs that push delivery is disabled.
+
 > Maps use OpenStreetMap tiles via Leaflet — **no API key or billing**, so
 > there is nothing to add for the live map.
 

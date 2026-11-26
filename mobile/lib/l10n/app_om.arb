@@ -333,5 +333,6 @@
   "callbackStatusRescheduled": "YEROON JIJJIIRAMEERA",
   "callbackModeVoice": "sagalee",
   "callbackModeVideo": "viidiyoo",
-  "callbackModeChat": "barreeffama"
+  "callbackModeChat": "barreeffama",
+  "accessibilityActionsDescription": "Bilbila kallattiin gaafadhu yookaan viidiyoo afaan mallattoo waraabi."
 }

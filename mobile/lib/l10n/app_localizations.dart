@@ -761,7 +761,7 @@ abstract class AppLocalizations {
   /// No description provided for @noScheduledSlot.
   ///
   /// In en, this message translates to:
-  /// **'No scheduled slot'**
+  /// **'No scheduled time'**
   String get noScheduledSlot;
 
   /// No description provided for @reportFollowUp.
@@ -1915,6 +1915,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'ZEGA-ALERT collects only the information needed to keep you safe: your name, phone number, region and the content of reports you choose to submit.\n\nLocation is used for SOS alerts, nearest-station lookup, safety zones and incident mapping. It is transmitted only while you use these features.\n\nContact details on missing-person notices are encrypted at rest. Sensitive information is visible only to authorised police staff.\n\nYou can browse news, wanted and missing persons as a guest. You can delete your account by contacting support.'**
   String get privacyBody;
+
+  /// No description provided for @onboardingEmergencyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency SOS'**
+  String get onboardingEmergencyTitle;
+
+  /// No description provided for @onboardingEmergencySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Press SOS to alert nearby police and share your location. If the app cannot connect, call 991.'**
+  String get onboardingEmergencySubtitle;
+
+  /// No description provided for @onboardingReportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report Crime Safely'**
+  String get onboardingReportTitle;
+
+  /// No description provided for @onboardingReportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a crime report with details and photos. You can choose whether to include your identity.'**
+  String get onboardingReportSubtitle;
+
+  /// No description provided for @onboardingMissingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Find Missing Persons'**
+  String get onboardingMissingTitle;
+
+  /// No description provided for @onboardingMissingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'View missing-person and wanted alerts. Report a sighting to help police and families.'**
+  String get onboardingMissingSubtitle;
+
+  /// No description provided for @onboardingRegionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set Your Region'**
+  String get onboardingRegionTitle;
+
+  /// No description provided for @onboardingRegionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your region in Settings to see local alerts and receive Safety Zone notifications.'**
+  String get onboardingRegionSubtitle;
+
+  /// No description provided for @onboardingNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get onboardingNext;
+
+  /// No description provided for @onboardingGetStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Started'**
+  String get onboardingGetStarted;
+
+  /// No description provided for @onboardingSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get onboardingSkip;
+
+  /// No description provided for @callbacksLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load callback requests right now.'**
+  String get callbacksLoadFailed;
+
+  /// No description provided for @callbackUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update the callback request.'**
+  String get callbackUpdateFailed;
+
+  /// No description provided for @chooseFutureTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a future time.'**
+  String get chooseFutureTime;
+
+  /// No description provided for @alternativeTimeSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Alternative time sent to the officer.'**
+  String get alternativeTimeSent;
+
+  /// No description provided for @callbackSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send the callback update.'**
+  String get callbackSendFailed;
+
+  /// No description provided for @callbackSessionStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start the session.'**
+  String get callbackSessionStartFailed;
+
+  /// No description provided for @youProposedSlot.
+  ///
+  /// In en, this message translates to:
+  /// **'You proposed: {slot}'**
+  String youProposedSlot(Object slot);
+
+  /// No description provided for @waitingForOfficer.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for officer'**
+  String get waitingForOfficer;
+
+  /// No description provided for @inAppSessionStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'In-app session started'**
+  String get inAppSessionStarted;
+
+  /// No description provided for @proposeAnotherTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Propose another time'**
+  String get proposeAnotherTime;
+
+  /// No description provided for @rejoinSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejoin session'**
+  String get rejoinSession;
+
+  /// No description provided for @startInAppSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Start in-app session'**
+  String get startInAppSession;
+
+  /// No description provided for @callbackStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'PENDING'**
+  String get callbackStatusPending;
+
+  /// No description provided for @callbackStatusAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'ACCEPTED'**
+  String get callbackStatusAccepted;
+
+  /// No description provided for @callbackStatusDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'DECLINED'**
+  String get callbackStatusDeclined;
+
+  /// No description provided for @callbackStatusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'COMPLETED'**
+  String get callbackStatusCompleted;
+
+  /// No description provided for @callbackStatusRescheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'RESCHEDULED'**
+  String get callbackStatusRescheduled;
+
+  /// No description provided for @callbackModeVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'voice'**
+  String get callbackModeVoice;
+
+  /// No description provided for @callbackModeVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'video'**
+  String get callbackModeVideo;
+
+  /// No description provided for @callbackModeChat.
+  ///
+  /// In en, this message translates to:
+  /// **'chat'**
+  String get callbackModeChat;
 }
 
 class _AppLocalizationsDelegate

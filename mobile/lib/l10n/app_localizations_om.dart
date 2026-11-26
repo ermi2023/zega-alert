@@ -356,7 +356,7 @@ class AppLocalizationsOm extends AppLocalizations {
   String get filePathNote => 'Naannoo fayilii / yaada';
 
   @override
-  String get noScheduledSlot => 'Yeroon hin qabamne';
+  String get noScheduledSlot => 'Yeroon hin ramadamne';
 
   @override
   String get reportFollowUp => 'Waraanna faanaa';
@@ -1012,4 +1012,107 @@ class AppLocalizationsOm extends AppLocalizations {
   @override
   String get privacyBody =>
       'ZEGA-ALERT odeeffannoo nageenya kee eeguuf barbaachisu qofa walitti qaba: maqaa, lakkoofsa bilbilaa, naannoo fi qabiyyee gabaasa ati dhiyeessuuf filatte.\n\nBakki SOS, buufata dhiyoo barbaaduu, aanaalee nageenyaa fi kaartaa balaa keessatti fayyada. Yeroo tajaajiloota kana fayyadamtu qofa ni ergama.\n\nOdeeffannoon qunnamtii beeksisa namoota badan irratti yeroo kuufamu iccitiidhaan eegama. Odeeffannoo iccitii poolisii hayyama qabu qofa argata.\n\nOduu, namoota barbaadaman fi badan akka keessummaatti ilaaluu dandeessa. Gargaarsa qunnamuun herrega kee haquu dandeessa.';
+
+  @override
+  String get onboardingEmergencyTitle => 'SOS Hatattamaa';
+
+  @override
+  String get onboardingEmergencySubtitle =>
+      'SOS tuqiitii poolisii si bira jiraniif akeekkachiisa ergi, akkasumas bakka kee qoodi. Appiin yoo hin qunnamne 991 bilbili.';
+
+  @override
+  String get onboardingReportTitle => 'Yakka Nagaan Gabaasi';
+
+  @override
+  String get onboardingReportSubtitle =>
+      'Bal\'ina fi suuraawwan dabalachuun gabaasa yakkaa ergi. Eenyummaa kee dabaluus ykn dhiisuus filachuu dandeessa.';
+
+  @override
+  String get onboardingMissingTitle => 'Namoota Badan Barbaadi';
+
+  @override
+  String get onboardingMissingSubtitle =>
+      'Beeksisa namoota badan fi barbaadaman ilaali. Poolisii fi maatii gargaaruuf namoota argite gabaasi.';
+
+  @override
+  String get onboardingRegionTitle => 'Naannoo Kee Filadhu';
+
+  @override
+  String get onboardingRegionSubtitle =>
+      'Beeksisa naannoo argachuu fi akeekkachiisa Aanaa Nageenyaa argachuuf Qindaa\'ina keessatti naannoo kee filadhu.';
+
+  @override
+  String get onboardingNext => 'Itti Aanu';
+
+  @override
+  String get onboardingGetStarted => 'Jalqabi';
+
+  @override
+  String get onboardingSkip => 'Darbi';
+
+  @override
+  String get callbacksLoadFailed =>
+      'Gaaffilee bilbilaa amma fe\'uun hin danda\'amne.';
+
+  @override
+  String get callbackUpdateFailed =>
+      'Gaaffii bilbilaa haaromsuun hin danda\'amne.';
+
+  @override
+  String get chooseFutureTime => 'Yeroo gara fuulduraa filadhu.';
+
+  @override
+  String get alternativeTimeSent => 'Yeroon biraa qondaalaaf ergameera.';
+
+  @override
+  String get callbackSendFailed =>
+      'Odeeffannoo bilbilaa erguun hin danda\'amne.';
+
+  @override
+  String get callbackSessionStartFailed =>
+      'Walgahii jalqabuun hin danda\'amne.';
+
+  @override
+  String youProposedSlot(Object slot) {
+    return 'Ati dhiheessite: $slot';
+  }
+
+  @override
+  String get waitingForOfficer => 'Qondaala eeggachaa jira';
+
+  @override
+  String get inAppSessionStarted => 'Walgahiin appii keessatti jalqabameera';
+
+  @override
+  String get proposeAnotherTime => 'Yeroo biraa dhiheessi';
+
+  @override
+  String get rejoinSession => 'Walgahii irra deebi\'ii seeni';
+
+  @override
+  String get startInAppSession => 'Walgahii appii keessatti jalqabi';
+
+  @override
+  String get callbackStatusPending => 'EEGAA JIRA';
+
+  @override
+  String get callbackStatusAccepted => 'FUDHATAMEERA';
+
+  @override
+  String get callbackStatusDeclined => 'DIDAMEERA';
+
+  @override
+  String get callbackStatusCompleted => 'XUMURAMEERA';
+
+  @override
+  String get callbackStatusRescheduled => 'YEROON JIJJIIRAMEERA';
+
+  @override
+  String get callbackModeVoice => 'sagalee';
+
+  @override
+  String get callbackModeVideo => 'viidiyoo';
+
+  @override
+  String get callbackModeChat => 'barreeffama';
 }

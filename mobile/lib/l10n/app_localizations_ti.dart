@@ -352,7 +352,7 @@ class AppLocalizationsTi extends AppLocalizations {
   String get filePathNote => 'መንገዲ ፋይል / መዝገብ';
 
   @override
-  String get noScheduledSlot => 'ዝተመደበ ግዜ የለን';
+  String get noScheduledSlot => 'ዝተመደበ ሰዓት የለን';
 
   @override
   String get reportFollowUp => 'ምክትታል ሪፖርት';
@@ -982,4 +982,103 @@ class AppLocalizationsTi extends AppLocalizations {
   @override
   String get privacyBody =>
       'ZEGA-ALERT ድሕነትካ ንምሕላው ዘድሊ ሓበሬታ ጥራይ ይእክብ፦ ስምካ፣ ቁጽሪ ተሌፎንካ፣ ክልልካን እትልእኾ ሪፖርታትን።\n\nቦታ ንSOS ምልክታታት፣ ቀረባ ጣብያ ምድላይ፣ ዞባታት ድሕነትን ካርታ ፍጻመታትን ይጥቀም። ነዞም ኣገልግሎታት ክትጥቀም ከለኻ ጥራይ ይለኣኽ።\n\nኣብ ሓበሬታ ዝጠፍኡ ሰባት ዘሎ ርክብ ብሓበሬታ ይሕሎ። ስሱዕ ሓበሬታ ፍቓድ ዘለዎም ሰራሕተኛታት ፖሊስ ጥራይ ይርእዩ።\n\nዜናን ዝድለዩን ዝጠፍኡን ሰባት ከም ጋሻ ክትርኢ ትኽእል። ንድጋፍ ብምርካብ ሕሳብካ ክትስርዞ ትኽእል።';
+
+  @override
+  String get onboardingEmergencyTitle => 'ህጹጽ SOS';
+
+  @override
+  String get onboardingEmergencySubtitle =>
+      'SOS ጠውቕ እሞ ኣብ ቀረባኻ ንዘለዉ ፖሊስ ኣጠንቅቕን ቦታኻ ኣካፍልን። App እንተዘይተራኺቡ 991 ደውል።';
+
+  @override
+  String get onboardingReportTitle => 'ገበን ብውሑስ ሪፖርት ግበር';
+
+  @override
+  String get onboardingReportSubtitle =>
+      'ዝርዝርን ፎቶታትን ብምውሳኽ ሪፖርት ገበን ስደድ። መንነትካ ምእታው ትመርጽ።';
+
+  @override
+  String get onboardingMissingTitle => 'ዝጠፍኡ ሰባት ድለ';
+
+  @override
+  String get onboardingMissingSubtitle =>
+      'ምልክታታት ዝጠፍኡን ዝድለዩን ሰባት ርአ። ፖሊስን ስድራቤታትን ንምሕጋዝ እትርእዮ ሰብ ሪፖርት ግበር።';
+
+  @override
+  String get onboardingRegionTitle => 'ክልልካ ምረጽ';
+
+  @override
+  String get onboardingRegionSubtitle =>
+      'ኣብ ቅጥዕታት ክልልካ ምረጽ እሞ ናይ ከባቢ ምልክታታትን ምልክታታት ዞባ ድሕነትን ተቐበል።';
+
+  @override
+  String get onboardingNext => 'ቀጽል';
+
+  @override
+  String get onboardingGetStarted => 'ጀምር';
+
+  @override
+  String get onboardingSkip => 'ዝለል';
+
+  @override
+  String get callbacksLoadFailed => 'ሕቶታት ተመላሊስካ ምድዋል ሕጂ ምጽዓን ኣይተኻእለን።';
+
+  @override
+  String get callbackUpdateFailed => 'እቲ ሕቶ ምሕዳስ ኣይተኻእለን።';
+
+  @override
+  String get chooseFutureTime => 'ኣብ መጻኢ ዘሎ ሰዓት ምረጽ።';
+
+  @override
+  String get alternativeTimeSent => 'ኣማራጺ ሰዓት ናብቲ ፖሊስ ተላኢኹ።';
+
+  @override
+  String get callbackSendFailed => 'ሓድሽ ሓበሬታ ምልኣኽ ኣይተኻእለን።';
+
+  @override
+  String get callbackSessionStartFailed => 'እቲ ክፍለ ግዜ ምጅማር ኣይተኻእለን።';
+
+  @override
+  String youProposedSlot(Object slot) {
+    return 'ንስኻ ዝሓሰብካዮ: $slot';
+  }
+
+  @override
+  String get waitingForOfficer => 'ነቲ ፖሊስ ይጽበ';
+
+  @override
+  String get inAppSessionStarted => 'ኣብቲ app ዝርርብ ተጀሚሩ';
+
+  @override
+  String get proposeAnotherTime => 'ካልእ ሰዓት ሓሳብ ኣቕርብ';
+
+  @override
+  String get rejoinSession => 'ናብቲ ዝርርብ እንደገና እቶ';
+
+  @override
+  String get startInAppSession => 'ኣብ app ዝርርብ ጀምር';
+
+  @override
+  String get callbackStatusPending => 'ይጽበ';
+
+  @override
+  String get callbackStatusAccepted => 'ተቐባልነት ረኺቡ';
+
+  @override
+  String get callbackStatusDeclined => 'ተነጺጉ';
+
+  @override
+  String get callbackStatusCompleted => 'ተዛዚሙ';
+
+  @override
+  String get callbackStatusRescheduled => 'ሰዓት ተቐይሩ';
+
+  @override
+  String get callbackModeVoice => 'ድምጺ';
+
+  @override
+  String get callbackModeVideo => 'ቪድዮ';
+
+  @override
+  String get callbackModeChat => 'ጽሑፍ';
 }

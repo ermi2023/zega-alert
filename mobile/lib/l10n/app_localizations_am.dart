@@ -353,7 +353,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get filePathNote => 'የፋይል መንገድ / ማስታወሻ';
 
   @override
-  String get noScheduledSlot => 'የተያዘ ጊዜ የለም';
+  String get noScheduledSlot => 'የተያዘ ሰዓት የለም';
 
   @override
   String get reportFollowUp => 'የሪፖርት ክትትል';
@@ -986,4 +986,103 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get privacyBody =>
       'ZEGA-ALERT ደህንነትዎን ለመጠበቅ የሚያስፈልገውን መረጃ ብቻ ይሰበስባል፦ ስምዎን፣ ስልክ ቁጥርዎን፣ ክልልዎን እና ለማቅረብ የመረጡትን ሪፖርቶች።\n\nአካባቢ ለSOS ማሳወቂያዎች፣ ቅርብ ጣቢያ ፍለጋ፣ የደህንነት ዞኖች እና የክስተት ካርታ ይጠቀማል። እነዚህን ባህሪያት ሲጠቀሙ ብቻ ይላካል።\n\nበጠፉ ሰዎች ማሳወቂያ ያሉ የግንኙነት ዝርዝሮች በማከማቻ ጊዜ ይመሰጠራሉ። ስሱ መረጃዎችን የተፈቀደላቸው የፖሊስ ሰራተኞች ብቻ ያያሉ።\n\nዜናን፣ የሚፈለጉ እና የጠፉ ሰዎችን እንደ እንግዳ ማየት ይችላሉ። ድጋፍን በማነጋገር መለያዎን ማጥፋት ይችላሉ።';
+
+  @override
+  String get onboardingEmergencyTitle => 'የአደጋ ጊዜ SOS';
+
+  @override
+  String get onboardingEmergencySubtitle =>
+      'በአቅራቢያዎ ያሉ ፖሊሶችን ለማሳወቅ እና አካባቢዎን ለማጋራት SOSን ይጫኑ። መተግበሪያው ካልተገናኘ 991 ይደውሉ።';
+
+  @override
+  String get onboardingReportTitle => 'ወንጀልን በደህና ሪፖርት ያድርጉ';
+
+  @override
+  String get onboardingReportSubtitle =>
+      'ዝርዝር እና ፎቶዎችን በማካተት የወንጀል ሪፖርት ይላኩ። ማንነትዎን ማካተት ወይም አለማካተት መምረጥ ይችላሉ።';
+
+  @override
+  String get onboardingMissingTitle => 'የጠፉ ሰዎችን ያግኙ';
+
+  @override
+  String get onboardingMissingSubtitle =>
+      'የጠፉ እና የሚፈለጉ ሰዎች ማሳወቂያዎችን ይመልከቱ። ፖሊስን እና ቤተሰቦችን ለመርዳት ያዩትን ይሪፖርቱ።';
+
+  @override
+  String get onboardingRegionTitle => 'ክልልዎን ይምረጡ';
+
+  @override
+  String get onboardingRegionSubtitle =>
+      'የአካባቢ ማሳወቂያዎችን ለማየት እና የደህንነት ዞን ማሳወቂያዎችን ለመቀበል በቅንብሮች ውስጥ ክልልዎን ይምረጡ።';
+
+  @override
+  String get onboardingNext => 'ቀጣይ';
+
+  @override
+  String get onboardingGetStarted => 'ይጀምሩ';
+
+  @override
+  String get onboardingSkip => 'ዝለል';
+
+  @override
+  String get callbacksLoadFailed => 'የጥሪ ጥያቄዎችን አሁን መጫን አልተቻለም።';
+
+  @override
+  String get callbackUpdateFailed => 'የጥሪ ጥያቄውን ማዘመን አልተቻለም።';
+
+  @override
+  String get chooseFutureTime => 'ወደፊት ያለ ሰዓት ይምረጡ።';
+
+  @override
+  String get alternativeTimeSent => 'አማራጭ ሰዓቱ ለፖሊሱ ተልኳል።';
+
+  @override
+  String get callbackSendFailed => 'የጥሪ ማዘመኛውን መላክ አልተቻለም።';
+
+  @override
+  String get callbackSessionStartFailed => 'ክፍለ ጊዜውን መጀመር አልተቻለም።';
+
+  @override
+  String youProposedSlot(Object slot) {
+    return 'ያቀረቡት፦ $slot';
+  }
+
+  @override
+  String get waitingForOfficer => 'ፖሊሱን በመጠባበቅ ላይ';
+
+  @override
+  String get inAppSessionStarted => 'በመተግበሪያው ውስጥ ውይይት ተጀምሯል';
+
+  @override
+  String get proposeAnotherTime => 'ሌላ ሰዓት ያቅርቡ';
+
+  @override
+  String get rejoinSession => 'ወደ ውይይቱ እንደገና ይግቡ';
+
+  @override
+  String get startInAppSession => 'በመተግበሪያው ውስጥ ውይይት ይጀምሩ';
+
+  @override
+  String get callbackStatusPending => 'በመጠባበቅ ላይ';
+
+  @override
+  String get callbackStatusAccepted => 'ተቀባይነት አግኝቷል';
+
+  @override
+  String get callbackStatusDeclined => 'ውድቅ ተደርጓል';
+
+  @override
+  String get callbackStatusCompleted => 'ተጠናቋል';
+
+  @override
+  String get callbackStatusRescheduled => 'ሰዓቱ ተቀይሯል';
+
+  @override
+  String get callbackModeVoice => 'ድምፅ';
+
+  @override
+  String get callbackModeVideo => 'ቪዲዮ';
+
+  @override
+  String get callbackModeChat => 'ጽሑፍ';
 }

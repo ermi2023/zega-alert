@@ -511,7 +511,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (!_loggedIn) _guestBanner(loc),
         _category(loc.helpAndAccessibility, Icons.accessible_forward, [
           Semantics(
-            label: 'People of Determination actions. Request a direct call or record a sign language video.',
+            label:
+                '${loc.helpAndAccessibility}. ${loc.accessibilityActionsDescription}',
             child: const PodActions(),
           ),
           const SizedBox(height: 8),
@@ -531,7 +532,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _profileHeader(loc),
           _category(loc.personalInformation, Icons.person_outline, [
             Semantics(
-              label: 'Full name input',
+              label: loc.fullName,
               child: Form(
                 key: _form,
                 child: Column(
@@ -947,7 +948,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           if (_loggedIn) ...[
             Semantics(
-              label: 'Callback requests. View police callback requests for your reports.',
+                label: '${loc.callbackRequests}. ${loc.callbackSubtitle}',
               child: Card(
                 child: ListTile(
                   leading: const Icon(
@@ -978,7 +979,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           FilledButton.icon(
             onPressed: () => openAuth(context),
             icon: const Icon(Icons.login),
-            label: const Text('Sign in / Create account'),
+            label: Text(loc.signInCreateAccount),
           ),
       ],
     );

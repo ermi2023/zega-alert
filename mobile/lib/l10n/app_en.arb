@@ -333,5 +333,6 @@
   "callbackStatusRescheduled": "RESCHEDULED",
   "callbackModeVoice": "voice",
   "callbackModeVideo": "video",
-  "callbackModeChat": "chat"
+  "callbackModeChat": "chat",
+  "accessibilityActionsDescription": "Request a direct call or record a sign-language video."
 }

@@ -364,7 +364,7 @@ class AppLocalizationsSo extends AppLocalizations {
   String get filePathNote => 'Jidka faylka / note';
 
   @override
-  String get noScheduledSlot => 'No scheduled slot';
+  String get noScheduledSlot => 'Waqti lama jadwalayn';
 
   @override
   String get reportFollowUp => 'Ka warbixi daba-galka';
@@ -1022,4 +1022,106 @@ class AppLocalizationsSo extends AppLocalizations {
   @override
   String get privacyBody =>
       'ZEGA-ALERT waxay ururisaa oo keliya xogta loo baahan yahay si laguu ilaaliyo: magacaaga, lambarka telefoonka, gobolka iyo waxa ku jira warbixinnada aad doorato inaad dirto.\n\nGoobta waxaa loo isticmaalaa digniinaha SOS, raadinta saldhigga kuugu dhow, aagagga badbaadada iyo khariidaynta dhacdooyinka. Waxa la diraa oo keliya markaad isticmaalayso adeegyadaas.\n\nFaahfaahinta xiriirka ee ogeysiisyada dadka maqan waa la sirgeliyaa marka la kaydiyo. Xogta xasaasiga ah waxaa arki kara oo keliya shaqaalaha booliiska ee la oggolaaday.\n\nWaxaad marti ahaan u baari kartaa wararka, dadka la doonayo iyo kuwa maqan. Waxaad tirtiri kartaa akoonkaaga adigoo la xiriiraya taageerada.';
+
+  @override
+  String get onboardingEmergencyTitle => 'SOS Degdeg ah';
+
+  @override
+  String get onboardingEmergencySubtitle =>
+      'Riix SOS si aad booliiska kuu dhow uga digto oo aad ula wadaagto goobtaada. Wac 991 haddii app-ku xiriiri waayo.';
+
+  @override
+  String get onboardingReportTitle => 'Si Ammaan ah Usoo Gudbi Dambi';
+
+  @override
+  String get onboardingReportSubtitle =>
+      'Dir warbixin dambi oo faahfaahin iyo sawirro leh. Adiga ayaa dooranaya inaad aqoonsigaaga ku darto iyo in kale.';
+
+  @override
+  String get onboardingMissingTitle => 'Raadi Dadka Maqan';
+
+  @override
+  String get onboardingMissingSubtitle =>
+      'Eeg digniinaha dadka maqan iyo kuwa la doonayo. Booliiska iyo qoysaska ku caawi inaad soo sheegto qof aad aragtay.';
+
+  @override
+  String get onboardingRegionTitle => 'Dooro Gobolkaaga';
+
+  @override
+  String get onboardingRegionSubtitle =>
+      'Dooro gobolkaaga gudaha Dejinta si aad u aragto digniinaha deegaanka una hesho ogeysiisyada Aagga Badbaadada.';
+
+  @override
+  String get onboardingNext => 'Xiga';
+
+  @override
+  String get onboardingGetStarted => 'Bilow';
+
+  @override
+  String get onboardingSkip => 'Ka gudub';
+
+  @override
+  String get callbacksLoadFailed =>
+      'Hadda lama soo dejin karin codsiyada dib-u-wicitaanka.';
+
+  @override
+  String get callbackUpdateFailed =>
+      'Lama cusboonaysiin karin codsiga dib-u-wicitaanka.';
+
+  @override
+  String get chooseFutureTime => 'Dooro waqti mustaqbalka ah.';
+
+  @override
+  String get alternativeTimeSent => 'Waqti kale ayaa sarkaalka loo diray.';
+
+  @override
+  String get callbackSendFailed =>
+      'Lama diri karin cusboonaysiinta wicitaanka.';
+
+  @override
+  String get callbackSessionStartFailed => 'Lama bilaabi karin kulanka.';
+
+  @override
+  String youProposedSlot(Object slot) {
+    return 'Waxaad soo jeedisay: $slot';
+  }
+
+  @override
+  String get waitingForOfficer => 'Waxaa la sugayaa sarkaalka';
+
+  @override
+  String get inAppSessionStarted => 'Kulanka app-ka ayaa bilaabmay';
+
+  @override
+  String get proposeAnotherTime => 'Soo jeedi waqti kale';
+
+  @override
+  String get rejoinSession => 'Ku noqo kulanka';
+
+  @override
+  String get startInAppSession => 'Bilow kulan app-ka dhexdiisa';
+
+  @override
+  String get callbackStatusPending => 'LA SUGAYO';
+
+  @override
+  String get callbackStatusAccepted => 'LA AQBALAY';
+
+  @override
+  String get callbackStatusDeclined => 'LA DIIDAY';
+
+  @override
+  String get callbackStatusCompleted => 'LA DHAMMEYSTIRAY';
+
+  @override
+  String get callbackStatusRescheduled => 'WAQTIGA LA BEDDELAY';
+
+  @override
+  String get callbackModeVoice => 'cod';
+
+  @override
+  String get callbackModeVideo => 'muuqaal';
+
+  @override
+  String get callbackModeChat => 'qoraal';
 }

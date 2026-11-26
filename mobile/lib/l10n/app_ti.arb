@@ -333,5 +333,6 @@
   "callbackStatusRescheduled": "ሰዓት ተቐይሩ",
   "callbackModeVoice": "ድምጺ",
   "callbackModeVideo": "ቪድዮ",
-  "callbackModeChat": "ጽሑፍ"
+  "callbackModeChat": "ጽሑፍ",
+  "accessibilityActionsDescription": "ቀጥታ ጻውዒት ሕተት ወይ ቪድዮ ቋንቋ ምልክት ቅረጽ።"
 }

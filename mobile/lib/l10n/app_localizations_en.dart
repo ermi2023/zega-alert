@@ -359,7 +359,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get filePathNote => 'File path / note';
 
   @override
-  String get noScheduledSlot => 'No scheduled slot';
+  String get noScheduledSlot => 'No scheduled time';
 
   @override
   String get reportFollowUp => 'Report follow-up';
@@ -1003,4 +1003,104 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get privacyBody =>
       'ZEGA-ALERT collects only the information needed to keep you safe: your name, phone number, region and the content of reports you choose to submit.\n\nLocation is used for SOS alerts, nearest-station lookup, safety zones and incident mapping. It is transmitted only while you use these features.\n\nContact details on missing-person notices are encrypted at rest. Sensitive information is visible only to authorised police staff.\n\nYou can browse news, wanted and missing persons as a guest. You can delete your account by contacting support.';
+
+  @override
+  String get onboardingEmergencyTitle => 'Emergency SOS';
+
+  @override
+  String get onboardingEmergencySubtitle =>
+      'Press SOS to alert nearby police and share your location. If the app cannot connect, call 991.';
+
+  @override
+  String get onboardingReportTitle => 'Report Crime Safely';
+
+  @override
+  String get onboardingReportSubtitle =>
+      'Send a crime report with details and photos. You can choose whether to include your identity.';
+
+  @override
+  String get onboardingMissingTitle => 'Find Missing Persons';
+
+  @override
+  String get onboardingMissingSubtitle =>
+      'View missing-person and wanted alerts. Report a sighting to help police and families.';
+
+  @override
+  String get onboardingRegionTitle => 'Set Your Region';
+
+  @override
+  String get onboardingRegionSubtitle =>
+      'Choose your region in Settings to see local alerts and receive Safety Zone notifications.';
+
+  @override
+  String get onboardingNext => 'Next';
+
+  @override
+  String get onboardingGetStarted => 'Get Started';
+
+  @override
+  String get onboardingSkip => 'Skip';
+
+  @override
+  String get callbacksLoadFailed =>
+      'Could not load callback requests right now.';
+
+  @override
+  String get callbackUpdateFailed => 'Could not update the callback request.';
+
+  @override
+  String get chooseFutureTime => 'Choose a future time.';
+
+  @override
+  String get alternativeTimeSent => 'Alternative time sent to the officer.';
+
+  @override
+  String get callbackSendFailed => 'Could not send the callback update.';
+
+  @override
+  String get callbackSessionStartFailed => 'Could not start the session.';
+
+  @override
+  String youProposedSlot(Object slot) {
+    return 'You proposed: $slot';
+  }
+
+  @override
+  String get waitingForOfficer => 'Waiting for officer';
+
+  @override
+  String get inAppSessionStarted => 'In-app session started';
+
+  @override
+  String get proposeAnotherTime => 'Propose another time';
+
+  @override
+  String get rejoinSession => 'Rejoin session';
+
+  @override
+  String get startInAppSession => 'Start in-app session';
+
+  @override
+  String get callbackStatusPending => 'PENDING';
+
+  @override
+  String get callbackStatusAccepted => 'ACCEPTED';
+
+  @override
+  String get callbackStatusDeclined => 'DECLINED';
+
+  @override
+  String get callbackStatusCompleted => 'COMPLETED';
+
+  @override
+  String get callbackStatusRescheduled => 'RESCHEDULED';
+
+  @override
+  String get callbackModeVoice => 'voice';
+
+  @override
+  String get callbackModeVideo => 'video';
+
+  @override
+  String get callbackModeChat => 'chat';
 }

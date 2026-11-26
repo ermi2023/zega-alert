@@ -333,5 +333,6 @@
   "callbackStatusRescheduled": "WAQTIGA LA BEDDELAY",
   "callbackModeVoice": "cod",
   "callbackModeVideo": "muuqaal",
-  "callbackModeChat": "qoraal"
+  "callbackModeChat": "qoraal",
+  "accessibilityActionsDescription": "Codso wicitaan toos ah ama duub muuqaal luqadda calaamadaha ah."
 }

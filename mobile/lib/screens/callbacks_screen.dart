@@ -23,6 +23,7 @@ class _CallbacksScreenState extends State<CallbacksScreen> {
   }
 
   Future<void> _load() async {
+    final loc = AppLocalizations.of(context);
     setState(() {
       _loading = true;
       _error = null;
@@ -37,7 +38,7 @@ class _CallbacksScreenState extends State<CallbacksScreen> {
       setState(() {
         _error = Api.userMessage(
           e,
-          fallback: 'Could not load callbacks right now.',
+          fallback: loc.callbacksLoadFailed,
         );
         _loading = false;
       });
@@ -45,6 +46,7 @@ class _CallbacksScreenState extends State<CallbacksScreen> {
   }
 
   Future<void> _respond(dynamic cb, String status) async {
+    final loc = AppLocalizations.of(context);
     try {
       await Api.patch('/callbacks/${cb['id']}', {'status': status});
       _load();
@@ -53,7 +55,7 @@ class _CallbacksScreenState extends State<CallbacksScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              Api.userMessage(e, fallback: 'Could not update the callback.'),
+              Api.userMessage(e, fallback: loc.callbackUpdateFailed),
             ),
           ),
         );
@@ -62,6 +64,7 @@ class _CallbacksScreenState extends State<CallbacksScreen> {
   }
 
   Future<void> _proposeTime(dynamic cb) async {
+    final loc = AppLocalizations.of(context);
     final now = DateTime.now();
     final date = await showDatePicker(
       context: context,
@@ -86,7 +89,7 @@ class _CallbacksScreenState extends State<CallbacksScreen> {
       if (mounted)
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Choose a future time.')));
+        ).showSnackBar(SnackBar(content: Text(loc.chooseFutureTime)));
       return;
     }
     try {
@@ -95,7 +98,7 @@ class _CallbacksScreenState extends State<CallbacksScreen> {
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Alternative time sent to the officer.')),
+        SnackBar(content: Text(loc.alternativeTimeSent)),
       );
       _load();
     } catch (e) {
@@ -105,7 +108,7 @@ class _CallbacksScreenState extends State<CallbacksScreen> {
             content: Text(
               Api.userMessage(
                 e,
-                fallback: 'Could not send the callback update.',
+                fallback: loc.callbackSendFailed,
               ),
             ),
           ),
@@ -115,6 +118,7 @@ class _CallbacksScreenState extends State<CallbacksScreen> {
   }
 
   Future<void> _joinSession(dynamic cb) async {
+    final loc = AppLocalizations.of(context);
     var data = Map<String, dynamic>.from(cb as Map);
     try {
       if (data['session_id'] == null) {
@@ -134,7 +138,7 @@ class _CallbacksScreenState extends State<CallbacksScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              Api.userMessage(e, fallback: 'Could not start the session.'),
+              Api.userMessage(e, fallback: loc.callbackSessionStartFailed),
             ),
           ),
         );
@@ -142,7 +146,21 @@ class _CallbacksScreenState extends State<CallbacksScreen> {
     }
   }
 
-  String _label(String s) => s.replaceAll('_', ' ').toUpperCase();
+  String _label(String s, AppLocalizations loc) => switch (s) {
+    'pending' => loc.callbackStatusPending,
+    'accepted' => loc.callbackStatusAccepted,
+    'declined' => loc.callbackStatusDeclined,
+    'completed' => loc.callbackStatusCompleted,
+    'rescheduled' => loc.callbackStatusRescheduled,
+    _ => s.replaceAll('_', ' ').toUpperCase(),
+  };
+
+  String _mode(String? mode, AppLocalizations loc) => switch (mode) {
+    'voice' => loc.callbackModeVoice,
+    'video' => loc.callbackModeVideo,
+    'chat' => loc.callbackModeChat,
+    _ => mode ?? loc.notAvailable,
+  };
 
   Color _color(String s) => switch (s) {
     'accepted' => Colors.green,
@@ -151,10 +169,10 @@ class _CallbacksScreenState extends State<CallbacksScreen> {
     _ => Colors.orange,
   };
 
-  String _slot(String? iso) {
-    if (iso == null) return 'No scheduled slot';
+  String _slot(String? iso, AppLocalizations loc) {
+    if (iso == null) return loc.noScheduledSlot;
     final d = DateTime.tryParse(iso);
-    if (d == null) return 'No scheduled slot';
+    if (d == null) return loc.noScheduledSlot;
     return d.toLocal().toString().substring(0, 16);
   }
 
@@ -224,7 +242,7 @@ class _CallbacksScreenState extends State<CallbacksScreen> {
                             ),
                           ),
                           Text(
-                            _label(cb['status'] ?? ''),
+                            _label(cb['status'] ?? '', loc),
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
@@ -235,7 +253,7 @@ class _CallbacksScreenState extends State<CallbacksScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        '${loc.mode}: ${cb['mode'] ?? 'voice'} · ${_slot(cb['requested_slot'])}',
+                        '${loc.mode}: ${_mode(cb['mode'] ?? 'voice', loc)} · ${_slot(cb['requested_slot'], loc)}',
                         style: const TextStyle(
                           fontSize: 13,
                           color: Colors.grey,
@@ -243,15 +261,15 @@ class _CallbacksScreenState extends State<CallbacksScreen> {
                       ),
                       if (cb['proposed_slot'] != null)
                         Text(
-                          'You proposed: ${_slot(cb['proposed_slot'])} (waiting for officer)',
+                          '${loc.youProposedSlot(_slot(cb['proposed_slot'], loc))} · ${loc.waitingForOfficer}',
                           style: const TextStyle(
                             fontSize: 13,
                             color: Colors.orange,
                           ),
                         ),
                       if (cb['session_id'] != null)
-                        const Text(
-                          'In-app session started',
+                        Text(
+                          loc.inAppSessionStarted,
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.green,
@@ -291,7 +309,7 @@ class _CallbacksScreenState extends State<CallbacksScreen> {
                           OutlinedButton.icon(
                             onPressed: () => _proposeTime(cb),
                             icon: const Icon(Icons.schedule, size: 18),
-                            label: const Text('Propose another time'),
+                            label: Text(loc.proposeAnotherTime),
                           ),
                         ],
                       ],
@@ -308,8 +326,8 @@ class _CallbacksScreenState extends State<CallbacksScreen> {
                           ),
                           label: Text(
                             cb['session_id'] != null
-                                ? 'Rejoin session'
-                                : 'Start in-app session',
+                                ? loc.rejoinSession
+                                : loc.startInAppSession,
                           ),
                         ),
                       ],

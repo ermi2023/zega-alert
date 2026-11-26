@@ -8,7 +8,7 @@ This is the citizen-facing mobile app for the ZEGA-ALERT system. It provides Hom
 
 ## Features
 
-- **Home**: SOS emergency button with GPS, announcements, missing/wanted persons lists, and a visible Safety Zones card
+- **Home**: SOS emergency button with GPS, announcements, missing/wanted persons lists
 - **Report**: Submit crime reports with category, severity, evidence (photo/video/audio), anonymous option
 - **News**: 4-tab view — Announcements, Legal articles, Missing persons, Sightings
 - **Messages**: Real-time chat with staff via Socket.io

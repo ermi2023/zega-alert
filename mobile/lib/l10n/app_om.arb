@@ -281,6 +281,8 @@
   "passwordChanged": "Jechi darbii milkaa'inaan jijjiirameera.",
   "passwordChangeFailed": "Jechi darbii kee jijjiiruun hin danda'amne.",
   "clearPhotos": "Suuraawwan haqi",
+  "clearSavedPersonPhotosTitle": "Suuraawwan namootaa kuufaman haquu?",
+  "clearSavedPersonPhotosBody": "Kun suuraawwan namoota barbaadaman fi badan meeshaa kana irratti kuufaman haqa. Kuusaan suuraa yoo baname deebi'anii kuufamuu danda'u.",
   "aboutSupport": "Waa'ee fi gargaarsa",
   "aboutZegaAlert": "Waa'ee ZEGA-ALERT",
   "version": "Gosa",

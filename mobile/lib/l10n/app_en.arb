@@ -281,6 +281,8 @@
   "passwordChanged": "Password changed successfully.",
   "passwordChangeFailed": "Could not change your password.",
   "clearPhotos": "Clear photos",
+  "clearSavedPersonPhotosTitle": "Clear saved person photos?",
+  "clearSavedPersonPhotosBody": "This removes wanted and missing-person photos saved on this device. They can be saved again while photo storage is enabled.",
   "aboutSupport": "About & support",
   "aboutZegaAlert": "About ZEGA-ALERT",
   "version": "Version",

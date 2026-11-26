@@ -281,6 +281,8 @@
   "passwordChanged": "Furaha sirta ah si guul leh ayaa loo beddelay.",
   "passwordChangeFailed": "Lama beddeli karin furahaaga sirta ah.",
   "clearPhotos": "Tirtir sawirrada",
+  "clearSavedPersonPhotosTitle": "Tirtir sawirrada dadka ee kaydsan?",
+  "clearSavedPersonPhotosBody": "Tani waxay ka saaraysaa sawirrada dadka la doonayo iyo kuwa maqan ee qalabkan lagu kaydiyey. Mar kale ayaa la kaydin karaa haddii kaydinta sawirradu daaran tahay.",
   "aboutSupport": "Ku saabsan & taageero",
   "aboutZegaAlert": "Ku saabsan ZEGA-ALERT",
   "version": "Nooca",

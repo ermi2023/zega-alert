@@ -915,89 +915,93 @@ class AppLocalizationsOm extends AppLocalizations {
       'Daangaa aanaa nageenyaa ammaa mirkaneessuun hin danda\'amne.';
 
   @override
-  String get biometricCancelled => 'Biometric authentication was cancelled.';
+  String get biometricCancelled => 'Mirkaneessi baayomeetirikisii haqameera.';
 
   @override
-  String get settingsLoadFailed => 'Could not load settings right now.';
+  String get settingsLoadFailed => 'Qindaa\'ina amma fe\'uun hin danda\'amne.';
 
   @override
-  String get savedPhotoStorageFailed => 'Could not read saved photo storage.';
+  String get savedPhotoStorageFailed =>
+      'Kuusaa suuraa olkaa\'ame dubbisuun hin danda\'amne.';
 
   @override
   String get photoStorageUpdateFailed =>
-      'Could not update photo storage settings.';
+      'Qindaa\'ina kuusaa suuraa haaromsuun hin danda\'amne.';
 
   @override
-  String get photoStorageClearFailed => 'Could not clear saved photos.';
+  String get photoStorageClearFailed =>
+      'Suuraawwan kuufaman haquun hin danda\'amne.';
 
   @override
-  String get passwordChanged => 'Password changed successfully.';
+  String get passwordChanged => 'Jechi darbii milkaa\'inaan jijjiirameera.';
 
   @override
-  String get passwordChangeFailed => 'Could not change your password.';
+  String get passwordChangeFailed =>
+      'Jechi darbii kee jijjiiruun hin danda\'amne.';
 
   @override
-  String get clearPhotos => 'Clear photos';
+  String get clearPhotos => 'Suuraawwan haqi';
 
   @override
-  String get aboutSupport => 'About & support';
+  String get aboutSupport => 'Waa\'ee fi gargaarsa';
 
   @override
-  String get aboutZegaAlert => 'About ZEGA-ALERT';
+  String get aboutZegaAlert => 'Waa\'ee ZEGA-ALERT';
 
   @override
-  String get version => 'Version';
+  String get version => 'Gosa';
 
   @override
-  String get termsConditions => 'Terms & Conditions';
+  String get termsConditions => 'Seerota fi haalawwan';
 
   @override
-  String get privacyPolicy => 'Privacy Policy';
+  String get privacyPolicy => 'Imaammata iccitii';
 
   @override
-  String get rateZegaAlert => 'Rate ZEGA-ALERT';
+  String get rateZegaAlert => 'ZEGA-ALERT madaali';
 
   @override
-  String get chatWithAdmin => 'Chat with Admin';
+  String get chatWithAdmin => 'Bulchaa waliin haasa\'i';
 
   @override
-  String get followUpOnReports => 'Follow up on reports';
+  String get followUpOnReports => 'Gabaasa irratti hordoffii';
 
   @override
-  String get leaveFeedback => 'Leave Feedback';
+  String get leaveFeedback => 'Yaada dhiyeessi';
 
   @override
-  String get feedbackHint => 'Tell us how we can improve...';
+  String get feedbackHint =>
+      'Akkamitti fooyyessuu akka dandeenyu nutti himi...';
 
   @override
-  String get feedbackSubmitted => 'Feedback submitted. Thank you!';
+  String get feedbackSubmitted => 'Yaadni ergameera. Galatoomi!';
 
   @override
-  String get contactUs => 'Contact us';
+  String get contactUs => 'Nu qunnami';
 
   @override
-  String get policeEmergency => 'Police emergency';
+  String get policeEmergency => 'Poolisii hatattamaa';
 
   @override
-  String get emailSupport => 'Email support';
+  String get emailSupport => 'Gargaarsa imeelii';
 
   @override
-  String get close => 'Close';
+  String get close => 'Cufi';
 
   @override
   String get searchAppStoreToRate =>
-      'Search for ZEGA-ALERT in your app store to rate us.';
+      'Madaallii kennuuf ZEGA-ALERT mana appii kee keessatti barbaadi.';
 
   @override
   String aboutBody(Object version) {
-    return 'ZEGA-ALERT is the Ethiopian Federal Police citizen safety app. It connects you to emergency dispatch, crime reporting, missing and wanted persons, official announcements and two-way communication with officers — in English, Amharic, Oromifa, Tigrinya and Ethio Somali.\n\nVersion $version';
+    return 'ZEGA-ALERT appii nageenya lammiilee Poolisii Federaalaa Itoophiyaati. Gargaarsa hatattamaa, gabaasa yakkaa, namoota badan fi barbaadaman, beeksisa mootummaa fi poolisii waliin haasawa walitti si qaba.\n\nGosa $version';
   }
 
   @override
   String get termsBody =>
-      '1. Use ZEGA-ALERT only for genuine emergencies, crime reports and public-safety information.\n\n2. Knowingly sending false reports is an offence and may lead to account suspension and legal action.\n\n3. Emergency features depend on network coverage and location services. Always call 991 if the app cannot connect.\n\n4. Reports you submit are shared with the responsible police station and regional administrators for investigation.\n\n5. Keep your account credentials private. You are responsible for activity on your account.';
+      '1. ZEGA-ALERT balaa dhugaa, gabaasa yakkaa fi odeeffannoo nageenya uummataaf qofa fayyadami.\n\n2. Beekaa gabaasa sobaa erguun yakka; herregni cufamuu fi tarkaanfiin seeraa fudhatamuu danda\'a.\n\n3. Tajaajilli hatattamaa qunnamtii interneetii fi bakka bilbilaa irratti hundaa\'a. Appiin yoo hin hojjenne yeroo hunda 991 bilbili.\n\n4. Gabaasni kee qorannoo irratti bu\'uura ta\'uuf buufata poolisii fi bulchitoota naannoo waliin qoodama.\n\n5. Odeeffannoo seensaa herrega kee iccitiidhaan eegi. Sochii herrega kee irratti itti gaafatamummaa qabda.';
 
   @override
   String get privacyBody =>
-      'ZEGA-ALERT collects only the information needed to keep you safe: your name, phone number, region and the content of reports you choose to submit.\n\nLocation is used for SOS alerts, nearest-station lookup, safety zones and incident mapping. It is transmitted only while you use these features.\n\nContact details on missing-person notices are encrypted at rest. Sensitive information is visible only to authorised police staff.\n\nYou can browse news, wanted and missing persons as a guest. You can delete your account by contacting support.';
+      'ZEGA-ALERT odeeffannoo nageenya kee eeguuf barbaachisu qofa walitti qaba: maqaa, lakkoofsa bilbilaa, naannoo fi qabiyyee gabaasa ati dhiyeessuuf filatte.\n\nBakki SOS, buufata dhiyoo barbaaduu, aanaalee nageenyaa fi kaartaa balaa keessatti fayyada. Yeroo tajaajiloota kana fayyadamtu qofa ni ergama.\n\nOdeeffannoon qunnamtii beeksisa namoota badan irratti yeroo kuufamu iccitiidhaan eegama. Odeeffannoo iccitii poolisii hayyama qabu qofa argata.\n\nOduu, namoota barbaadaman fi badan akka keessummaatti ilaaluu dandeessa. Gargaarsa qunnamuun herrega kee haquu dandeessa.';
 }

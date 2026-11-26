@@ -281,6 +281,8 @@
   "passwordChanged": "የይለፍ ቃሉ በተሳካ ሁኔታ ተቀይሯል።",
   "passwordChangeFailed": "የይለፍ ቃልዎን መቀየር አልተቻለም።",
   "clearPhotos": "ፎቶዎችን አጽዳ",
+  "clearSavedPersonPhotosTitle": "የተቀመጡ የሰዎች ፎቶዎችን ያጽዱ?",
+  "clearSavedPersonPhotosBody": "ይህ በዚህ መሣሪያ ላይ የተቀመጡ የሚፈለጉ እና የጠፉ ሰዎችን ፎቶዎች ያስወግዳል። የፎቶ ማከማቻ ከበራ እንደገና ሊቀመጡ ይችላሉ።",
   "aboutSupport": "ስለ መተግበሪያው እና እገዛ",
   "aboutZegaAlert": "ስለ ZEGA-ALERT",
   "version": "ስሪት",

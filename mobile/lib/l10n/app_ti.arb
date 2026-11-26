@@ -281,6 +281,8 @@
   "passwordChanged": "መሕለፊ ቃል ብዓወት ተቐይሩ።",
   "passwordChangeFailed": "መሕለፊ ቃልካ ምቕያር ኣይተኻእለን።",
   "clearPhotos": "ፎቶታት ኣጽርይ",
+  "clearSavedPersonPhotosTitle": "ዝተዓቀቡ ፎቶታት ሰባት ኣጽርይ?",
+  "clearSavedPersonPhotosBody": "እዚ ኣብዚ መሳርሒ ዝተዓቀቡ ፎቶታት ዝድለዩን ዝጠፍኡን ሰባት ይስርዝ። ምዕቃብ ፎቶ እንተተኸፊቱ እንደገና ክዕቀቡ ይኽእሉ።",
   "aboutSupport": "ብዛዕባን ሓገዝን",
   "aboutZegaAlert": "ብዛዕባ ZEGA-ALERT",
   "version": "ስሪት",

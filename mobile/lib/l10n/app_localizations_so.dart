@@ -927,89 +927,91 @@ class AppLocalizationsSo extends AppLocalizations {
       'Lama hubin karin xuduudaha hadda ee Aagga Badbaadada.';
 
   @override
-  String get biometricCancelled => 'Biometric authentication was cancelled.';
+  String get biometricCancelled => 'Xaqiijinta biometriga waa la joojiyey.';
 
   @override
-  String get settingsLoadFailed => 'Could not load settings right now.';
+  String get settingsLoadFailed => 'Dejinta hadda lama soo dejin karin.';
 
   @override
-  String get savedPhotoStorageFailed => 'Could not read saved photo storage.';
+  String get savedPhotoStorageFailed => 'Lama akhrin karin kaydka sawirrada.';
 
   @override
   String get photoStorageUpdateFailed =>
-      'Could not update photo storage settings.';
+      'Lama cusboonaysiin karin dejinta kaydinta sawirrada.';
 
   @override
-  String get photoStorageClearFailed => 'Could not clear saved photos.';
+  String get photoStorageClearFailed =>
+      'Lama tirtiri karin sawirrada la kaydiyey.';
 
   @override
-  String get passwordChanged => 'Password changed successfully.';
+  String get passwordChanged =>
+      'Furaha sirta ah si guul leh ayaa loo beddelay.';
 
   @override
-  String get passwordChangeFailed => 'Could not change your password.';
+  String get passwordChangeFailed => 'Lama beddeli karin furahaaga sirta ah.';
 
   @override
-  String get clearPhotos => 'Clear photos';
+  String get clearPhotos => 'Tirtir sawirrada';
 
   @override
-  String get aboutSupport => 'About & support';
+  String get aboutSupport => 'Ku saabsan & taageero';
 
   @override
-  String get aboutZegaAlert => 'About ZEGA-ALERT';
+  String get aboutZegaAlert => 'Ku saabsan ZEGA-ALERT';
 
   @override
-  String get version => 'Version';
+  String get version => 'Nooca';
 
   @override
-  String get termsConditions => 'Terms & Conditions';
+  String get termsConditions => 'Shuruudaha iyo Xaaladaha';
 
   @override
-  String get privacyPolicy => 'Privacy Policy';
+  String get privacyPolicy => 'Siyaasadda asturnaanta';
 
   @override
-  String get rateZegaAlert => 'Rate ZEGA-ALERT';
+  String get rateZegaAlert => 'Qiimee ZEGA-ALERT';
 
   @override
-  String get chatWithAdmin => 'Chat with Admin';
+  String get chatWithAdmin => 'La sheekayso Maamulka';
 
   @override
-  String get followUpOnReports => 'Follow up on reports';
+  String get followUpOnReports => 'La soco warbixinnada';
 
   @override
-  String get leaveFeedback => 'Leave Feedback';
+  String get leaveFeedback => 'Ka tag faallo';
 
   @override
-  String get feedbackHint => 'Tell us how we can improve...';
+  String get feedbackHint => 'Noo sheeg sida aan u wanaajin karno...';
 
   @override
-  String get feedbackSubmitted => 'Feedback submitted. Thank you!';
+  String get feedbackSubmitted => 'Faallada waa la gudbiyey. Mahadsanid!';
 
   @override
-  String get contactUs => 'Contact us';
+  String get contactUs => 'Nala soo xiriir';
 
   @override
-  String get policeEmergency => 'Police emergency';
+  String get policeEmergency => 'Gurmadka booliiska';
 
   @override
-  String get emailSupport => 'Email support';
+  String get emailSupport => 'Taageerada iimaylka';
 
   @override
-  String get close => 'Close';
+  String get close => 'Xir';
 
   @override
   String get searchAppStoreToRate =>
-      'Search for ZEGA-ALERT in your app store to rate us.';
+      'Ka raadi ZEGA-ALERT dukaanka app-ka si aad u qiimeyso.';
 
   @override
   String aboutBody(Object version) {
-    return 'ZEGA-ALERT is the Ethiopian Federal Police citizen safety app. It connects you to emergency dispatch, crime reporting, missing and wanted persons, official announcements and two-way communication with officers — in English, Amharic, Oromifa, Tigrinya and Ethio Somali.\n\nVersion $version';
+    return 'ZEGA-ALERT waa app-ka badbaadada muwaadiniinta ee Booliiska Federaalka Itoobiya. Wuxuu kugu xiraa gurmadka degdegga ah, warbixinta dambiyada, dadka maqan iyo kuwa la doonayo, ogeysiisyada rasmiga ah iyo wada-xiriirka saraakiisha.\n\nNooca $version';
   }
 
   @override
   String get termsBody =>
-      '1. Use ZEGA-ALERT only for genuine emergencies, crime reports and public-safety information.\n\n2. Knowingly sending false reports is an offence and may lead to account suspension and legal action.\n\n3. Emergency features depend on network coverage and location services. Always call 991 if the app cannot connect.\n\n4. Reports you submit are shared with the responsible police station and regional administrators for investigation.\n\n5. Keep your account credentials private. You are responsible for activity on your account.';
+      '1. U isticmaal ZEGA-ALERT oo keliya xaaladaha degdegga ah ee dhabta ah, warbixinnada dambiyada iyo xogta badbaadada dadweynaha.\n\n2. Dirista warbixin been ah adigoo og waa dembi; akoonka waa la joojin karaa, tallaabo sharci ahna waa la qaadi karaa.\n\n3. Adeegyada degdegga ahi waxay ku xiran yihiin shabakadda iyo adeegga goobta. Mar walba wac 991 haddii app-ku xiriiri waayo.\n\n4. Warbixinnadaadu waxay la wadaagayaan saldhigga booliiska ee masuulka ah iyo maamulka gobolka si loo baaro.\n\n5. Astur xogta gelitaanka akoonkaaga. Adiga ayaa masuul ka ah hawsha akoonkaaga.';
 
   @override
   String get privacyBody =>
-      'ZEGA-ALERT collects only the information needed to keep you safe: your name, phone number, region and the content of reports you choose to submit.\n\nLocation is used for SOS alerts, nearest-station lookup, safety zones and incident mapping. It is transmitted only while you use these features.\n\nContact details on missing-person notices are encrypted at rest. Sensitive information is visible only to authorised police staff.\n\nYou can browse news, wanted and missing persons as a guest. You can delete your account by contacting support.';
+      'ZEGA-ALERT waxay ururisaa oo keliya xogta loo baahan yahay si laguu ilaaliyo: magacaaga, lambarka telefoonka, gobolka iyo waxa ku jira warbixinnada aad doorato inaad dirto.\n\nGoobta waxaa loo isticmaalaa digniinaha SOS, raadinta saldhigga kuugu dhow, aagagga badbaadada iyo khariidaynta dhacdooyinka. Waxa la diraa oo keliya markaad isticmaalayso adeegyadaas.\n\nFaahfaahinta xiriirka ee ogeysiisyada dadka maqan waa la sirgeliyaa marka la kaydiyo. Xogta xasaasiga ah waxaa arki kara oo keliya shaqaalaha booliiska ee la oggolaaday.\n\nWaxaad marti ahaan u baari kartaa wararka, dadka la doonayo iyo kuwa maqan. Waxaad tirtiri kartaa akoonkaaga adigoo la xiriiraya taageerada.';
 }

@@ -892,89 +892,87 @@ class AppLocalizationsTi extends AppLocalizations {
       'ዶባት ናይቲ እዋናዊ ዞባ ድሕነት ምርምር ኣይተኻእለን።';
 
   @override
-  String get biometricCancelled => 'Biometric authentication was cancelled.';
+  String get biometricCancelled => 'መረጋገጺ ባዮሜትሪክስ ተሰሪዙ።';
 
   @override
-  String get settingsLoadFailed => 'Could not load settings right now.';
+  String get settingsLoadFailed => 'ቅጥዕታት ሕጂ ምጽዓን ኣይተኻእለን።';
 
   @override
-  String get savedPhotoStorageFailed => 'Could not read saved photo storage.';
+  String get savedPhotoStorageFailed => 'ዝተዓቀቡ ፎቶታት ምንባብ ኣይተኻእለን።';
 
   @override
-  String get photoStorageUpdateFailed =>
-      'Could not update photo storage settings.';
+  String get photoStorageUpdateFailed => 'ቅጥዕታት ምዕቃብ ፎቶ ምሕዳስ ኣይተኻእለን።';
 
   @override
-  String get photoStorageClearFailed => 'Could not clear saved photos.';
+  String get photoStorageClearFailed => 'ዝተዓቀቡ ፎቶታት ምጽራይ ኣይተኻእለን።';
 
   @override
-  String get passwordChanged => 'Password changed successfully.';
+  String get passwordChanged => 'መሕለፊ ቃል ብዓወት ተቐይሩ።';
 
   @override
-  String get passwordChangeFailed => 'Could not change your password.';
+  String get passwordChangeFailed => 'መሕለፊ ቃልካ ምቕያር ኣይተኻእለን።';
 
   @override
-  String get clearPhotos => 'Clear photos';
+  String get clearPhotos => 'ፎቶታት ኣጽርይ';
 
   @override
-  String get aboutSupport => 'About & support';
+  String get aboutSupport => 'ብዛዕባን ሓገዝን';
 
   @override
-  String get aboutZegaAlert => 'About ZEGA-ALERT';
+  String get aboutZegaAlert => 'ብዛዕባ ZEGA-ALERT';
 
   @override
-  String get version => 'Version';
+  String get version => 'ስሪት';
 
   @override
-  String get termsConditions => 'Terms & Conditions';
+  String get termsConditions => 'ውዕላትን ኩነታትን';
 
   @override
-  String get privacyPolicy => 'Privacy Policy';
+  String get privacyPolicy => 'ፖሊሲ ብሕታውነት';
 
   @override
-  String get rateZegaAlert => 'Rate ZEGA-ALERT';
+  String get rateZegaAlert => 'ን ZEGA-ALERT ደረጃ ሃብ';
 
   @override
-  String get chatWithAdmin => 'Chat with Admin';
+  String get chatWithAdmin => 'ምስ ኣመሓዳሪ ዕላል';
 
   @override
-  String get followUpOnReports => 'Follow up on reports';
+  String get followUpOnReports => 'ኣብ ሪፖርታት ምክትታል';
 
   @override
-  String get leaveFeedback => 'Leave Feedback';
+  String get leaveFeedback => 'ርኢቶ ሃብ';
 
   @override
-  String get feedbackHint => 'Tell us how we can improve...';
+  String get feedbackHint => 'ከመይ ከነመሓይሽ ከም እንኽእል ንገረና...';
 
   @override
-  String get feedbackSubmitted => 'Feedback submitted. Thank you!';
+  String get feedbackSubmitted => 'ርኢቶ ተላኢኹ። የቐንየልና!';
 
   @override
-  String get contactUs => 'Contact us';
+  String get contactUs => 'ርኸቡና';
 
   @override
-  String get policeEmergency => 'Police emergency';
+  String get policeEmergency => 'ህጹጽ ፖሊስ';
 
   @override
-  String get emailSupport => 'Email support';
+  String get emailSupport => 'ሓገዝ ብኢመይል';
 
   @override
-  String get close => 'Close';
+  String get close => 'ዕጾ';
 
   @override
-  String get searchAppStoreToRate =>
-      'Search for ZEGA-ALERT in your app store to rate us.';
+  String get searchAppStoreToRate => 'ደረጃ ንምሃብ ZEGA-ALERT ኣብ መደብር መተግበሪኻ ድለዮ።';
 
   @override
   String aboutBody(Object version) {
-    return 'ZEGA-ALERT is the Ethiopian Federal Police citizen safety app. It connects you to emergency dispatch, crime reporting, missing and wanted persons, official announcements and two-way communication with officers — in English, Amharic, Oromifa, Tigrinya and Ethio Somali.\n\nVersion $version';
+    return 'ZEGA-ALERT ናይ ፌደራል ፖሊስ ኢትዮጵያ መተግበሪ ድሕነት ዜጋታት እዩ። ምስ ህጹጽ ሓገዝ፣ ሪፖርት ገበን፣ ዝጠፍኡን ዝድለዩን ሰባት፣ ወግዓዊ ምልክታታትን ምስ ፖሊስ ርክብን የተሓሕዘካ።\n\nስሪት $version';
   }
 
   @override
   String get termsBody =>
-      '1. Use ZEGA-ALERT only for genuine emergencies, crime reports and public-safety information.\n\n2. Knowingly sending false reports is an offence and may lead to account suspension and legal action.\n\n3. Emergency features depend on network coverage and location services. Always call 991 if the app cannot connect.\n\n4. Reports you submit are shared with the responsible police station and regional administrators for investigation.\n\n5. Keep your account credentials private. You are responsible for activity on your account.';
+      '1. ZEGA-ALERT ንናይ ሓቂ ህጹጽ ኩነታት፣ ሪፖርት ገበንን ሓበሬታ ድሕነት ህዝብን ጥራይ ተጠቐመሉ።\n\n2. ፈሊጥካ ሓሶት ሪፖርት ምልኣኽ ገበን እዩ፤ ሕሳብ ክእገድን ሕጋዊ ስጉምቲ ክውሰድን ይኽእል።\n\n3. ህጹጽ ኣገልግሎታት ኣብ ሽፋን ኔትወርክን ኣገልግሎት ቦታን ይምርኮሱ። App እንተዘይተራኺቡ ኩሉ ግዜ 991 ደውል።\n\n4. እትልእኾም ሪፖርታት ንምርመራ ምስ ዝምልከቶ ጣብያ ፖሊስን ኣመሓደርቲ ክልልን ይካፈሉ።\n\n5. መረጃ መእተዊ ሕሳብካ ምስጢር ግበሮ። ኣብ ሕሳብካ ንዝግበር ንጥፈት ሓላፍነት ኣለካ።';
 
   @override
   String get privacyBody =>
-      'ZEGA-ALERT collects only the information needed to keep you safe: your name, phone number, region and the content of reports you choose to submit.\n\nLocation is used for SOS alerts, nearest-station lookup, safety zones and incident mapping. It is transmitted only while you use these features.\n\nContact details on missing-person notices are encrypted at rest. Sensitive information is visible only to authorised police staff.\n\nYou can browse news, wanted and missing persons as a guest. You can delete your account by contacting support.';
+      'ZEGA-ALERT ድሕነትካ ንምሕላው ዘድሊ ሓበሬታ ጥራይ ይእክብ፦ ስምካ፣ ቁጽሪ ተሌፎንካ፣ ክልልካን እትልእኾ ሪፖርታትን።\n\nቦታ ንSOS ምልክታታት፣ ቀረባ ጣብያ ምድላይ፣ ዞባታት ድሕነትን ካርታ ፍጻመታትን ይጥቀም። ነዞም ኣገልግሎታት ክትጥቀም ከለኻ ጥራይ ይለኣኽ።\n\nኣብ ሓበሬታ ዝጠፍኡ ሰባት ዘሎ ርክብ ብሓበሬታ ይሕሎ። ስሱዕ ሓበሬታ ፍቓድ ዘለዎም ሰራሕተኛታት ፖሊስ ጥራይ ይርእዩ።\n\nዜናን ዝድለዩን ዝጠፍኡን ሰባት ከም ጋሻ ክትርኢ ትኽእል። ንድጋፍ ብምርካብ ሕሳብካ ክትስርዞ ትኽእል።';
 }

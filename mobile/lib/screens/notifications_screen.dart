@@ -44,7 +44,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       setState(
         () => _error = Api.userMessage(
           e,
-          fallback: 'Could not load notifications right now.',
+          fallback: AppLocalizations.of(context).notificationLoadFailed,
         ),
       );
     } finally {

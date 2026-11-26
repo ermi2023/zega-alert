@@ -117,10 +117,11 @@ class _LoginScreenState extends State<LoginScreen>
 
   /// Validate email
   String? _validateEmail(String? value) {
+    final loc = AppLocalizations.of(context);
     if (value == null || value.trim().isEmpty) return null; // Optional field
     if (RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value.trim()))
       return null;
-    return 'Enter a valid email address';
+    return loc.validEmailRequired;
   }
 
   /// Combined validator for identifier (phone or email)
@@ -136,7 +137,7 @@ class _LoginScreenState extends State<LoginScreen>
     final phone = _normalizePhone(trimmed);
     return phone.length == 10 && phone.startsWith('0')
         ? null
-        : 'Enter a valid phone number or email';
+        : loc.validPhoneOrEmailRequired;
   }
 
   /// Validate password
@@ -149,6 +150,7 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   String _friendlyError(Object e) {
+    final loc = AppLocalizations.of(context);
     final s = e.toString();
     if (s.contains('SocketException') ||
         s.contains('ClientException') ||
@@ -158,15 +160,15 @@ class _LoginScreenState extends State<LoginScreen>
     }
     if (s.toLowerCase().contains('unauthorized') ||
         s.toLowerCase().contains('invalid credentials')) {
-      return 'Invalid phone/email or password. Please try again.';
+      return loc.invalidCredentials;
     }
     if (s.toLowerCase().contains('not found') ||
         s.toLowerCase().contains('user not found')) {
-      return 'No account found with this phone/email.';
+      return loc.accountNotFound;
     }
     return Api.userMessage(
       e,
-      fallback: 'Sign in could not be completed. Please try again.',
+      fallback: loc.signInFailed,
     );
   }
 
@@ -231,7 +233,7 @@ class _LoginScreenState extends State<LoginScreen>
       final ok = await BiometricService.authenticate();
       if (!ok) {
         if (mounted)
-          setState(() => _error = 'Biometric authentication cancelled.');
+          setState(() => _error = loc.biometricCancelled);
         return;
       }
       final refreshed = await Api.refreshSession();
@@ -326,7 +328,7 @@ class _LoginScreenState extends State<LoginScreen>
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Text(
-                              'Welcome Back',
+                              loc.welcomeBack,
                               textAlign: TextAlign.center,
                               style: ZegaTheme.headlineSmall.copyWith(
                                 color: ZegaTheme.primaryNavy,
@@ -335,7 +337,7 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Thank you for helping keep our community safe.',
+                              loc.welcomeSafetyMessage,
                               textAlign: TextAlign.center,
                               style: ZegaTheme.bodySmall.copyWith(
                                 color: ZegaTheme.secondaryText,
@@ -351,7 +353,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 foregroundColor: ZegaTheme.secondaryText,
                                 textStyle: ZegaTheme.bodySmall,
                               ),
-                              child: const Text('Skip'),
+                              child: Text(loc.continueAsGuest),
                             ),
                           ],
                         ),
@@ -408,7 +410,7 @@ class _LoginScreenState extends State<LoginScreen>
           ZegaTextField(
             controller: _identifierController,
             focusNode: _identifierFocus,
-            label: 'Phone Number or Email',
+            label: loc.phoneNumberOrEmail,
             hint: 'e.g., +251 911 234 567 or user@email.com',
             prefixIcon: Icons.person_outline,
             keyboardType: TextInputType.emailAddress,
@@ -421,7 +423,7 @@ class _LoginScreenState extends State<LoginScreen>
             controller: _passwordController,
             focusNode: _passwordFocus,
             label: loc.password,
-            hint: 'Enter your password',
+            hint: loc.enterPassword,
             textInputAction: TextInputAction.done,
             validator: _validatePassword,
             onFieldSubmitted: (_) => _submit(),
@@ -432,7 +434,7 @@ class _LoginScreenState extends State<LoginScreen>
           ],
           const SizedBox(height: 18),
           ZegaPrimaryButton(
-            label: 'Log In',
+            label: loc.logIn,
             onPressed: _isLoading ? null : _submit,
             isLoading: _isLoading,
             isEnabled: _formKey.currentState?.validate() ?? false,
@@ -442,7 +444,7 @@ class _LoginScreenState extends State<LoginScreen>
           Align(
             alignment: Alignment.center,
             child: ZegaTextButton(
-              label: 'Forgot your password?',
+              label: loc.forgotPassword,
               onPressed: _isLoading ? null : _navigateToForgotPassword,
               style: ZegaTheme.bodySmall.copyWith(
                 color: ZegaTheme.primaryNavy,
@@ -453,7 +455,7 @@ class _LoginScreenState extends State<LoginScreen>
           if (_canBioLogin && !_isLoading) ...[
             const SizedBox(height: 8),
             ZegaSecondaryButton(
-              label: 'Sign in with Biometrics',
+              label: loc.signInBiometrics,
               onPressed: _biometricLogin,
               leadingIcon: Icons.fingerprint,
               height: 48,
@@ -497,8 +499,8 @@ class _LoginScreenState extends State<LoginScreen>
 
   Widget _buildRegistrationNavigation(AppLocalizations loc) {
     return ZegaAuthNavigation(
-      label: "Don't have an account?",
-      actionLabel: 'Sign up',
+      label: loc.newHere,
+      actionLabel: loc.signUp,
       onActionPressed: _navigateToRegister,
       labelStyle: ZegaTheme.bodyMedium.copyWith(color: Colors.white70),
       actionStyle: ZegaTheme.labelLarge.copyWith(

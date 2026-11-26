@@ -81,6 +81,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _load() async {
+    final loc = AppLocalizations.of(context);
     _safetyZoneTrackingEnabled = await SafetyZoneTrackingService.isEnabled();
     final trackingIssue = SafetyZoneTrackingService.lastError;
     if (trackingIssue != null) {
@@ -135,7 +136,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         setState(
           () => _loadError = Api.userMessage(
             e,
-            fallback: 'Could not load settings right now.',
+            fallback: loc.settingsLoadFailed,
           ),
         );
     }
@@ -156,7 +157,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         setState(
           () => _status = Api.userMessage(
             error,
-            fallback: 'Could not read saved photo storage.',
+            fallback: AppLocalizations.of(context).savedPhotoStorageFailed,
           ),
         );
       }
@@ -180,7 +181,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _personPhotoCachingEnabled = PersonImageCacheService.enabled.value;
           _status = Api.userMessage(
             error,
-            fallback: 'Could not update photo storage settings.',
+            fallback: AppLocalizations.of(context).photoStorageUpdateFailed,
           );
         });
       }
@@ -190,22 +191,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _clearPersonPhotoCache() async {
+    final loc = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clear saved person photos?'),
-        content: const Text(
-          'This removes wanted and missing-person photos saved on this device. '
-          'They can be saved again while photo storage is enabled.',
-        ),
+        title: Text(loc.clearSavedPersonPhotosTitle),
+        content: Text(loc.clearSavedPersonPhotosBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(loc.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Clear photos'),
+            child: Text(loc.clearPhotos),
           ),
         ],
       ),
@@ -221,7 +220,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         setState(
           () => _status = Api.userMessage(
             error,
-            fallback: 'Could not clear saved photos.',
+            fallback: loc.photoStorageClearFailed,
           ),
         );
       }
@@ -425,13 +424,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _currentPassword.clear();
       _newPassword.clear();
       _confirmPassword.clear();
-      setState(() => _passwordStatus = 'Password changed successfully.');
+      setState(
+        () => _passwordStatus = AppLocalizations.of(context).passwordChanged,
+      );
     } catch (e) {
       if (mounted)
         setState(
           () => _passwordStatus = Api.userMessage(
             e,
-            fallback: 'Could not change your password.',
+            fallback: AppLocalizations.of(context).passwordChangeFailed,
           ),
         );
     } finally {
@@ -817,32 +818,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
             );
           }),
         ]),
-        _category('About & support', Icons.info_outline, [
+        _category(loc.aboutSupport, Icons.info_outline, [
           Card(
             child: Column(
               children: [
                 ListTile(
                   leading: const Icon(Icons.info_outline),
-                  title: const Text('About ZEGA-ALERT'),
-                  subtitle: const Text('Version 1.0.0'),
+                  title: Text(loc.aboutZegaAlert),
+                  subtitle: Text('${loc.version} ${Api.appVersion}'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: _about,
                 ),
                 ListTile(
                   leading: const Icon(Icons.description_outlined),
-                  title: const Text('Terms & Conditions'),
+                  title: Text(loc.termsConditions),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: _terms,
                 ),
                 ListTile(
                   leading: const Icon(Icons.privacy_tip_outlined),
-                  title: const Text('Privacy Policy'),
+                  title: Text(loc.privacyPolicy),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: _privacy,
                 ),
                 ListTile(
                   leading: const Icon(Icons.star_outline),
-                  title: const Text('Rate ZEGA-ALERT'),
+                  title: Text(loc.rateZegaAlert),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: _rateApp,
                 ),
@@ -857,8 +858,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Icons.chat_bubble_outline,
                     color: Color(0xFF1E40AF),
                   ),
-                  title: const Text('Chat with Admin'),
-                  subtitle: const Text('Follow up on reports'),
+                  title: Text(loc.chatWithAdmin),
+                  subtitle: Text(loc.followUpOnReports),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
                     Navigator.of(context).push(
@@ -874,8 +875,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Leave Feedback',
+                      Text(
+                        loc.leaveFeedback,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
@@ -885,7 +886,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       TextField(
                         maxLines: 3,
                         decoration: InputDecoration(
-                          hintText: 'Tell us how we can improve...',
+                          hintText: loc.feedbackHint,
                           hintStyle: TextStyle(
                             color: Colors.grey.shade400,
                             fontSize: 13,
@@ -915,10 +916,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ElevatedButton(
                             onPressed: () {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Feedback submitted. Thank you!',
-                                  ),
+                                SnackBar(
+                                  content: Text(loc.feedbackSubmitted),
                                 ),
                               );
                             },
@@ -1258,24 +1257,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _about() {
+    final loc = AppLocalizations.of(context);
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('ZEGA-ALERT'),
+        title: Text(loc.aboutZegaAlert),
         content: SingleChildScrollView(
           child: Text(
-            'ZEGA-ALERT is the Ethiopian Federal Police citizen safety app. '
-            'It connects you to emergency dispatch, crime reporting, missing and '
-            'wanted persons, official announcements and two-way communication '
-            'with officers — in English, Amharic, Oromifa, Tigrinya and Ethio Somali.\n\n'
-            'Version ${Api.appVersion}',
-            style: TextStyle(height: 1.4),
+            loc.aboutBody(Api.appVersion),
+            style: const TextStyle(height: 1.4),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Close'),
+            child: Text(loc.close),
           ),
         ],
       ),
@@ -1283,28 +1279,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _contact() {
+    final loc = AppLocalizations.of(context);
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Contact us'),
+        title: Text(loc.contactUs),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
               leading: const Icon(Icons.local_police),
-              title: const Text('Police emergency'),
+              title: Text(loc.policeEmergency),
               subtitle: const Text('991'),
               onTap: () => _dial('991'),
             ),
             ListTile(
               leading: const Icon(Icons.emergency),
-              title: const Text('Ambulance / rescue'),
+              title: Text(loc.ambulanceRescue),
               subtitle: const Text('907'),
               onTap: () => _dial('907'),
             ),
             ListTile(
               leading: const Icon(Icons.email_outlined),
-              title: const Text('Email support'),
+              title: Text(loc.emailSupport),
               subtitle: const Text('support@zega-alert.et'),
               onTap: () async {
                 await launchUrl(
@@ -1317,7 +1314,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Close'),
+            child: Text(loc.close),
           ),
         ],
       ),
@@ -1325,29 +1322,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _terms() {
+    final loc = AppLocalizations.of(context);
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Terms & Conditions'),
-        content: const SingleChildScrollView(
+        title: Text(loc.termsConditions),
+        content: SingleChildScrollView(
           child: Text(
-            '1. Use ZEGA-ALERT only for genuine emergencies, crime reports and '
-            'public-safety information.\n\n'
-            '2. Knowingly sending false reports is an offence and may lead to '
-            'account suspension and legal action.\n\n'
-            '3. Emergency features depend on network coverage and location '
-            'services. Always call 991 if the app cannot connect.\n\n'
-            '4. Reports you submit are shared with the responsible police '
-            'station and regional administrators for investigation.\n\n'
-            '5. Keep your account credentials private. You are responsible for '
-            'activity on your account.',
-            style: TextStyle(height: 1.4),
+            loc.termsBody,
+            style: const TextStyle(height: 1.4),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Close'),
+            child: Text(loc.close),
           ),
         ],
       ),
@@ -1355,29 +1344,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _privacy() {
+    final loc = AppLocalizations.of(context);
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Privacy Policy'),
-        content: const SingleChildScrollView(
+        title: Text(loc.privacyPolicy),
+        content: SingleChildScrollView(
           child: Text(
-            'ZEGA-ALERT collects only the information needed to keep you safe: '
-            'your name, phone number, region and the content of reports you '
-            'choose to submit.\n\n'
-            'Location is used for SOS alerts, nearest-station lookup, safety '
-            'zones and incident mapping. It is transmitted only while you use '
-            'these features.\n\n'
-            'Contact details on missing-person notices are encrypted at rest. '
-            'Sensitive information is visible only to authorised police staff.\n\n'
-            'You can browse news, wanted and missing persons as a guest. You '
-            'can delete your account by contacting support.',
-            style: TextStyle(height: 1.4),
+            loc.privacyBody,
+            style: const TextStyle(height: 1.4),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Close'),
+            child: Text(loc.close),
           ),
         ],
       ),
@@ -1385,6 +1366,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _rateApp() async {
+    final loc = AppLocalizations.of(context);
     final uri = Uri.parse(
       'https://play.google.com/store/search?q=ZEGA-ALERT&c=apps',
     );
@@ -1396,8 +1378,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (_) {}
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Search for ZEGA-ALERT in your app store to rate us.'),
+        SnackBar(
+          content: Text(loc.searchAppStoreToRate),
         ),
       );
     }

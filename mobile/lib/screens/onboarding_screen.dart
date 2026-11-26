@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../l10n/app_localizations.dart';
+
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onDone;
   const OnboardingScreen({super.key, required this.onDone});
@@ -13,30 +15,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _controller = PageController();
   int _page = 0;
 
-  final _pages = const [
+  List<_OnboardPage> _pages(AppLocalizations loc) => [
     _OnboardPage(
       icon: Icons.sos,
       color: Color(0xFFDC2626),
-      title: 'Emergency SOS',
-      subtitle: 'Press the SOS button to instantly alert the nearest police officers with your live GPS location. Help arrives in minutes.',
+      title: loc.onboardingEmergencyTitle,
+      subtitle: loc.onboardingEmergencySubtitle,
     ),
     _OnboardPage(
       icon: Icons.report_problem,
       color: Color(0xFF2563EB),
-      title: 'Report Crime Safely',
-      subtitle: 'Submit crime reports anonymously or with your identity. Attach photos, GPS coordinates, and descriptions.',
+      title: loc.onboardingReportTitle,
+      subtitle: loc.onboardingReportSubtitle,
     ),
     _OnboardPage(
       icon: Icons.person_search,
       color: Color(0xFFF59E0B),
-      title: 'Find Missing Persons',
-      subtitle: 'View national missing persons and wanted alerts. Report sightings to help families reunite.',
+      title: loc.onboardingMissingTitle,
+      subtitle: loc.onboardingMissingSubtitle,
     ),
     _OnboardPage(
       icon: Icons.location_on,
       color: Color(0xFF16A34A),
-      title: 'Set Your Region',
-      subtitle: 'Configure your region in Settings to receive local safety alerts and geofence protection for your area.',
+      title: loc.onboardingRegionTitle,
+      subtitle: loc.onboardingRegionSubtitle,
     ),
   ];
 
@@ -54,6 +56,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    final pages = _pages(loc);
     return Scaffold(
       backgroundColor: const Color(0xFF070C18),
       body: SafeArea(
@@ -62,9 +66,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             Expanded(
               child: PageView.builder(
                 controller: _controller,
-                itemCount: _pages.length,
+                itemCount: pages.length,
                 onPageChanged: (i) => setState(() => _page = i),
-                itemBuilder: (_, i) => _pages[i],
+                itemBuilder: (_, i) => pages[i],
               ),
             ),
             Padding(
@@ -73,7 +77,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(_pages.length, (i) => AnimatedContainer(
+                    children: List.generate(pages.length, (i) => AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
                       margin: const EdgeInsets.symmetric(horizontal: 4),
                       width: _page == i ? 24 : 8,
@@ -94,22 +98,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
                       onPressed: () {
-                        if (_page < _pages.length - 1) {
+                        if (_page < pages.length - 1) {
                           _controller.nextPage(duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
                         } else {
                           _done();
                         }
                       },
                       child: Text(
-                        _page < _pages.length - 1 ? 'Next' : 'Get Started',
+                        _page < pages.length - 1
+                            ? loc.onboardingNext
+                            : loc.onboardingGetStarted,
                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
-                  if (_page < _pages.length - 1)
+                  if (_page < pages.length - 1)
                     TextButton(
                       onPressed: _done,
-                      child: const Text('Skip', style: TextStyle(color: Colors.white38)),
+                      child: Text(
+                        loc.onboardingSkip,
+                        style: const TextStyle(color: Colors.white38),
+                      ),
                     ),
                 ],
               ),

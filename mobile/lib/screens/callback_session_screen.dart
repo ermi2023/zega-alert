@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import 'video_call_screen.dart';
 import '../services/api.dart';
 
@@ -36,6 +37,7 @@ class _CallbackSessionScreenState extends State<CallbackSessionScreen> {
   }
 
   Future<void> _end() async {
+    final loc = AppLocalizations.of(context);
     setState(() => _ending = true);
     try {
       await Api.patch('/callbacks/${widget.callback['id']}', {
@@ -48,7 +50,7 @@ class _CallbackSessionScreenState extends State<CallbackSessionScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              Api.userMessage(e, fallback: 'Could not end the session.'),
+              Api.userMessage(e, fallback: loc.callbackSessionEndFailed),
             ),
           ),
         );
@@ -57,6 +59,7 @@ class _CallbackSessionScreenState extends State<CallbackSessionScreen> {
   }
 
   Future<void> _startVideoCall() async {
+    final loc = AppLocalizations.of(context);
     final cb = widget.callback;
     final currentUserId = Api.userId?.toString();
     final citizenId = cb['citizen_id']?.toString();
@@ -67,17 +70,15 @@ class _CallbackSessionScreenState extends State<CallbackSessionScreen> {
         ? citizenId
         : null;
     if (targetUserId == null || targetUserId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not find the other call participant.'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(loc.otherCallParticipantNotFound)));
       return;
     }
 
     final targetName = targetUserId == officerId
-        ? cb['officer_name'] ?? 'Officer'
-        : cb['citizen_name'] ?? 'Citizen';
+        ? cb['officer_name'] ?? loc.police
+        : cb['citizen_name'] ?? loc.citizenProfile;
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => VideoCallScreen(
@@ -91,13 +92,19 @@ class _CallbackSessionScreenState extends State<CallbackSessionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final cb = widget.callback;
     final seconds = _watch.elapsed.inSeconds;
     final elapsed =
         '${(seconds ~/ 60).toString().padLeft(2, '0')}:${(seconds % 60).toString().padLeft(2, '0')}';
     final mode = (cb['mode'] ?? 'voice').toString();
+    final localizedMode = switch (mode) {
+      'video' => loc.callbackModeVideo,
+      'chat' => loc.callbackModeChat,
+      _ => loc.callbackModeVoice,
+    };
     return Scaffold(
-      appBar: AppBar(title: const Text('Callback session')),
+      appBar: AppBar(title: Text(loc.callbackSessionTitle)),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -115,19 +122,21 @@ class _CallbackSessionScreenState extends State<CallbackSessionScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              mode == 'chat' ? 'In-app chat session' : 'In-app $mode session',
+              mode == 'chat'
+                  ? loc.inAppChatSession
+                  : loc.inAppSessionMode(localizedMode),
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
-              cb['report_title'] ?? 'Report follow-up',
+              cb['report_title'] ?? loc.reportFollowUp,
               textAlign: TextAlign.center,
             ),
             if (cb['officer_name'] != null) ...[
               const SizedBox(height: 4),
               Text(
-                'Officer: ${cb['officer_name']}',
+                loc.officerNamed(cb['officer_name'].toString()),
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.grey),
               ),
@@ -141,8 +150,8 @@ class _CallbackSessionScreenState extends State<CallbackSessionScreen> {
             const SizedBox(height: 8),
             Text(
               mode == 'video'
-                  ? 'Callback session active · start a live video call when ready'
-                  : 'Connected · this session stays inside ZEGA-ALERT',
+                  ? loc.callbackVideoActiveDescription
+                  : loc.connectedInsideApp,
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.grey, fontSize: 12),
             ),
@@ -151,7 +160,7 @@ class _CallbackSessionScreenState extends State<CallbackSessionScreen> {
               FilledButton.icon(
                 onPressed: _startVideoCall,
                 icon: const Icon(Icons.videocam),
-                label: const Text('Start live video conversation'),
+                label: Text(loc.startLiveVideoConversation),
               ),
             ],
             if (cb['notes'] != null && cb['notes'].toString().isNotEmpty) ...[
@@ -168,7 +177,7 @@ class _CallbackSessionScreenState extends State<CallbackSessionScreen> {
               style: FilledButton.styleFrom(backgroundColor: Colors.red),
               onPressed: _ending ? null : _end,
               icon: const Icon(Icons.call_end),
-              label: Text(_ending ? 'Ending…' : 'End session'),
+              label: Text(_ending ? loc.ending : loc.endSession),
             ),
             const SizedBox(height: 12),
           ],

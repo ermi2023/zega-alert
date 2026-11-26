@@ -362,7 +362,7 @@ class _NewsScreenState extends State<NewsScreen>
                         ),
                       ),
                       Text(
-                        'News, road closures, wanted & missing persons, and lost items',
+                        loc.newsScreenDescription,
                         style: TextStyle(
                           fontSize: 12,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -372,7 +372,7 @@ class _NewsScreenState extends State<NewsScreen>
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Refresh',
+                  tooltip: loc.refresh,
                   onPressed: _loading
                       ? null
                       : () => _loadNews(clearContentNotifications: true),
@@ -823,6 +823,7 @@ class _NewsScreenState extends State<NewsScreen>
   };
 
   Widget _legalTab() {
+    final loc = AppLocalizations.of(context);
     return Column(
       children: [
         Padding(
@@ -832,9 +833,9 @@ class _NewsScreenState extends State<NewsScreen>
               Expanded(
                 child: DropdownButtonFormField<String>(
                   initialValue: _legalCategory,
-                  decoration: const InputDecoration(
-                    labelText: 'Category',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: loc.categoryLabel,
+                    border: const OutlineInputBorder(),
                     isDense: true,
                   ),
                   items:
@@ -849,7 +850,7 @@ class _NewsScreenState extends State<NewsScreen>
                           .map(
                             (c) => DropdownMenuItem(
                               value: c,
-                              child: Text(c ?? 'All'),
+                              child: Text(c ?? loc.allItems),
                             ),
                           )
                           .toList(),
@@ -863,15 +864,17 @@ class _NewsScreenState extends State<NewsScreen>
               Expanded(
                 child: DropdownButtonFormField<String>(
                   initialValue: _legalLang,
-                  decoration: const InputDecoration(
-                    labelText: 'Language',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: loc.languageLabel,
+                    border: const OutlineInputBorder(),
                     isDense: true,
                   ),
                   items: [null, 'en', 'am', 'om', 'ti']
                       .map(
-                        (l) =>
-                            DropdownMenuItem(value: l, child: Text(l ?? 'All')),
+                        (l) => DropdownMenuItem(
+                          value: l,
+                          child: Text(l ?? loc.allItems),
+                        ),
                       )
                       .toList(),
                   onChanged: (v) {
@@ -1387,6 +1390,7 @@ class _NewsScreenState extends State<NewsScreen>
   }
 
   Widget _buildCommentSection(String id) {
+    final loc = AppLocalizations.of(context);
     final key = 'announcement_$id';
     final isLoading = _commentsLoading[key] ?? false;
     final comments = _commentsData[key] ?? [];
@@ -1500,7 +1504,7 @@ class _NewsScreenState extends State<NewsScreen>
                   child: TextField(
                     controller: controller,
                     decoration: InputDecoration(
-                      hintText: 'Write a comment...',
+                      hintText: loc.writeCommentHint,
                       hintStyle: TextStyle(
                         fontSize: 13,
                         color: Colors.grey.shade400,

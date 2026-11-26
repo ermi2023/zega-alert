@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../l10n/app_localizations.dart';
 import '../services/api.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -15,6 +16,8 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+  AppLocalizations get loc => AppLocalizations.of(context);
+
   final _phone = TextEditingController();
   final _newPassword = TextEditingController();
   final _confirmPassword = TextEditingController();
@@ -166,7 +169,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         backgroundColor: const Color(0xFFF5F7FA),
         foregroundColor: const Color(0xFF142B4A),
         elevation: 0,
-        title: const Text('Account recovery'),
+        title: Text(loc.accountRecovery),
       ),
       body: SafeArea(
         child: Center(
@@ -360,7 +363,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           FilteringTextInputFormatter.allow(RegExp(r'[\d+\s()-]')),
         ],
         decoration: InputDecoration(
-          labelText: 'Phone number',
+          labelText: loc.phone,
           hintText: '911 234 567',
           prefixText: '+251 ',
           prefixIcon: const Icon(Icons.phone_outlined),
@@ -425,7 +428,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             controller: _newPassword,
             obscureText: !_showPassword,
             decoration: InputDecoration(
-              labelText: 'New password',
+              labelText: loc.newPassword,
               prefixIcon: const Icon(Icons.lock_outline),
               suffixIcon: IconButton(
                 onPressed: () => setState(() => _showPassword = !_showPassword),
@@ -441,21 +444,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             ),
             validator: (value) => value != null && value.length >= 8
                 ? null
-                : 'Use at least 8 characters.',
+                : loc.passwordMinimumLength,
           ),
           const SizedBox(height: 14),
           TextFormField(
             controller: _confirmPassword,
             obscureText: !_showPassword,
             decoration: InputDecoration(
-              labelText: 'Confirm new password',
+              labelText: loc.confirmNewPassword,
               prefixIcon: const Icon(Icons.lock_outline),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
             ),
             validator: (value) =>
-                value == _newPassword.text ? null : 'Passwords do not match.',
+                value == _newPassword.text ? null : loc.passwordsDoNotMatch,
           ),
           const SizedBox(height: 12),
           const Align(
@@ -475,8 +478,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       children: [
         Icon(Icons.check_circle, color: colors.primary, size: 64),
         const SizedBox(height: 16),
-        const Text(
-          'Password reset successful!',
+        Text(
+          loc.passwordResetSuccessful,
           textAlign: TextAlign.center,
           style: TextStyle(
             color: Color(0xFF142B4A),
@@ -485,8 +488,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
-          'Your password has been updated. Sign in with your new password.',
+        Text(
+          loc.passwordUpdatedSignIn,
           textAlign: TextAlign.center,
           style: TextStyle(color: Color(0xFF64748B), height: 1.45),
         ),
@@ -496,7 +499,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           height: 50,
           child: FilledButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Back to sign in'),
+            child: Text(loc.backToSignIn),
           ),
         ),
       ],

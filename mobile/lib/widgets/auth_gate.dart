@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../services/api.dart';
 import '../screens/login_screen.dart';
 
@@ -6,20 +7,20 @@ import '../screens/login_screen.dart';
 /// guests to create a free account. Guests can always browse public screens.
 class AuthGate extends StatelessWidget {
   final Widget child;
-  final String title;
-  final String message;
+  final String? title;
+  final String? message;
 
   const AuthGate({
     super.key,
     required this.child,
-    this.title = 'Sign in to continue',
-    this.message =
-        'Create a free ZEGA-ALERT account or sign in to use this feature.',
+    this.title,
+    this.message,
   });
 
   @override
   Widget build(BuildContext context) {
     if (Api.isLoggedIn) return child;
+    final loc = AppLocalizations.of(context);
     final theme = Theme.of(context);
     return Center(
       child: SingleChildScrollView(
@@ -29,14 +30,22 @@ class AuthGate extends StatelessWidget {
           children: [
             Icon(Icons.lock_outline, size: 64, color: theme.colorScheme.primary),
             const SizedBox(height: 16),
-            Text(title, style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
+            Text(
+              title ?? loc.authGateTitle,
+              style: theme.textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 8),
-            Text(message, style: const TextStyle(color: Colors.grey), textAlign: TextAlign.center),
+            Text(
+              message ?? loc.authGateMessage,
+              style: const TextStyle(color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 24),
             FilledButton.icon(
               onPressed: () => openAuth(context),
               icon: const Icon(Icons.login),
-              label: const Text('Sign in / Create account'),
+              label: Text(loc.signInCreateAccount),
             ),
           ],
         ),
@@ -56,14 +65,21 @@ Future<void> openAuth(BuildContext context) async {
 /// to sign in; the caller should abort its action when this returns false.
 Future<bool> ensureAuthed(BuildContext context, {String? reason}) async {
   if (Api.isLoggedIn) return true;
+  final loc = AppLocalizations.of(context);
   final go = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Sign in required'),
-      content: Text(reason ?? 'Please sign in or create a free account to continue.'),
+      title: Text(loc.signInRequiredTitle),
+      content: Text(reason ?? loc.signInRequiredMessage),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Not now')),
-        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Sign in')),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: Text(loc.notNow),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: Text(loc.signingIn),
+        ),
       ],
     ),
   );

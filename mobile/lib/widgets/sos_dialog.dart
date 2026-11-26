@@ -23,10 +23,7 @@ import 'auth_gate.dart';
 /// 5. Continuous background location streaming until deactivated
 Future<void> triggerEmergencySos(BuildContext context) async {
   final loc = AppLocalizations.of(context);
-  if (!await ensureAuthed(
-    context,
-    reason: loc.signInToSendSos,
-  )) {
+  if (!await ensureAuthed(context, reason: loc.signInToSendSos)) {
     return;
   }
   if (!context.mounted) return;
@@ -128,9 +125,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
           ? (dispatch['station_id'] != null
                 ? loc.sosNearestNoOfficers
                 : loc.sosLocationMissingCentral)
-          : loc.sosSentToStation(
-              stationName ?? loc.nearestPoliceStation,
-            );
+          : loc.sosSentToStation(stationName ?? loc.nearestPoliceStation);
 
       if (sosId != null) {
         _sosId = sosId;
@@ -151,10 +146,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
       if (mounted) {
         setState(() {
           _sending = false;
-          _statusText = Api.userMessage(
-            e,
-            fallback: loc.sosSendFailed,
-          );
+          _statusText = Api.userMessage(e, fallback: loc.sosSendFailed);
         });
       }
     }
@@ -190,10 +182,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
       if (!mounted) return;
       setState(() {
         _liveStatus = 'error';
-        _liveError = Api.userMessage(
-          error,
-          fallback: loc.sosLiveStreamFailed,
-        );
+        _liveError = Api.userMessage(error, fallback: loc.sosLiveStreamFailed);
       });
     }
   }
@@ -311,7 +300,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
+          Text(
             loc.sosEmergencyTitle,
             style: TextStyle(
               fontSize: 22,
@@ -322,8 +311,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
           ),
           const SizedBox(height: 8),
           Text(
-            _statusText ??
-                loc.sosNotifyCountdown(_secondsRemaining),
+            _statusText ?? loc.sosNotifyCountdown(_secondsRemaining),
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 14, color: Colors.white70),
           ),
@@ -340,7 +328,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
+              child: Text(
                 loc.sosCancelAbort,
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
@@ -374,7 +362,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
                   child: const Icon(Icons.sos, color: Colors.white, size: 20),
                 ),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -402,7 +390,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
                     color: Colors.green.shade900,
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: const Text(
+                  child: Text(
                     loc.sosDispatched,
                     style: TextStyle(
                       color: Colors.greenAccent,
@@ -493,7 +481,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
                 ),
               ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               loc.sosRespondingUnits,
               style: TextStyle(
                 color: Colors.white,
@@ -504,7 +492,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
             const SizedBox(height: 6),
             Expanded(
               child: _units.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Text(
                         loc.sosRoutingOfficer,
                         style: TextStyle(color: Colors.white60),
@@ -628,12 +616,12 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
+          Text(
             loc.sosLiveTitle,
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             loc.sosLivePrivacyNote,
             style: TextStyle(color: Colors.white60, fontSize: 11),
           ),

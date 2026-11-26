@@ -438,7 +438,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(height: 12),
                           ElevatedButton(
                             onPressed: _load,
-                            child: const Text('Retry'),
+                            child: Text(loc.retry),
                           ),
                         ],
                       ),
@@ -552,7 +552,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           IconButton(
-            tooltip: 'Refresh wanted and missing people',
+            tooltip: loc.refreshWantedMissing,
             onPressed: _loading
                 ? null
                 : () => _load(clearPersonNotifications: true),
@@ -574,6 +574,7 @@ class _HomeScreenState extends State<HomeScreen> {
     Map<String, dynamic> person, {
     required bool isWanted,
   }) {
+    final loc = AppLocalizations.of(context);
     final id = person['id'] as String? ?? '';
     final entityType = isWanted ? 'wanted_person' : 'missing_person';
     final entityKey = '${entityType}_$id';
@@ -1025,7 +1026,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     onTap: () async {
                       if (!await ensureAuthed(
                         context,
-                        reason: 'Sign in to report a sighting.',
+                        reason: loc.signInToReportSighting,
                       ))
                         return;
                       if (!context.mounted) return;
@@ -1034,7 +1035,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           builder: (_) => SightingReportScreen(
                             missingPersonId: isWanted ? null : id,
                             wantedPersonId: isWanted ? id : null,
-                            title: 'Report Sighting: $name',
+                            title: loc.reportSightingForPerson(name),
                             onDone: _load,
                           ),
                         ),
@@ -1186,6 +1187,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCommentSection(String entityType, String entityId) {
+    final loc = AppLocalizations.of(context);
     final key = '${entityType}_$entityId';
     final isLoading = _commentsLoading[key] ?? false;
     final comments = _commentsData[key] ?? [];
@@ -1327,7 +1329,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: TextField(
                     controller: controller,
                     decoration: InputDecoration(
-                      hintText: 'Write a comment...',
+                      hintText: loc.writeCommentHint,
                       hintStyle: TextStyle(
                         fontSize: 13,
                         color: Colors.grey.shade400,

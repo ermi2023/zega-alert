@@ -371,7 +371,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(child: Text('Verify Phone Number')),
+                  Expanded(child: Text(loc.verifyPhoneNumber)),
                 ],
               ),
               content: Column(
@@ -380,7 +380,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                 children: [
                   if (fallbackCode != null && fallbackCode.isNotEmpty) ...[
                     Text(
-                      'SMS is not configured yet. Use this temporary demo code:',
+                      loc.smsDemoCodeNotice,
                       style: ZegaTheme.bodyMedium.copyWith(height: 1.5),
                     ),
                     const SizedBox(height: 8),
@@ -394,7 +394,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                     ),
                   ] else
                     Text(
-                      'Enter the 6-digit code sent to\n$phone',
+                      loc.enterOtpSentTo(phone),
                       style: ZegaTheme.bodyMedium.copyWith(height: 1.5),
                     ),
                   const SizedBox(height: 16),
@@ -445,7 +445,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                   onPressed: verifying
                       ? null
                       : () => Navigator.of(dialogContext).pop(false),
-                  child: Text('Not Now', style: ZegaTheme.labelLarge),
+                  child: Text(loc.notNow, style: ZegaTheme.labelLarge),
                 ),
                 FilledButton(
                   onPressed: verifying ? null : verify,
@@ -590,6 +590,7 @@ class _RegisterScreenState extends State<RegisterScreen>
   }
 
   Widget _buildHeader(double height) {
+    final loc = AppLocalizations.of(context);
     final logoSize = (height * 0.46).clamp(64.0, 104.0).toDouble();
 
     return Stack(
@@ -603,7 +604,7 @@ class _RegisterScreenState extends State<RegisterScreen>
             onPressed: () => Navigator.of(context).pop(),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-            tooltip: 'Back',
+            tooltip: loc.back,
           ),
         ),
         Center(

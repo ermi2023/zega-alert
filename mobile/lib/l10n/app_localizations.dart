@@ -161,7 +161,7 @@ abstract class AppLocalizations {
   /// No description provided for @sosDispatched.
   ///
   /// In en, this message translates to:
-  /// **'🚨 SOS Dispatched'**
+  /// **'DISPATCHED'**
   String get sosDispatched;
 
   /// No description provided for @unitsOnTheWay.
@@ -2713,6 +2713,528 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'by {name}'**
   String byUser(Object name);
+
+  /// No description provided for @signInToSendSos.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to send an SOS alert with your live location.'**
+  String get signInToSendSos;
+
+  /// No description provided for @sosSendingStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting GPS coordinates and connecting to dispatch…'**
+  String get sosSendingStatus;
+
+  /// No description provided for @sosNotifyCountdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifying nearby police in {seconds} seconds…'**
+  String sosNotifyCountdown(Object seconds);
+
+  /// No description provided for @sosCancelAbort.
+  ///
+  /// In en, this message translates to:
+  /// **'CANCEL / ABORT'**
+  String get sosCancelAbort;
+
+  /// No description provided for @sosNoDispatchRecipients.
+  ///
+  /// In en, this message translates to:
+  /// **'SOS alert saved, but no station officers or central dispatch recipients are available.'**
+  String get sosNoDispatchRecipients;
+
+  /// No description provided for @sosNearestNoOfficers.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearest station has no assigned officers. SOS sent to central dispatch.'**
+  String get sosNearestNoOfficers;
+
+  /// No description provided for @sosLocationMissingCentral.
+  ///
+  /// In en, this message translates to:
+  /// **'SOS sent to central dispatch because location was unavailable.'**
+  String get sosLocationMissingCentral;
+
+  /// No description provided for @sosSentToStation.
+  ///
+  /// In en, this message translates to:
+  /// **'SOS sent to {station}. Responding officers notified.'**
+  String sosSentToStation(Object station);
+
+  /// No description provided for @sosSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send the emergency alert. Please try again.'**
+  String get sosSendFailed;
+
+  /// No description provided for @sosLiveStreamFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect the live stream. Please try again.'**
+  String get sosLiveStreamFailed;
+
+  /// No description provided for @sosEmergencyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'EMERGENCY SOS'**
+  String get sosEmergencyTitle;
+
+  /// No description provided for @sosHelpIsOnWay.
+  ///
+  /// In en, this message translates to:
+  /// **'HELP IS ON THE WAY'**
+  String get sosHelpIsOnWay;
+
+  /// No description provided for @sosLivePatrolActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Live patrol dispatch active'**
+  String get sosLivePatrolActive;
+
+  /// No description provided for @sosRespondingUnits.
+  ///
+  /// In en, this message translates to:
+  /// **'Responding Patrol Units'**
+  String get sosRespondingUnits;
+
+  /// No description provided for @sosRoutingOfficer.
+  ///
+  /// In en, this message translates to:
+  /// **'Routing nearest regional officer…'**
+  String get sosRoutingOfficer;
+
+  /// No description provided for @sosEtaMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String sosEtaMinutes(Object minutes);
+
+  /// No description provided for @sosCalculating.
+  ///
+  /// In en, this message translates to:
+  /// **'calculating…'**
+  String get sosCalculating;
+
+  /// No description provided for @sosDistanceAway.
+  ///
+  /// In en, this message translates to:
+  /// **' · {distance} km away'**
+  String sosDistanceAway(Object distance);
+
+  /// No description provided for @sosOfficerOnDuty.
+  ///
+  /// In en, this message translates to:
+  /// **'Officer On Duty'**
+  String get sosOfficerOnDuty;
+
+  /// No description provided for @sosEtaWithDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'ETA: {eta}{distance}'**
+  String sosEtaWithDistance(Object distance, Object eta);
+
+  /// No description provided for @sosSafeEndEmergency.
+  ///
+  /// In en, this message translates to:
+  /// **'I AM SAFE / END EMERGENCY'**
+  String get sosSafeEndEmergency;
+
+  /// No description provided for @sosLiveConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting to dispatch…'**
+  String get sosLiveConnecting;
+
+  /// No description provided for @sosLiveWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for dispatch to answer…'**
+  String get sosLiveWaiting;
+
+  /// No description provided for @sosLiveNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Live with dispatch'**
+  String get sosLiveNow;
+
+  /// No description provided for @sosLiveInterrupted.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection interrupted'**
+  String get sosLiveInterrupted;
+
+  /// No description provided for @sosLiveEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'Live stream ended'**
+  String get sosLiveEnded;
+
+  /// No description provided for @sosLiveStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start live stream'**
+  String get sosLiveStartFailed;
+
+  /// No description provided for @sosLiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Live audio/video for dispatch'**
+  String get sosLiveTitle;
+
+  /// No description provided for @sosLivePrivacyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Live media is streamed to dispatch staff and is not saved as a recording.'**
+  String get sosLivePrivacyNote;
+
+  /// No description provided for @sosEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'END'**
+  String get sosEnd;
+
+  /// No description provided for @sosStartLiveAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Start live audio'**
+  String get sosStartLiveAudio;
+
+  /// No description provided for @sosStartLiveVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Start live video'**
+  String get sosStartLiveVideo;
+
+  /// No description provided for @sosStatusEnRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'EN ROUTE'**
+  String get sosStatusEnRoute;
+
+  /// No description provided for @nearestPoliceStation.
+  ///
+  /// In en, this message translates to:
+  /// **'the nearest police station'**
+  String get nearestPoliceStation;
+
+  /// No description provided for @callbackSessionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Callback session'**
+  String get callbackSessionTitle;
+
+  /// No description provided for @otherCallParticipantNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not find the other call participant.'**
+  String get otherCallParticipantNotFound;
+
+  /// No description provided for @inAppChatSession.
+  ///
+  /// In en, this message translates to:
+  /// **'In-app chat session'**
+  String get inAppChatSession;
+
+  /// No description provided for @inAppSessionMode.
+  ///
+  /// In en, this message translates to:
+  /// **'In-app {mode} session'**
+  String inAppSessionMode(Object mode);
+
+  /// No description provided for @callbackVideoActiveDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Callback session active · start a live video call when ready'**
+  String get callbackVideoActiveDescription;
+
+  /// No description provided for @connectedInsideApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected · this session stays inside ZEGA-ALERT'**
+  String get connectedInsideApp;
+
+  /// No description provided for @startLiveVideoConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Start live video conversation'**
+  String get startLiveVideoConversation;
+
+  /// No description provided for @ending.
+  ///
+  /// In en, this message translates to:
+  /// **'Ending…'**
+  String get ending;
+
+  /// No description provided for @endSession.
+  ///
+  /// In en, this message translates to:
+  /// **'End session'**
+  String get endSession;
+
+  /// No description provided for @callbackSessionEndFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not end the session.'**
+  String get callbackSessionEndFailed;
+
+  /// No description provided for @officerNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Officer: {name}'**
+  String officerNamed(Object name);
+
+  /// No description provided for @refreshWantedMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh wanted and missing people'**
+  String get refreshWantedMissing;
+
+  /// No description provided for @reportSightingForPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Report Sighting: {name}'**
+  String reportSightingForPerson(Object name);
+
+  /// No description provided for @signInToReportSighting.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to report a sighting.'**
+  String get signInToReportSighting;
+
+  /// No description provided for @writeCommentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a comment...'**
+  String get writeCommentHint;
+
+  /// No description provided for @newsScreenDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'News, road closures, wanted & missing persons, and lost items'**
+  String get newsScreenDescription;
+
+  /// No description provided for @refresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get refresh;
+
+  /// No description provided for @categoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get categoryLabel;
+
+  /// No description provided for @allItems.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get allItems;
+
+  /// No description provided for @authGateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to continue'**
+  String get authGateTitle;
+
+  /// No description provided for @authGateMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a free ZEGA-ALERT account or sign in to use this feature.'**
+  String get authGateMessage;
+
+  /// No description provided for @signInRequiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in required'**
+  String get signInRequiredTitle;
+
+  /// No description provided for @signInRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Please sign in or create a free account to continue.'**
+  String get signInRequiredMessage;
+
+  /// No description provided for @updateAvailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update available'**
+  String get updateAvailableTitle;
+
+  /// No description provided for @updateAvailableMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version} is available. Update now?'**
+  String updateAvailableMessage(Object version);
+
+  /// No description provided for @later.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get later;
+
+  /// No description provided for @download.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get download;
+
+  /// No description provided for @backendServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend server'**
+  String get backendServer;
+
+  /// No description provided for @serverUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Server URL'**
+  String get serverUrl;
+
+  /// No description provided for @serverUrlHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave blank to auto-detect on the local network.'**
+  String get serverUrlHelp;
+
+  /// No description provided for @autoDetect.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-detect'**
+  String get autoDetect;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @serverCurrentUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Server: {url}'**
+  String serverCurrentUrl(Object url);
+
+  /// No description provided for @ethiopianMobileNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Ethiopian mobile number'**
+  String get ethiopianMobileNumber;
+
+  /// No description provided for @validEthiopianMobileNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid Ethiopian mobile number.'**
+  String get validEthiopianMobileNumber;
+
+  /// No description provided for @emailOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Email (optional)'**
+  String get emailOptional;
+
+  /// No description provided for @emailSignInHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an email so you can also sign in with it'**
+  String get emailSignInHint;
+
+  /// No description provided for @phoneOrEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number or email'**
+  String get phoneOrEmail;
+
+  /// No description provided for @phoneExample.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. +251 911 234 567'**
+  String get phoneExample;
+
+  /// No description provided for @signUpAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign Up'**
+  String get signUpAction;
+
+  /// No description provided for @termsAcceptance.
+  ///
+  /// In en, this message translates to:
+  /// **'I accept the Terms of Service and Privacy Policy'**
+  String get termsAcceptance;
+
+  /// No description provided for @registrationPasswordRequirements.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 8 characters with an uppercase letter, number and symbol.'**
+  String get registrationPasswordRequirements;
+
+  /// No description provided for @invalidEmailAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email address.'**
+  String get invalidEmailAddress;
+
+  /// No description provided for @invalidPhoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid phone number.'**
+  String get invalidPhoneNumber;
+
+  /// No description provided for @connectionFailedTryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect. Check your internet connection and try again.'**
+  String get connectionFailedTryAgain;
+
+  /// No description provided for @verifyPhoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify Phone Number'**
+  String get verifyPhoneNumber;
+
+  /// No description provided for @back.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get back;
+
+  /// No description provided for @smsDemoCodeNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'SMS is not configured yet. Use this temporary demo code:'**
+  String get smsDemoCodeNotice;
+
+  /// No description provided for @enterOtpSentTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6-digit code sent to\n{phone}'**
+  String enterOtpSentTo(Object phone);
+
+  /// No description provided for @accountRecovery.
+  ///
+  /// In en, this message translates to:
+  /// **'Account recovery'**
+  String get accountRecovery;
+
+  /// No description provided for @backToSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to sign in'**
+  String get backToSignIn;
+
+  /// No description provided for @passwordResetSuccessful.
+  ///
+  /// In en, this message translates to:
+  /// **'Password reset successful!'**
+  String get passwordResetSuccessful;
+
+  /// No description provided for @passwordUpdatedSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Your password has been updated. Sign in with your new password.'**
+  String get passwordUpdatedSignIn;
 }
 
 class _AppLocalizationsDelegate

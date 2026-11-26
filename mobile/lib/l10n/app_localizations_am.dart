@@ -37,7 +37,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get sending => 'በመላክ ላይ…';
 
   @override
-  String get sosDispatched => '🚨 SOS ተልኳል';
+  String get sosDispatched => 'ተልኳል';
 
   @override
   String unitsOnTheWay(Object count) {
@@ -763,7 +763,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get signInBiometrics => 'በባዮሜትሪክስ ይግቡ';
 
   @override
-  String get continueAsGuest => 'እንደ እንግዳ ቀጥል';
+  String get continueAsGuest => 'እንደ እንግዳ ይቀጥሉ';
 
   @override
   String get signUp => 'ይመዝገቡ';
@@ -1417,4 +1417,295 @@ class AppLocalizationsAm extends AppLocalizations {
   String byUser(Object name) {
     return 'በ $name';
   }
+
+  @override
+  String get signInToSendSos => 'የቀጥታ አካባቢዎን የSOS ማሳወቂያ ለመላክ ይግቡ።';
+
+  @override
+  String get sosSendingStatus => 'የGPS አካባቢ በማግኘት እና ከማዕከሉ ጋር በመገናኘት ላይ…';
+
+  @override
+  String sosNotifyCountdown(Object seconds) {
+    return 'በአቅራቢያ ያሉ ፖሊሶችን በ$seconds ሰከንድ ውስጥ በማሳወቅ ላይ…';
+  }
+
+  @override
+  String get sosCancelAbort => 'ሰርዝ / አቁም';
+
+  @override
+  String get sosNoDispatchRecipients =>
+      'የSOS ማሳወቂያው ተቀምጧል፣ ግን የጣቢያ ፖሊሶች ወይም የማዕከል ተቀባዮች አይገኙም።';
+
+  @override
+  String get sosNearestNoOfficers =>
+      'በአቅራቢያው ጣቢያ የተመደቡ ፖሊሶች የሉም። SOS ወደ ማዕከሉ ተልኳል።';
+
+  @override
+  String get sosLocationMissingCentral => 'አካባቢው ስላልተገኘ SOS ወደ ማዕከሉ ተልኳል።';
+
+  @override
+  String sosSentToStation(Object station) {
+    return 'SOS ወደ $station ተልኳል። ምላሽ የሚሰጡ ፖሊሶች ተነግሯቸዋል።';
+  }
+
+  @override
+  String get sosSendFailed => 'የአደጋ ጊዜ ማሳወቂያውን መላክ አልተቻለም። እባክዎ ይሞክሩ።';
+
+  @override
+  String get sosLiveStreamFailed => 'የቀጥታ ስርጭቱን ማገናኘት አልተቻለም። እባክዎ ይሞክሩ።';
+
+  @override
+  String get sosEmergencyTitle => 'የአደጋ ጊዜ SOS';
+
+  @override
+  String get sosHelpIsOnWay => 'እርዳታ በመንገድ ላይ ነው';
+
+  @override
+  String get sosLivePatrolActive => 'የቀጥታ የፖሊስ ምላሽ ንቁ ነው';
+
+  @override
+  String get sosRespondingUnits => 'ምላሽ የሚሰጡ ፖሊሶች';
+
+  @override
+  String get sosRoutingOfficer => 'በአቅራቢያ ያለውን የክልል ፖሊስ በመመደብ ላይ…';
+
+  @override
+  String sosEtaMinutes(Object minutes) {
+    return '$minutes ደቂቃ';
+  }
+
+  @override
+  String get sosCalculating => 'በማስላት ላይ…';
+
+  @override
+  String sosDistanceAway(Object distance) {
+    return ' · $distance ኪ.ሜ ርቀት';
+  }
+
+  @override
+  String get sosOfficerOnDuty => 'በሥራ ላይ ያለ ፖሊስ';
+
+  @override
+  String sosEtaWithDistance(Object distance, Object eta) {
+    return 'የመድረሻ ጊዜ፦ $eta$distance';
+  }
+
+  @override
+  String get sosSafeEndEmergency => 'ደህና ነኝ / አደጋውን ጨርስ';
+
+  @override
+  String get sosLiveConnecting => 'ከማዕከሉ ጋር በመገናኘት ላይ…';
+
+  @override
+  String get sosLiveWaiting => 'ማዕከሉ እስኪመልስ በመጠባበቅ ላይ…';
+
+  @override
+  String get sosLiveNow => 'ከማዕከሉ ጋር በቀጥታ ተገናኝተዋል';
+
+  @override
+  String get sosLiveInterrupted => 'ግንኙነቱ ተቋርጧል';
+
+  @override
+  String get sosLiveEnded => 'የቀጥታ ስርጭቱ ተጠናቋል';
+
+  @override
+  String get sosLiveStartFailed => 'የቀጥታ ስርጭቱን መጀመር አልተቻለም';
+
+  @override
+  String get sosLiveTitle => 'ለማዕከሉ የቀጥታ ድምፅ/ቪዲዮ';
+
+  @override
+  String get sosLivePrivacyNote =>
+      'የቀጥታ ሚዲያው ለማዕከሉ ሰራተኞች ይላካል፤ እንደ ቀረጻ አይቀመጥም።';
+
+  @override
+  String get sosEnd => 'ጨርስ';
+
+  @override
+  String get sosStartLiveAudio => 'የቀጥታ ድምፅ ጀምር';
+
+  @override
+  String get sosStartLiveVideo => 'የቀጥታ ቪዲዮ ጀምር';
+
+  @override
+  String get sosStatusEnRoute => 'በመንገድ ላይ';
+
+  @override
+  String get nearestPoliceStation => 'በአቅራቢያ ያለው ፖሊስ ጣቢያ';
+
+  @override
+  String get callbackSessionTitle => 'የጥሪ ውይይት';
+
+  @override
+  String get otherCallParticipantNotFound => 'ለዚህ ጥሪ ሌላውን ተሳታፊ ማግኘት አልተቻለም።';
+
+  @override
+  String get inAppChatSession => 'በመተግበሪያው ውስጥ የጽሑፍ ውይይት';
+
+  @override
+  String inAppSessionMode(Object mode) {
+    return 'በመተግበሪያው ውስጥ የ$mode ውይይት';
+  }
+
+  @override
+  String get callbackVideoActiveDescription =>
+      'የጥሪ ውይይቱ ንቁ ነው · ሲዘጋጁ የቀጥታ ቪዲዮ ጥሪ ይጀምሩ';
+
+  @override
+  String get connectedInsideApp => 'ተገናኝተዋል · ይህ ውይይት በZEGA-ALERT ውስጥ ይቆያል';
+
+  @override
+  String get startLiveVideoConversation => 'የቀጥታ ቪዲዮ ውይይት ይጀምሩ';
+
+  @override
+  String get ending => 'በመጨረስ ላይ…';
+
+  @override
+  String get endSession => 'ውይይቱን ጨርስ';
+
+  @override
+  String get callbackSessionEndFailed => 'ውይይቱን መጨረስ አልተቻለም።';
+
+  @override
+  String officerNamed(Object name) {
+    return 'ፖሊስ፦ $name';
+  }
+
+  @override
+  String get refreshWantedMissing => 'የሚፈለጉ እና የጠፉ ሰዎችን ያድሱ';
+
+  @override
+  String reportSightingForPerson(Object name) {
+    return 'የታየውን ሰው ሪፖርት ያድርጉ፦ $name';
+  }
+
+  @override
+  String get signInToReportSighting => 'ያዩትን ሰው ለማሳወቅ ይግቡ።';
+
+  @override
+  String get writeCommentHint => 'አስተያየት ይጻፉ...';
+
+  @override
+  String get newsScreenDescription =>
+      'ዜና፣ የመንገድ መዘጋት፣ የሚፈለጉ እና የጠፉ ሰዎች፣ እንዲሁም የጠፉ እቃዎች';
+
+  @override
+  String get refresh => 'አድስ';
+
+  @override
+  String get categoryLabel => 'ምድብ';
+
+  @override
+  String get allItems => 'ሁሉም';
+
+  @override
+  String get authGateTitle => 'ለመቀጠል ይግቡ';
+
+  @override
+  String get authGateMessage =>
+      'ይህን ባህሪ ለመጠቀም ነፃ የZEGA-ALERT መለያ ይፍጠሩ ወይም ይግቡ።';
+
+  @override
+  String get signInRequiredTitle => 'መግባት ያስፈልጋል';
+
+  @override
+  String get signInRequiredMessage => 'ለመቀጠል እባክዎ ይግቡ ወይም ነፃ መለያ ይፍጠሩ።';
+
+  @override
+  String get updateAvailableTitle => 'ማዘመኛ አለ';
+
+  @override
+  String updateAvailableMessage(Object version) {
+    return 'ስሪት $version ይገኛል። አሁን ማዘመን ይፈልጋሉ?';
+  }
+
+  @override
+  String get later => 'በኋላ';
+
+  @override
+  String get download => 'ያውርዱ';
+
+  @override
+  String get backendServer => 'የጀርባ አገልጋይ';
+
+  @override
+  String get serverUrl => 'የአገልጋይ URL';
+
+  @override
+  String get serverUrlHelp => 'በአካባቢው ኔትወርክ ላይ በራስ ሰር እንዲፈለግ ባዶ ይተዉት።';
+
+  @override
+  String get autoDetect => 'በራስ ሰር ይፈልጉ';
+
+  @override
+  String get save => 'ያስቀምጡ';
+
+  @override
+  String serverCurrentUrl(Object url) {
+    return 'አገልጋይ፦ $url';
+  }
+
+  @override
+  String get ethiopianMobileNumber => 'የኢትዮጵያ ሞባይል ቁጥር';
+
+  @override
+  String get validEthiopianMobileNumber => 'ትክክለኛ የኢትዮጵያ ሞባይል ቁጥር ያስገቡ።';
+
+  @override
+  String get emailOptional => 'ኢሜይል (አማራጭ)';
+
+  @override
+  String get emailSignInHint => 'በኢሜይልም መግባት እንዲችሉ ኢሜይል ያክሉ';
+
+  @override
+  String get phoneOrEmail => 'ስልክ ቁጥር ወይም ኢሜይል';
+
+  @override
+  String get phoneExample => 'ለምሳሌ +251 911 234 567';
+
+  @override
+  String get signUpAction => 'ይመዝገቡ';
+
+  @override
+  String get termsAcceptance => 'የአገልግሎት ውሎችን እና የግላዊነት ፖሊሲውን እቀበላለሁ';
+
+  @override
+  String get registrationPasswordRequirements =>
+      'ቢያንስ 8 ፊደሎች፣ ትልቅ ፊደል፣ ቁጥር እና ምልክት ያካትት።';
+
+  @override
+  String get invalidEmailAddress => 'ትክክለኛ የኢሜይል አድራሻ ያስገቡ።';
+
+  @override
+  String get invalidPhoneNumber => 'ትክክለኛ የስልክ ቁጥር ያስገቡ።';
+
+  @override
+  String get connectionFailedTryAgain =>
+      'መገናኘት አልተቻለም። የኢንተርኔት ግንኙነትዎን ያረጋግጡ እና ይሞክሩ።';
+
+  @override
+  String get verifyPhoneNumber => 'የስልክ ቁጥር ያረጋግጡ';
+
+  @override
+  String get back => 'ተመለስ';
+
+  @override
+  String get smsDemoCodeNotice => 'SMS ገና አልተዋቀረም። ይህን ጊዜያዊ የሙከራ ኮድ ይጠቀሙ፦';
+
+  @override
+  String enterOtpSentTo(Object phone) {
+    return 'ወደ $phone የተላከውን 6 አሃዝ ኮድ ያስገቡ።';
+  }
+
+  @override
+  String get accountRecovery => 'መለያ መመለስ';
+
+  @override
+  String get backToSignIn => 'ወደ መግቢያ ተመለስ';
+
+  @override
+  String get passwordResetSuccessful => 'የይለፍ ቃሉ በተሳካ ሁኔታ ተቀይሯል!';
+
+  @override
+  String get passwordUpdatedSignIn => 'የይለፍ ቃልዎ ተዘምኗል። በአዲሱ የይለፍ ቃልዎ ይግቡ።';
 }

@@ -37,7 +37,7 @@ class AppLocalizationsOm extends AppLocalizations {
   String get sending => 'Ergamu jira…';
 
   @override
-  String get sosDispatched => '🚨 SOS ergame';
+  String get sosDispatched => 'ERGAMEERA';
 
   @override
   String unitsOnTheWay(Object count) {
@@ -778,7 +778,7 @@ class AppLocalizationsOm extends AppLocalizations {
   String get signInBiometrics => 'Baayomeetiriksiin seeni';
 
   @override
-  String get continueAsGuest => 'Akka keessummaatti itti fufi';
+  String get continueAsGuest => 'Keessummaan itti fufi';
 
   @override
   String get signUp => 'Galmaa\'i';
@@ -1455,4 +1455,311 @@ class AppLocalizationsOm extends AppLocalizations {
   String byUser(Object name) {
     return '${name}n';
   }
+
+  @override
+  String get signInToSendSos =>
+      'Bakka kee kallattiin dabaluun SOS erguuf seeni.';
+
+  @override
+  String get sosSendingStatus =>
+      'Bakka GPS argachaa fi buufata qindeessaa waliin wal qunnamaa jira…';
+
+  @override
+  String sosNotifyCountdown(Object seconds) {
+    return 'Poolisii si bira jiru sekondii $seconds keessatti akeekkachisaa jira…';
+  }
+
+  @override
+  String get sosCancelAbort => 'HAQI / DHAABI';
+
+  @override
+  String get sosNoDispatchRecipients =>
+      'Akeekkachiisni SOS kuufameera, garuu poolisii buufataa yookaan nama qindeessaa giddugaleessaa hin jiru.';
+
+  @override
+  String get sosNearestNoOfficers =>
+      'Buufata si bira jiru poolisii ramadame hin qabu. SOS gara qindeessaa giddugaleessaatti ergameera.';
+
+  @override
+  String get sosLocationMissingCentral =>
+      'Bakka waan hin argamneef SOS gara qindeessaa giddugaleessaatti ergameera.';
+
+  @override
+  String sosSentToStation(Object station) {
+    return 'SOS gara $station ergameera. Poolisiin deebii kennu beeksifameera.';
+  }
+
+  @override
+  String get sosSendFailed =>
+      'Akeekkachiisa balaa hatattamaa erguun hin danda\'amne. Maaloo irra deebi\'ii yaali.';
+
+  @override
+  String get sosLiveStreamFailed =>
+      'Tamsaasa kallattii qunnamuun hin danda\'amne. Maaloo irra deebi\'ii yaali.';
+
+  @override
+  String get sosEmergencyTitle => 'SOS HATATTAMAA';
+
+  @override
+  String get sosHelpIsOnWay => 'GARGAARSI DHUFAA JIRA';
+
+  @override
+  String get sosLivePatrolActive => 'Deebiin poolisii kallattii irratti jira';
+
+  @override
+  String get sosRespondingUnits => 'Poolisii deebii kennan';
+
+  @override
+  String get sosRoutingOfficer => 'Poolisii naannoo si bira jiru ramadaa jira…';
+
+  @override
+  String sosEtaMinutes(Object minutes) {
+    return 'Daqiiqaa $minutes';
+  }
+
+  @override
+  String get sosCalculating => 'Lakkoofsaa jira…';
+
+  @override
+  String sosDistanceAway(Object distance) {
+    return ' · $distance km fagaataa';
+  }
+
+  @override
+  String get sosOfficerOnDuty => 'Poolisii hojii irra jiru';
+
+  @override
+  String sosEtaWithDistance(Object distance, Object eta) {
+    return 'Yeroo ga\'umsaa: $eta$distance';
+  }
+
+  @override
+  String get sosSafeEndEmergency => 'NAGEENYAAN JIRA / BALAAN XUMURAME';
+
+  @override
+  String get sosLiveConnecting => 'Qindeessaa waliin wal qunnamaa jira…';
+
+  @override
+  String get sosLiveWaiting => 'Qindeessaan hanga deebisutti eegaa jira…';
+
+  @override
+  String get sosLiveNow => 'Qindeessaa waliin kallattiin wal qunnaman';
+
+  @override
+  String get sosLiveInterrupted => 'Walqunnamtiin citeera';
+
+  @override
+  String get sosLiveEnded => 'Tamsaasa kallattii xumurameera';
+
+  @override
+  String get sosLiveStartFailed =>
+      'Tamsaasa kallattii jalqabuun hin danda\'amne';
+
+  @override
+  String get sosLiveTitle => 'Sagalee/viidiyoo kallattii qindeessaaf';
+
+  @override
+  String get sosLivePrivacyNote =>
+      'Miidiyaan kallattii hojjettoota qindeessaaf ergama; akka waraabbiitti hin kuufamu.';
+
+  @override
+  String get sosEnd => 'XUMURI';
+
+  @override
+  String get sosStartLiveAudio => 'Sagalee kallattii jalqabi';
+
+  @override
+  String get sosStartLiveVideo => 'Viidiyoo kallattii jalqabi';
+
+  @override
+  String get sosStatusEnRoute => 'KARAARRA JIRA';
+
+  @override
+  String get nearestPoliceStation => 'buufata poolisii si bira jiru';
+
+  @override
+  String get callbackSessionTitle => 'Walgahii bilbilaa';
+
+  @override
+  String get otherCallParticipantNotFound =>
+      'Nama bilbila kana irratti hirmaatu biraa argachuun hin danda\'amne.';
+
+  @override
+  String get inAppChatSession => 'Walgahii barreeffamaa appii keessaa';
+
+  @override
+  String inAppSessionMode(Object mode) {
+    return 'Walgahii $mode appii keessaa';
+  }
+
+  @override
+  String get callbackVideoActiveDescription =>
+      'Walgahiin bilbilaa hojii irra jira · yeroo qophoofte bilbila viidiyoo jalqabi';
+
+  @override
+  String get connectedInsideApp =>
+      'Wal qunnamtaniittu · walgahiin kun appii ZEGA-ALERT keessa jira';
+
+  @override
+  String get startLiveVideoConversation =>
+      'Walgahii viidiyoo kallattii jalqabi';
+
+  @override
+  String get ending => 'Xumuraa jira…';
+
+  @override
+  String get endSession => 'Walgahii xumuri';
+
+  @override
+  String get callbackSessionEndFailed => 'Walgahii xumuruun hin danda\'amne.';
+
+  @override
+  String officerNamed(Object name) {
+    return 'Qondaala: $name';
+  }
+
+  @override
+  String get refreshWantedMissing => 'Namoota barbaadaman fi badan haaromsi';
+
+  @override
+  String reportSightingForPerson(Object name) {
+    return 'Nama argame gabaasi: $name';
+  }
+
+  @override
+  String get signInToReportSighting => 'Nama argite gabaasuuf seeni.';
+
+  @override
+  String get writeCommentHint => 'Yaada barreessi...';
+
+  @override
+  String get newsScreenDescription =>
+      'Oduu, cufamuu daandii, namoota barbaadaman fi badan, akkasumas meeshaalee badan';
+
+  @override
+  String get refresh => 'Haaromsi';
+
+  @override
+  String get categoryLabel => 'Ramaddii';
+
+  @override
+  String get allItems => 'Hunda';
+
+  @override
+  String get authGateTitle => 'Itti fufuuf seeni';
+
+  @override
+  String get authGateMessage =>
+      'Tajaajila kana fayyadamuuf herrega ZEGA-ALERT bilisaa uumi yookaan seeni.';
+
+  @override
+  String get signInRequiredTitle => 'Seenuun barbaachisaadha';
+
+  @override
+  String get signInRequiredMessage =>
+      'Itti fufuuf maaloo seeni yookaan herrega bilisaa uumi.';
+
+  @override
+  String get updateAvailableTitle => 'Haaromsi jira';
+
+  @override
+  String updateAvailableMessage(Object version) {
+    return 'Gosni $version ni argama. Amma haaromsuu?';
+  }
+
+  @override
+  String get later => 'Booda';
+
+  @override
+  String get download => 'Buusi';
+
+  @override
+  String get backendServer => 'Sarvarii duubbee';
+
+  @override
+  String get serverUrl => 'URL sarvarii';
+
+  @override
+  String get serverUrlHelp =>
+      'Neetworkii naannoo irratti ofumaan akka barbaadu duwwaa dhiisi.';
+
+  @override
+  String get autoDetect => 'Ofumaan barbaadi';
+
+  @override
+  String get save => 'Olkaa\'i';
+
+  @override
+  String serverCurrentUrl(Object url) {
+    return 'Sarvarii: $url';
+  }
+
+  @override
+  String get ethiopianMobileNumber => 'Lakkoofsa moobaayila Itoophiyaa';
+
+  @override
+  String get validEthiopianMobileNumber =>
+      'Lakkoofsa moobaayila Itoophiyaa sirrii galchi.';
+
+  @override
+  String get emailOptional => 'Imeelii (filannoo)';
+
+  @override
+  String get emailSignInHint => 'Imeelii dabali akka ittiin seenuu dandeessu';
+
+  @override
+  String get phoneOrEmail => 'Lakkoofsa bilbilaa yookaan imeelii';
+
+  @override
+  String get phoneExample => 'Fakkeenyaaf +251 911 234 567';
+
+  @override
+  String get signUpAction => 'Galmaa\'i';
+
+  @override
+  String get termsAcceptance =>
+      'Seerota tajaajilaa fi imaammata iccitii nan fudhadha';
+
+  @override
+  String get registrationPasswordRequirements =>
+      'Yoo xiqqaate qubee 8, qubee guddaa, lakkoofsa fi mallattoo qabaachuu qaba.';
+
+  @override
+  String get invalidEmailAddress => 'Teessoo imeelii sirrii galchi.';
+
+  @override
+  String get invalidPhoneNumber => 'Lakkoofsa bilbilaa sirrii galchi.';
+
+  @override
+  String get connectionFailedTryAgain =>
+      'Wal qunnamuun hin danda\'amne. Neetworkii kee mirkaneessiitii irra deebi\'ii yaali.';
+
+  @override
+  String get verifyPhoneNumber => 'Lakkoofsa bilbilaa mirkaneessi';
+
+  @override
+  String get back => 'Duubatti';
+
+  @override
+  String get smsDemoCodeNotice =>
+      'SMS amma hin qophoofne. Koodii yaalii yeroo kanaa fayyadami:';
+
+  @override
+  String enterOtpSentTo(Object phone) {
+    return 'Koodii lakkoofsa 6 gara $phone ergame galchi';
+  }
+
+  @override
+  String get accountRecovery => 'Herrega deebisuu';
+
+  @override
+  String get backToSignIn => 'Gara seensaatti deebi\'i';
+
+  @override
+  String get passwordResetSuccessful =>
+      'Jechi darbii milkaa\'inaan deebifameera!';
+
+  @override
+  String get passwordUpdatedSignIn =>
+      'Jechi darbii kee haaromfameera. Jecha darbii haaraan seeni.';
 }

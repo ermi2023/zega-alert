@@ -37,7 +37,7 @@ class AppLocalizationsSo extends AppLocalizations {
   String get sending => 'SENDING…';
 
   @override
-  String get sosDispatched => '🚨 SOS ayaa soo dirtay';
+  String get sosDispatched => 'LA DIRAY';
 
   @override
   String unitsOnTheWay(Object count) {
@@ -146,7 +146,7 @@ class AppLocalizationsSo extends AppLocalizations {
   String get subCityLabel => 'Xaafadaha/degmada';
 
   @override
-  String get languageLabel => 'Luuqad';
+  String get languageLabel => 'Luqadda';
 
   @override
   String get preferredLanguage => 'Luuqada la door biday';
@@ -789,7 +789,7 @@ class AppLocalizationsSo extends AppLocalizations {
   String get signInBiometrics => 'Ku gal aqoonsiga biometriga';
 
   @override
-  String get continueAsGuest => 'Ku sii wad marti ahaan';
+  String get continueAsGuest => 'Marti ahaan u sii wad';
 
   @override
   String get signUp => 'Is diiwaangeli';
@@ -1464,4 +1464,317 @@ class AppLocalizationsSo extends AppLocalizations {
   String byUser(Object name) {
     return 'Waxaa qoray $name';
   }
+
+  @override
+  String get signInToSendSos =>
+      'Soo gal si aad u dirto digniinta SOS adigoo wadaagaya goobtaada tooska ah.';
+
+  @override
+  String get sosSendingStatus =>
+      'Helitaanka goobta GPS iyo ku xidhidda xarunta gurmadka…';
+
+  @override
+  String sosNotifyCountdown(Object seconds) {
+    return 'Booliiska kuu dhow ayaa la wargelinayaa $seconds ilbiriqsi gudahood…';
+  }
+
+  @override
+  String get sosCancelAbort => 'JOOJI / KA NOQO';
+
+  @override
+  String get sosNoDispatchRecipients =>
+      'Digniinta SOS waa la kaydiyey, balse ma jiro sarkaal saldhig ama qaate xarunta gurmadka.';
+
+  @override
+  String get sosNearestNoOfficers =>
+      'Saldhigga kuugu dhow ma laha saraakiil loo qoondeeyey. SOS waxaa loo diray xarunta dhexe.';
+
+  @override
+  String get sosLocationMissingCentral =>
+      'SOS waxaa loo diray xarunta dhexe maadaama goobta aan la helin.';
+
+  @override
+  String sosSentToStation(Object station) {
+    return 'SOS waxaa loo diray $station. Saraakiisha gurmadka waa la wargeliyey.';
+  }
+
+  @override
+  String get sosSendFailed =>
+      'Lama diri karin digniinta degdegga ah. Fadlan mar kale isku day.';
+
+  @override
+  String get sosLiveStreamFailed =>
+      'Lama xiriirin karin baahinta tooska ah. Fadlan mar kale isku day.';
+
+  @override
+  String get sosEmergencyTitle => 'SOS DEGDEG AH';
+
+  @override
+  String get sosHelpIsOnWay => 'GARGAARKU WUU SOO SOCDAA';
+
+  @override
+  String get sosLivePatrolActive =>
+      'Dirista roondada tooska ah way shaqaynaysaa';
+
+  @override
+  String get sosRespondingUnits => 'Cutubyada booliiska ee jawaabaya';
+
+  @override
+  String get sosRoutingOfficer =>
+      'Waxaa la raadinayaa sarkaalka gobolka kuugu dhow…';
+
+  @override
+  String sosEtaMinutes(Object minutes) {
+    return '$minutes daqiiqo';
+  }
+
+  @override
+  String get sosCalculating => 'Waa la xisaabinayaa…';
+
+  @override
+  String sosDistanceAway(Object distance) {
+    return ' · $distance km ayaa kuu jira';
+  }
+
+  @override
+  String get sosOfficerOnDuty => 'Sarkaal shaqada ku jira';
+
+  @override
+  String sosEtaWithDistance(Object distance, Object eta) {
+    return 'Waqtiga imaatinka: $eta$distance';
+  }
+
+  @override
+  String get sosSafeEndEmergency =>
+      'WAAAN BADQABAA / DHAMMEE XAAALADDA DEGDEGGA AH';
+
+  @override
+  String get sosLiveConnecting => 'Waxaa lagu xidhayaa xarunta gurmadka…';
+
+  @override
+  String get sosLiveWaiting => 'Waxaa la sugayaa jawaabta xarunta gurmadka…';
+
+  @override
+  String get sosLiveNow => 'Xarunta gurmadka ayaa kula xiriirta';
+
+  @override
+  String get sosLiveInterrupted => 'Xiriirkii waa go\'ay';
+
+  @override
+  String get sosLiveEnded => 'Baahinta tooska ah way dhammaatay';
+
+  @override
+  String get sosLiveStartFailed => 'Lama bilaabi karin baahinta tooska ah';
+
+  @override
+  String get sosLiveTitle =>
+      'Cod/muuqaal toos ah oo xarunta gurmadka loo dirayo';
+
+  @override
+  String get sosLivePrivacyNote =>
+      'Codka/muuqaalka tooska ah waxaa loo diraa shaqaalaha gurmadka, loomana kaydiyo duubis ahaan.';
+
+  @override
+  String get sosEnd => 'DHAMMEE';
+
+  @override
+  String get sosStartLiveAudio => 'Bilow cod toos ah';
+
+  @override
+  String get sosStartLiveVideo => 'Bilow muuqaal toos ah';
+
+  @override
+  String get sosStatusEnRoute => 'WUU SOO SOCDAA';
+
+  @override
+  String get nearestPoliceStation => 'saldhigga booliiska kuugu dhow';
+
+  @override
+  String get callbackSessionTitle => 'Kulanka dib-u-wicitaanka';
+
+  @override
+  String get otherCallParticipantNotFound =>
+      'Lama helin qofka kale ee wicitaanka.';
+
+  @override
+  String get inAppChatSession => 'Wada sheekaysiga qoraalka ee app-ka';
+
+  @override
+  String inAppSessionMode(Object mode) {
+    return 'Kulanka $mode ee app-ka';
+  }
+
+  @override
+  String get callbackVideoActiveDescription =>
+      'Kulanka dib-u-wicitaanku wuu socdaa · bilow wicitaan muuqaal toos ah markaad diyaar tahay';
+
+  @override
+  String get connectedInsideApp =>
+      'Waad isku xidhanteen · kulankani wuxuu ku jiraa ZEGA-ALERT';
+
+  @override
+  String get startLiveVideoConversation =>
+      'Bilow wada sheekaysi muuqaal toos ah';
+
+  @override
+  String get ending => 'Waa la dhamaynayaa…';
+
+  @override
+  String get endSession => 'Dhammee kulanka';
+
+  @override
+  String get callbackSessionEndFailed => 'Lama dhamayn karin kulanka.';
+
+  @override
+  String officerNamed(Object name) {
+    return 'Sarkaal: $name';
+  }
+
+  @override
+  String get refreshWantedMissing =>
+      'Cusboonaysii dadka la doonayo iyo kuwa maqan';
+
+  @override
+  String reportSightingForPerson(Object name) {
+    return 'Soo sheeg qofka la arkay: $name';
+  }
+
+  @override
+  String get signInToReportSighting =>
+      'Soo gal si aad u soo sheegto qof aad aragtay.';
+
+  @override
+  String get writeCommentHint => 'Qor faallo...';
+
+  @override
+  String get newsScreenDescription =>
+      'Wararka, xiritaanka waddooyinka, dadka la doonayo iyo kuwa maqan, iyo alaabta luntay';
+
+  @override
+  String get refresh => 'Cusboonaysii';
+
+  @override
+  String get categoryLabel => 'Qaybta';
+
+  @override
+  String get allItems => 'Dhammaan';
+
+  @override
+  String get authGateTitle => 'Soo gal si aad u sii wadato';
+
+  @override
+  String get authGateMessage =>
+      'Samee akoon ZEGA-ALERT oo bilaash ah ama soo gal si aad u isticmaasho adeeggan.';
+
+  @override
+  String get signInRequiredTitle => 'Gelitaan ayaa loo baahan yahay';
+
+  @override
+  String get signInRequiredMessage =>
+      'Fadlan soo gal ama samee akoon bilaash ah si aad u sii wadato.';
+
+  @override
+  String get updateAvailableTitle => 'Cusboonaysiin ayaa jirta';
+
+  @override
+  String updateAvailableMessage(Object version) {
+    return 'Nooca $version waa diyaar. Hadda ma cusboonaysiinaysaa?';
+  }
+
+  @override
+  String get later => 'Mar dambe';
+
+  @override
+  String get download => 'Soo dejiso';
+
+  @override
+  String get backendServer => 'Adeegaha backend-ka';
+
+  @override
+  String get serverUrl => 'URL-ka adeegaha';
+
+  @override
+  String get serverUrlHelp =>
+      'Ka tag meel bannaan si toos looga helo shabakadda deegaanka.';
+
+  @override
+  String get autoDetect => 'Si toos ah u hel';
+
+  @override
+  String get save => 'Kaydi';
+
+  @override
+  String serverCurrentUrl(Object url) {
+    return 'Adeegaha: $url';
+  }
+
+  @override
+  String get ethiopianMobileNumber => 'Lambarka moobilka Itoobiya';
+
+  @override
+  String get validEthiopianMobileNumber =>
+      'Geli lambarka moobilka Itoobiya oo sax ah.';
+
+  @override
+  String get emailOptional => 'Iimayl (ikhtiyaari)';
+
+  @override
+  String get emailSignInHint =>
+      'Ku dar iimayl si aad sidoo kale ugu geli karto';
+
+  @override
+  String get phoneOrEmail => 'Lambarka telefoonka ama iimaylka';
+
+  @override
+  String get phoneExample => 'tusaale +251 911 234 567';
+
+  @override
+  String get signUpAction => 'Isdiiwaangeli';
+
+  @override
+  String get termsAcceptance =>
+      'Waan aqbalayaa Shuruudaha Adeegga iyo Siyaasadda Asturnaanta';
+
+  @override
+  String get registrationPasswordRequirements =>
+      'Ugu yaraan 8 xaraf, xaraf weyn, tiro iyo calaamad.';
+
+  @override
+  String get invalidEmailAddress => 'Geli iimayl sax ah.';
+
+  @override
+  String get invalidPhoneNumber => 'Geli lambar telefoon oo sax ah.';
+
+  @override
+  String get connectionFailedTryAgain =>
+      'Lama xiriiri karin. Hubi internetkaaga oo mar kale isku day.';
+
+  @override
+  String get verifyPhoneNumber => 'Xaqiiji lambarka telefoonka';
+
+  @override
+  String get back => 'Dib u noqo';
+
+  @override
+  String get smsDemoCodeNotice =>
+      'SMS weli lama dejin. Isticmaal koodhkan tijaabada ah ee ku meel gaarka ah:';
+
+  @override
+  String enterOtpSentTo(Object phone) {
+    return 'Geli koodhka 6-da lambar ah ee loo diray\n$phone';
+  }
+
+  @override
+  String get accountRecovery => 'Soo celinta akoonka';
+
+  @override
+  String get backToSignIn => 'Ku noqo gelitaanka';
+
+  @override
+  String get passwordResetSuccessful =>
+      'Furaha sirta ah si guul leh ayaa dib loogu dejiyey!';
+
+  @override
+  String get passwordUpdatedSignIn =>
+      'Furahaaga sirta ah waa la cusboonaysiiyey. Ku gal furaha cusub.';
 }

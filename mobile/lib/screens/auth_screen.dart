@@ -83,6 +83,7 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Future<void> _checkUpdate() async {
+    final loc = AppLocalizations.of(context);
     try {
       final r = await Api.get('/app/version');
       final latest = r['version']?.toString() ?? '';
@@ -94,12 +95,12 @@ class _AuthScreenState extends State<AuthScreen> {
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Update available'),
-            content: Text('Version $latest is available. Update now?'),
+            title: Text(loc.updateAvailableTitle),
+            content: Text(loc.updateAvailableMessage(latest)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Later'),
+                child: Text(loc.later),
               ),
               FilledButton(
                 onPressed: () {
@@ -109,7 +110,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     mode: LaunchMode.externalApplication,
                   );
                 },
-                child: const Text('Download'),
+                child: Text(loc.download),
               ),
             ],
           ),
@@ -190,7 +191,7 @@ class _AuthScreenState extends State<AuthScreen> {
         final phone = _normalizePhone(_phone.text.trim());
         if (phone.length != 10 || !phone.startsWith('0')) {
           setState(() {
-            _error = 'Enter a valid phone number, e.g. 0911234567.';
+            _error = AppLocalizations.of(context).validEthiopianMobileNumber;
             _busy = false;
           });
           return;
@@ -295,34 +296,34 @@ class _AuthScreenState extends State<AuthScreen> {
   String _friendlyError(Object e) {
     return Api.userMessage(
       e,
-      fallback:
-          'Could not connect. Check your internet connection and try again.',
+      fallback: AppLocalizations.of(context).connectionFailedTryAgain,
     );
   }
 
   Future<void> _editServerUrl() async {
+    final loc = AppLocalizations.of(context);
     final controller = TextEditingController(text: Api.overrideBaseUrl ?? '');
     final result = await showDialog<String?>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Backend server'),
+        title: Text(loc.backendServer),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Current: ${Api.baseUrl}',
+              loc.serverCurrentUrl(Api.baseUrl),
               style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: controller,
               keyboardType: TextInputType.url,
-              decoration: const InputDecoration(
-                labelText: 'Server URL',
+              decoration: InputDecoration(
+                labelText: loc.serverUrl,
                 hintText: 'https://zega-api.example.et',
-                helperText: 'Leave blank to auto-detect on the local network.',
-                border: OutlineInputBorder(),
+                helperText: loc.serverUrlHelp,
+                border: const OutlineInputBorder(),
               ),
             ),
           ],
@@ -330,15 +331,15 @@ class _AuthScreenState extends State<AuthScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, ''),
-            child: const Text('Auto-detect'),
+            child: Text(loc.autoDetect),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, null),
-            child: const Text('Cancel'),
+            child: Text(loc.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, controller.text),
-            child: const Text('Save'),
+            child: Text(loc.save),
           ),
         ],
       ),
@@ -363,7 +364,7 @@ class _AuthScreenState extends State<AuthScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Not now'),
+            child: Text(loc.notNow),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
@@ -401,7 +402,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     onPressed: _busy ? null : _enterAsGuest,
                     style: TextButton.styleFrom(foregroundColor: Colors.white),
                     icon: const Icon(Icons.explore_outlined),
-                    label: const Text('Continue as guest'),
+                    label: Text(loc.continueAsGuest),
                   ),
                   TextButton.icon(
                     onPressed: _busy ? null : _editServerUrl,
@@ -410,7 +411,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                     icon: const Icon(Icons.dns_outlined, size: 16),
                     label: Text(
-                      'Server: ${Api.baseUrl}',
+                      loc.serverCurrentUrl(Api.baseUrl),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontSize: 11),
@@ -629,7 +630,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   hintText: '911 234 567',
                   prefixText: '+251 ',
                   prefixIcon: const Icon(Icons.phone_outlined),
-                  helperText: 'Ethiopian mobile number',
+                  helperText: loc.ethiopianMobileNumber,
                   border: const OutlineInputBorder(),
                 ),
                 validator: (v) {
@@ -637,7 +638,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   final phone = _normalizePhone(v);
                   return phone.length == 10 && phone.startsWith('0')
                       ? null
-                      : 'Enter a valid Ethiopian mobile number.';
+                      : loc.validEthiopianMobileNumber;
                 },
               ),
               const SizedBox(height: 12),
@@ -645,11 +646,11 @@ class _AuthScreenState extends State<AuthScreen> {
                 controller: _email,
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'Email (optional)',
-                  helperText: 'Add an email so you can also sign in with it',
+                decoration: InputDecoration(
+                  labelText: loc.emailOptional,
+                  helperText: loc.emailSignInHint,
                   prefixIcon: Icon(Icons.email_outlined),
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
@@ -701,11 +702,11 @@ class _AuthScreenState extends State<AuthScreen> {
                 controller: _id,
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'Phone number or email',
-                  hintText: 'e.g. +251 911 234 567',
+                decoration: InputDecoration(
+                  labelText: loc.phoneOrEmail,
+                  hintText: loc.phoneExample,
                   prefixIcon: Icon(Icons.phone_outlined),
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                 ),
                 validator: (value) {
                   final id = value?.trim() ?? '';
@@ -713,12 +714,12 @@ class _AuthScreenState extends State<AuthScreen> {
                   if (id.contains('@')) {
                     return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(id)
                         ? null
-                        : 'Enter a valid email address.';
+                        : loc.invalidEmailAddress;
                   }
                   final phone = _normalizePhone(id);
                   return phone.length == 10 && phone.startsWith('0')
                       ? null
-                      : 'Enter a valid phone number.';
+                      : loc.invalidPhoneNumber;
                 },
               ),
               const SizedBox(height: 12),
@@ -743,8 +744,8 @@ class _AuthScreenState extends State<AuthScreen> {
                       onTap: () {
                         setState(() => _acceptedTerms = !_acceptedTerms);
                       },
-                      child: const Text(
-                        'I accept the Terms of Service and Privacy Policy',
+                      child: Text(
+                        loc.termsAcceptance,
                         style: TextStyle(fontSize: 14),
                       ),
                     ),
@@ -761,7 +762,7 @@ class _AuthScreenState extends State<AuthScreen> {
               decoration: InputDecoration(
                 labelText: loc.password,
                 helperText: _register
-                    ? 'At least 8 characters with an uppercase letter, number and symbol.'
+                    ? loc.registrationPasswordRequirements
                     : null,
                 prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
@@ -782,7 +783,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: _busy ? null : _forgotPassword,
-                  child: const Text('Forgot password?'),
+                  child: Text(loc.forgotPassword),
                 ),
               ),
             if (_error.isNotEmpty)
@@ -823,7 +824,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         ),
                       )
                     : Text(
-                        _register ? 'Sign Up' : loc.signingIn,
+                        _register ? loc.signUpAction : loc.signingIn,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -836,7 +837,7 @@ class _AuthScreenState extends State<AuthScreen> {
               OutlinedButton.icon(
                 onPressed: _busy ? null : _biometricLogin,
                 icon: const Icon(Icons.fingerprint),
-                label: const Text('Sign in with biometrics'),
+                label: Text(loc.signInBiometrics),
               ),
             ],
             if (!_register) ...[

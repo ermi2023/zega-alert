@@ -37,7 +37,7 @@ class AppLocalizationsTi extends AppLocalizations {
   String get sending => 'ኣብ ምልኣኽ…';
 
   @override
-  String get sosDispatched => '🚨 SOS ተላኢኹ';
+  String get sosDispatched => 'ተላኢኹ';
 
   @override
   String unitsOnTheWay(Object count) {
@@ -1412,4 +1412,294 @@ class AppLocalizationsTi extends AppLocalizations {
   String byUser(Object name) {
     return 'ብ $name';
   }
+
+  @override
+  String get signInToSendSos => 'ምስ ቀጥታ ቦታኻ ምልክታ SOS ንምልኣኽ እቶ።';
+
+  @override
+  String get sosSendingStatus => 'ኮርዲኔት GPS ይርከብን ምስ ማእከል ምውህሃድ ይራኸብን ኣሎ…';
+
+  @override
+  String sosNotifyCountdown(Object seconds) {
+    return 'ኣብ ቀረባ ዘለዉ ፖሊስ ብ$seconds ካልኢት ይሕበሩ…';
+  }
+
+  @override
+  String get sosCancelAbort => 'ሰርዝ / ኣቋርጽ';
+
+  @override
+  String get sosNoDispatchRecipients =>
+      'ምልክታ SOS ተዓቂቡ፣ ግን ናይ ጣብያ ፖሊስ ወይ ናይ ማእከል ተቐበልቲ የለዉን።';
+
+  @override
+  String get sosNearestNoOfficers =>
+      'እቲ ቀረባ ጣብያ ዝተመደቡ ፖሊስ የብሉን። SOS ናብ ማእከል ተላኢኹ።';
+
+  @override
+  String get sosLocationMissingCentral => 'ቦታ ስለዘይተረኽበ SOS ናብ ማእከል ተላኢኹ።';
+
+  @override
+  String sosSentToStation(Object station) {
+    return 'SOS ናብ $station ተላኢኹ። እቶም ምላሽ ዝህቡ ፖሊስ ተሓቢሮም።';
+  }
+
+  @override
+  String get sosSendFailed => 'ህጹጽ ምልክታ ምልኣኽ ኣይተኻእለን። በጃኻ እንደገና ፈትን።';
+
+  @override
+  String get sosLiveStreamFailed => 'ቀጥታ ምትእስሳር ኣይተኻእለን። በጃኻ እንደገና ፈትን።';
+
+  @override
+  String get sosEmergencyTitle => 'ህጹጽ SOS';
+
+  @override
+  String get sosHelpIsOnWay => 'ሓገዝ ይመጽእ ኣሎ';
+
+  @override
+  String get sosLivePatrolActive => 'ቀጥታ ምውህሃድ ፓትሮል ንጡፍ እዩ';
+
+  @override
+  String get sosRespondingUnits => 'ምላሽ ዝህቡ ኣሃዱታት ፖሊስ';
+
+  @override
+  String get sosRoutingOfficer => 'እቲ ቀረባ ናይ ክልል ፖሊስ ይምደብ ኣሎ…';
+
+  @override
+  String sosEtaMinutes(Object minutes) {
+    return '$minutes ደቒቕ';
+  }
+
+  @override
+  String get sosCalculating => 'ይሕሰብ ኣሎ…';
+
+  @override
+  String sosDistanceAway(Object distance) {
+    return ' · $distance ኪ.ሜ ርሑቕ';
+  }
+
+  @override
+  String get sosOfficerOnDuty => 'ኣብ ስራሕ ዘሎ ፖሊስ';
+
+  @override
+  String sosEtaWithDistance(Object distance, Object eta) {
+    return 'እትበጽሓሉ ግዜ: $eta$distance';
+  }
+
+  @override
+  String get sosSafeEndEmergency => 'ውሑስ እየ / ህጹጽ ኩነታት ዛዝም';
+
+  @override
+  String get sosLiveConnecting => 'ምስ ማእከል ይራኸብ ኣሎ…';
+
+  @override
+  String get sosLiveWaiting => 'ማእከል ክምልስ ይጽበ ኣሎ…';
+
+  @override
+  String get sosLiveNow => 'ምስ ማእከል ብቐጥታ ተራኺብካ';
+
+  @override
+  String get sosLiveInterrupted => 'ርክብ ተቛሪጹ';
+
+  @override
+  String get sosLiveEnded => 'ቀጥታ ምስዳድ ተዛዚሙ';
+
+  @override
+  String get sosLiveStartFailed => 'ቀጥታ ምስዳድ ምጅማር ኣይተኻእለን';
+
+  @override
+  String get sosLiveTitle => 'ቀጥታ ድምጺ/ቪድዮ ንማእከል';
+
+  @override
+  String get sosLivePrivacyNote =>
+      'ቀጥታ ሚድያ ናብ ሰራሕተኛታት ማእከል ይለኣኽ፣ ከም ቅርጺ ኣይዕቀብን።';
+
+  @override
+  String get sosEnd => 'ዛዝም';
+
+  @override
+  String get sosStartLiveAudio => 'ቀጥታ ድምጺ ጀምር';
+
+  @override
+  String get sosStartLiveVideo => 'ቀጥታ ቪድዮ ጀምር';
+
+  @override
+  String get sosStatusEnRoute => 'ኣብ መንገዲ ኣሎ';
+
+  @override
+  String get nearestPoliceStation => 'እቲ ቀረባ ጣብያ ፖሊስ';
+
+  @override
+  String get callbackSessionTitle => 'ክፍለ ግዜ ተመላሊስካ ምድዋል';
+
+  @override
+  String get otherCallParticipantNotFound => 'ካልእ ተሳታፊ እቲ ጻውዒት ክርከብ ኣይተኻእለን።';
+
+  @override
+  String get inAppChatSession => 'ኣብ app ዝርርብ';
+
+  @override
+  String inAppSessionMode(Object mode) {
+    return 'ኣብ app ናይ $mode ክፍለ ግዜ';
+  }
+
+  @override
+  String get callbackVideoActiveDescription =>
+      'ክፍለ ግዜ ጻውዒት ንጡፍ እዩ · ምስ ተዳለኻ ቀጥታ ቪድዮ ጀምር';
+
+  @override
+  String get connectedInsideApp => 'ተራኺብካ · እዚ ክፍለ ግዜ ኣብ ZEGA-ALERT ይቕጽል';
+
+  @override
+  String get startLiveVideoConversation => 'ቀጥታ ቪድዮ ዝርርብ ጀምር';
+
+  @override
+  String get ending => 'ይውዳእ ኣሎ…';
+
+  @override
+  String get endSession => 'ክፍለ ግዜ ዛዝም';
+
+  @override
+  String get callbackSessionEndFailed => 'ክፍለ ግዜ ምውዳእ ኣይተኻእለን።';
+
+  @override
+  String officerNamed(Object name) {
+    return 'ፖሊስ: $name';
+  }
+
+  @override
+  String get refreshWantedMissing => 'ዝድለዩን ዝጠፍኡን ሰባት ኣሐድስ';
+
+  @override
+  String reportSightingForPerson(Object name) {
+    return 'ዝተራእየ ሰብ ሪፖርት ግበር: $name';
+  }
+
+  @override
+  String get signInToReportSighting => 'ንዝረኣኻዮ ሰብ ንምሕባር እቶ።';
+
+  @override
+  String get writeCommentHint => 'ርኢቶ ጽሓፍ...';
+
+  @override
+  String get newsScreenDescription =>
+      'ዜና፣ ምዕጻው መንገዲ፣ ዝድለዩን ዝጠፍኡን ሰባት፣ ከምኡውን ዝጠፍኡ ኣቑሑት';
+
+  @override
+  String get refresh => 'ኣሐድስ';
+
+  @override
+  String get categoryLabel => 'ምድብ';
+
+  @override
+  String get allItems => 'ኩሉ';
+
+  @override
+  String get authGateTitle => 'ንምቕጻል እቶ';
+
+  @override
+  String get authGateMessage => 'ነዚ ኣገልግሎት ንምጥቃም ነጻ ሕሳብ ZEGA-ALERT ፍጠር ወይ እቶ።';
+
+  @override
+  String get signInRequiredTitle => 'ምእታው የድሊ';
+
+  @override
+  String get signInRequiredMessage => 'ንምቕጻል በጃኻ እቶ ወይ ነጻ ሕሳብ ፍጠር።';
+
+  @override
+  String get updateAvailableTitle => 'ሓድሽ ምሕዳስ ኣሎ';
+
+  @override
+  String updateAvailableMessage(Object version) {
+    return 'ስሪት $version ይርከብ። ሕጂ ከተሐድስ?';
+  }
+
+  @override
+  String get later => 'ጸኒሑ';
+
+  @override
+  String get download => 'ኣውርድ';
+
+  @override
+  String get backendServer => 'ሰርቨር ድሕሪ መጋረጃ';
+
+  @override
+  String get serverUrl => 'URL ሰርቨር';
+
+  @override
+  String get serverUrlHelp => 'ኣብ ናይ ከባቢ ኔትወርክ ብርእሱ ንኽድለ ባዶ ግደፎ።';
+
+  @override
+  String get autoDetect => 'ብርእሱ ድለ';
+
+  @override
+  String get save => 'ዓቅብ';
+
+  @override
+  String serverCurrentUrl(Object url) {
+    return 'ሰርቨር: $url';
+  }
+
+  @override
+  String get ethiopianMobileNumber => 'ቁጽሪ ሞባይል ኢትዮጵያ';
+
+  @override
+  String get validEthiopianMobileNumber => 'ቅኑዕ ቁጽሪ ሞባይል ኢትዮጵያ ኣእቱ።';
+
+  @override
+  String get emailOptional => 'ኢመይል (ኣማራጺ)';
+
+  @override
+  String get emailSignInHint => 'ብኢመይል እውን ክትኣቱ ኢመይል ወስኽ';
+
+  @override
+  String get phoneOrEmail => 'ቁጽሪ ተሌፎን ወይ ኢመይል';
+
+  @override
+  String get phoneExample => 'ንኣብነት +251 911 234 567';
+
+  @override
+  String get signUpAction => 'ተመዝገብ';
+
+  @override
+  String get termsAcceptance => 'ንውዕላት ኣገልግሎትን ፖሊሲ ብሕታውነትን እቕበል';
+
+  @override
+  String get registrationPasswordRequirements =>
+      'ብውሑዱ 8 ፊደላት፣ ሓደ ዓቢ ፊደል፣ ቁጽርን ምልክትን ይሃሉዎ።';
+
+  @override
+  String get invalidEmailAddress => 'ቅኑዕ ኣድራሻ ኢመይል ኣእቱ።';
+
+  @override
+  String get invalidPhoneNumber => 'ቅኑዕ ቁጽሪ ተሌፎን ኣእቱ።';
+
+  @override
+  String get connectionFailedTryAgain =>
+      'ምርካብ ኣይተኻእለን። ናይ ኢንተርነት ርክብካ መርምርን እንደገና ፈትንን።';
+
+  @override
+  String get verifyPhoneNumber => 'ቁጽሪ ተሌፎን ኣረጋግጽ';
+
+  @override
+  String get back => 'ተመለስ';
+
+  @override
+  String get smsDemoCodeNotice => 'SMS ገና ኣይተዳለወን። ነዚ ናይ ግዜኡ መፈተኒ ኮድ ተጠቐም፦';
+
+  @override
+  String enterOtpSentTo(Object phone) {
+    return 'ናብ $phone ዝተላእከ 6-ኣሃዝ ኮድ ኣእቱ';
+  }
+
+  @override
+  String get accountRecovery => 'ሕሳብ ምምላስ';
+
+  @override
+  String get backToSignIn => 'ናብ ምእታው ተመለስ';
+
+  @override
+  String get passwordResetSuccessful => 'መሕለፊ ቃል ብዓወት ተቐይሩ!';
+
+  @override
+  String get passwordUpdatedSignIn => 'መሕለፊ ቃልካ ተሓዲሱ። ብሓድሽ መሕለፊ ቃልካ እቶ።';
 }

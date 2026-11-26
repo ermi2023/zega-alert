@@ -37,7 +37,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sending => 'SENDING…';
 
   @override
-  String get sosDispatched => '🚨 SOS Dispatched';
+  String get sosDispatched => 'DISPATCHED';
 
   @override
   String unitsOnTheWay(Object count) {
@@ -1439,4 +1439,308 @@ class AppLocalizationsEn extends AppLocalizations {
   String byUser(Object name) {
     return 'by $name';
   }
+
+  @override
+  String get signInToSendSos =>
+      'Sign in to send an SOS alert with your live location.';
+
+  @override
+  String get sosSendingStatus =>
+      'Getting GPS coordinates and connecting to dispatch…';
+
+  @override
+  String sosNotifyCountdown(Object seconds) {
+    return 'Notifying nearby police in $seconds seconds…';
+  }
+
+  @override
+  String get sosCancelAbort => 'CANCEL / ABORT';
+
+  @override
+  String get sosNoDispatchRecipients =>
+      'SOS alert saved, but no station officers or central dispatch recipients are available.';
+
+  @override
+  String get sosNearestNoOfficers =>
+      'Nearest station has no assigned officers. SOS sent to central dispatch.';
+
+  @override
+  String get sosLocationMissingCentral =>
+      'SOS sent to central dispatch because location was unavailable.';
+
+  @override
+  String sosSentToStation(Object station) {
+    return 'SOS sent to $station. Responding officers notified.';
+  }
+
+  @override
+  String get sosSendFailed =>
+      'Could not send the emergency alert. Please try again.';
+
+  @override
+  String get sosLiveStreamFailed =>
+      'Could not connect the live stream. Please try again.';
+
+  @override
+  String get sosEmergencyTitle => 'EMERGENCY SOS';
+
+  @override
+  String get sosHelpIsOnWay => 'HELP IS ON THE WAY';
+
+  @override
+  String get sosLivePatrolActive => 'Live patrol dispatch active';
+
+  @override
+  String get sosRespondingUnits => 'Responding Patrol Units';
+
+  @override
+  String get sosRoutingOfficer => 'Routing nearest regional officer…';
+
+  @override
+  String sosEtaMinutes(Object minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String get sosCalculating => 'calculating…';
+
+  @override
+  String sosDistanceAway(Object distance) {
+    return ' · $distance km away';
+  }
+
+  @override
+  String get sosOfficerOnDuty => 'Officer On Duty';
+
+  @override
+  String sosEtaWithDistance(Object distance, Object eta) {
+    return 'ETA: $eta$distance';
+  }
+
+  @override
+  String get sosSafeEndEmergency => 'I AM SAFE / END EMERGENCY';
+
+  @override
+  String get sosLiveConnecting => 'Connecting to dispatch…';
+
+  @override
+  String get sosLiveWaiting => 'Waiting for dispatch to answer…';
+
+  @override
+  String get sosLiveNow => 'Live with dispatch';
+
+  @override
+  String get sosLiveInterrupted => 'Connection interrupted';
+
+  @override
+  String get sosLiveEnded => 'Live stream ended';
+
+  @override
+  String get sosLiveStartFailed => 'Could not start live stream';
+
+  @override
+  String get sosLiveTitle => 'Live audio/video for dispatch';
+
+  @override
+  String get sosLivePrivacyNote =>
+      'Live media is streamed to dispatch staff and is not saved as a recording.';
+
+  @override
+  String get sosEnd => 'END';
+
+  @override
+  String get sosStartLiveAudio => 'Start live audio';
+
+  @override
+  String get sosStartLiveVideo => 'Start live video';
+
+  @override
+  String get sosStatusEnRoute => 'EN ROUTE';
+
+  @override
+  String get nearestPoliceStation => 'the nearest police station';
+
+  @override
+  String get callbackSessionTitle => 'Callback session';
+
+  @override
+  String get otherCallParticipantNotFound =>
+      'Could not find the other call participant.';
+
+  @override
+  String get inAppChatSession => 'In-app chat session';
+
+  @override
+  String inAppSessionMode(Object mode) {
+    return 'In-app $mode session';
+  }
+
+  @override
+  String get callbackVideoActiveDescription =>
+      'Callback session active · start a live video call when ready';
+
+  @override
+  String get connectedInsideApp =>
+      'Connected · this session stays inside ZEGA-ALERT';
+
+  @override
+  String get startLiveVideoConversation => 'Start live video conversation';
+
+  @override
+  String get ending => 'Ending…';
+
+  @override
+  String get endSession => 'End session';
+
+  @override
+  String get callbackSessionEndFailed => 'Could not end the session.';
+
+  @override
+  String officerNamed(Object name) {
+    return 'Officer: $name';
+  }
+
+  @override
+  String get refreshWantedMissing => 'Refresh wanted and missing people';
+
+  @override
+  String reportSightingForPerson(Object name) {
+    return 'Report Sighting: $name';
+  }
+
+  @override
+  String get signInToReportSighting => 'Sign in to report a sighting.';
+
+  @override
+  String get writeCommentHint => 'Write a comment...';
+
+  @override
+  String get newsScreenDescription =>
+      'News, road closures, wanted & missing persons, and lost items';
+
+  @override
+  String get refresh => 'Refresh';
+
+  @override
+  String get categoryLabel => 'Category';
+
+  @override
+  String get allItems => 'All';
+
+  @override
+  String get authGateTitle => 'Sign in to continue';
+
+  @override
+  String get authGateMessage =>
+      'Create a free ZEGA-ALERT account or sign in to use this feature.';
+
+  @override
+  String get signInRequiredTitle => 'Sign in required';
+
+  @override
+  String get signInRequiredMessage =>
+      'Please sign in or create a free account to continue.';
+
+  @override
+  String get updateAvailableTitle => 'Update available';
+
+  @override
+  String updateAvailableMessage(Object version) {
+    return 'Version $version is available. Update now?';
+  }
+
+  @override
+  String get later => 'Later';
+
+  @override
+  String get download => 'Download';
+
+  @override
+  String get backendServer => 'Backend server';
+
+  @override
+  String get serverUrl => 'Server URL';
+
+  @override
+  String get serverUrlHelp =>
+      'Leave blank to auto-detect on the local network.';
+
+  @override
+  String get autoDetect => 'Auto-detect';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String serverCurrentUrl(Object url) {
+    return 'Server: $url';
+  }
+
+  @override
+  String get ethiopianMobileNumber => 'Ethiopian mobile number';
+
+  @override
+  String get validEthiopianMobileNumber =>
+      'Enter a valid Ethiopian mobile number.';
+
+  @override
+  String get emailOptional => 'Email (optional)';
+
+  @override
+  String get emailSignInHint => 'Add an email so you can also sign in with it';
+
+  @override
+  String get phoneOrEmail => 'Phone number or email';
+
+  @override
+  String get phoneExample => 'e.g. +251 911 234 567';
+
+  @override
+  String get signUpAction => 'Sign Up';
+
+  @override
+  String get termsAcceptance =>
+      'I accept the Terms of Service and Privacy Policy';
+
+  @override
+  String get registrationPasswordRequirements =>
+      'At least 8 characters with an uppercase letter, number and symbol.';
+
+  @override
+  String get invalidEmailAddress => 'Enter a valid email address.';
+
+  @override
+  String get invalidPhoneNumber => 'Enter a valid phone number.';
+
+  @override
+  String get connectionFailedTryAgain =>
+      'Could not connect. Check your internet connection and try again.';
+
+  @override
+  String get verifyPhoneNumber => 'Verify Phone Number';
+
+  @override
+  String get back => 'Back';
+
+  @override
+  String get smsDemoCodeNotice =>
+      'SMS is not configured yet. Use this temporary demo code:';
+
+  @override
+  String enterOtpSentTo(Object phone) {
+    return 'Enter the 6-digit code sent to\n$phone';
+  }
+
+  @override
+  String get accountRecovery => 'Account recovery';
+
+  @override
+  String get backToSignIn => 'Back to sign in';
+
+  @override
+  String get passwordResetSuccessful => 'Password reset successful!';
+
+  @override
+  String get passwordUpdatedSignIn =>
+      'Your password has been updated. Sign in with your new password.';
 }

@@ -1142,4 +1142,301 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get openMapAndBoundary => 'Open map and boundary.';
+
+  @override
+  String get conversationsLoadFailed =>
+      'Could not load conversations right now.';
+
+  @override
+  String get fileUploadFailed => 'Could not upload the file.';
+
+  @override
+  String newMessageLabel(Object message) {
+    return 'New message: $message';
+  }
+
+  @override
+  String get enableLocationForNearestPolice =>
+      'Enable location to find the nearest police station.';
+
+  @override
+  String get stationChatStartFailed => 'Could not start the station chat.';
+
+  @override
+  String get rateConversation => 'Rate this conversation';
+
+  @override
+  String get noAccountForCall =>
+      'Could not identify your account for this call.';
+
+  @override
+  String get noOtherParticipant => 'No other participant to call.';
+
+  @override
+  String get callStartFailed => 'Could not start the call.';
+
+  @override
+  String get videoCall => 'Video call';
+
+  @override
+  String get chatNearestStation => 'Chat with nearest police station';
+
+  @override
+  String get dispatcherAvailableNow => 'A dispatcher is available now';
+
+  @override
+  String estimatedWaitMinutes(Object minutes) {
+    return 'Estimated wait: $minutes min';
+  }
+
+  @override
+  String get photoAttachment => 'Photo';
+
+  @override
+  String get videoAttachment => 'Video';
+
+  @override
+  String get audioAttachment => 'Audio';
+
+  @override
+  String get fileAttachment => 'File';
+
+  @override
+  String get couldNotSubmitFeedback => 'Could not submit your feedback.';
+
+  @override
+  String get submitAction => 'Submit';
+
+  @override
+  String get reportsFollowUpChat => 'Follow-up / Chat';
+
+  @override
+  String get reportsSearchHint => 'Search reports';
+
+  @override
+  String get reportFilterAll => 'All';
+
+  @override
+  String get reportFilterActive => 'Active';
+
+  @override
+  String get reportFilterResolved => 'Resolved';
+
+  @override
+  String get reportFilterDrafts => 'Drafts';
+
+  @override
+  String get photoCameraRecord => 'Take a photo / record';
+
+  @override
+  String get crimeCategoryField => 'Crime category';
+
+  @override
+  String get incidentDateTime => 'Incident date/time';
+
+  @override
+  String get enterLocationManually => 'Enter location manually';
+
+  @override
+  String get otherwiseUseGps => 'Otherwise use GPS';
+
+  @override
+  String get addressLabel => 'Address';
+
+  @override
+  String get latitudeLabel => 'Latitude';
+
+  @override
+  String get longitudeLabel => 'Longitude';
+
+  @override
+  String get photo => 'Photo';
+
+  @override
+  String get video => 'Video';
+
+  @override
+  String get audio => 'Audio';
+
+  @override
+  String get signLanguage => 'Sign language';
+
+  @override
+  String get link => 'Link';
+
+  @override
+  String get file => 'File';
+
+  @override
+  String get saveAsDraft => 'Save as draft';
+
+  @override
+  String evidenceAttached(Object type) {
+    return '$type attached.';
+  }
+
+  @override
+  String get crimeTheft => 'Theft';
+
+  @override
+  String get crimeRobbery => 'Robbery';
+
+  @override
+  String get crimeAssault => 'Assault';
+
+  @override
+  String get crimeBurglary => 'Burglary / break-in';
+
+  @override
+  String get crimeVandalism => 'Vandalism';
+
+  @override
+  String get crimeFraud => 'Fraud / scam';
+
+  @override
+  String get crimeHarassment => 'Harassment';
+
+  @override
+  String get crimeDrug => 'Drug offence';
+
+  @override
+  String get crimeTraffic => 'Traffic incident';
+
+  @override
+  String get crimeDomesticViolence => 'Domestic violence';
+
+  @override
+  String get crimeKidnapping => 'Kidnapping';
+
+  @override
+  String get crimeMurder => 'Murder / homicide';
+
+  @override
+  String get crimeOther => 'Other';
+
+  @override
+  String get severityLow => 'Low';
+
+  @override
+  String get severityMedium => 'Medium';
+
+  @override
+  String get severityHigh => 'High';
+
+  @override
+  String get severityCritical => 'Critical';
+
+  @override
+  String get reportsLoadFailed => 'Could not load reports right now.';
+
+  @override
+  String get reportSubmissionFailed =>
+      'Could not submit the report. Please try again.';
+
+  @override
+  String get reportStatusPending => 'PENDING';
+
+  @override
+  String get reportStatusSubmitted => 'SUBMITTED';
+
+  @override
+  String get reportStatusInReview => 'IN REVIEW';
+
+  @override
+  String get reportStatusInvestigating => 'INVESTIGATING';
+
+  @override
+  String get reportStatusAssigned => 'ASSIGNED';
+
+  @override
+  String get reportStatusRejected => 'REJECTED';
+
+  @override
+  String get reportStatusClosed => 'CLOSED';
+
+  @override
+  String get noReportsMatchFilter => 'No reports match this filter.';
+
+  @override
+  String get untitledReport => 'Untitled report';
+
+  @override
+  String rateResponseForReport(Object title) {
+    return 'Rate response for report: $title';
+  }
+
+  @override
+  String get reportDetailsTitle => 'Report details';
+
+  @override
+  String get reportDetailsLoadFailed => 'Could not load this report right now.';
+
+  @override
+  String get attachEvidence => 'Attach evidence';
+
+  @override
+  String get working => 'Working…';
+
+  @override
+  String get reportEvidenceAttached => 'Evidence attached.';
+
+  @override
+  String get reportEvidenceAttachFailed => 'Could not attach the evidence.';
+
+  @override
+  String get reportSubmittedForReview => 'Report submitted for review.';
+
+  @override
+  String get reportSubmitFailed => 'Could not submit the report.';
+
+  @override
+  String get photoVideo => 'Photo / video';
+
+  @override
+  String get documentAudio => 'Document / audio';
+
+  @override
+  String incidentDateTimeValue(Object value) {
+    return 'Incident date/time: $value';
+  }
+
+  @override
+  String reportedValue(Object value) {
+    return 'Reported: $value';
+  }
+
+  @override
+  String resolvedValue(Object value) {
+    return 'Resolved: $value';
+  }
+
+  @override
+  String locationCoordinates(Object latitude, Object longitude) {
+    return 'Location: $latitude, $longitude';
+  }
+
+  @override
+  String anonymousValue(Object value) {
+    return 'Anonymous: $value';
+  }
+
+  @override
+  String get yes => 'Yes';
+
+  @override
+  String get no => 'No';
+
+  @override
+  String get evidenceTitle => 'Evidence';
+
+  @override
+  String get statusHistoryTitle => 'Status history';
+
+  @override
+  String get noHistoryYet => 'No history yet.';
+
+  @override
+  String byUser(Object name) {
+    return 'by $name';
+  }
 }

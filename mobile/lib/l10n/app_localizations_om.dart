@@ -1154,4 +1154,305 @@ class AppLocalizationsOm extends AppLocalizations {
 
   @override
   String get openMapAndBoundary => 'Kaartaa fi daangaa bani.';
+
+  @override
+  String get conversationsLoadFailed =>
+      'Walgahiiwwan amma fe\'uun hin danda\'amne.';
+
+  @override
+  String get fileUploadFailed => 'Faayila olkaa\'uun hin danda\'amne.';
+
+  @override
+  String newMessageLabel(Object message) {
+    return 'Ergaa haaraa: $message';
+  }
+
+  @override
+  String get enableLocationForNearestPolice =>
+      'Buufata poolisii si bira jiru argachuuf bakka bilbilaa bani.';
+
+  @override
+  String get stationChatStartFailed =>
+      'Walgahii buufata poolisii jalqabuun hin danda\'amne.';
+
+  @override
+  String get rateConversation => 'Walgahii kana madaali';
+
+  @override
+  String get noAccountForCall =>
+      'Bilbila kanaaf herrega kee adda baasuun hin danda\'amne.';
+
+  @override
+  String get noOtherParticipant => 'Nama biraa bilbilamu hin jiru.';
+
+  @override
+  String get callStartFailed => 'Bilbila jalqabuun hin danda\'amne.';
+
+  @override
+  String get videoCall => 'Bilbila viidiyoo';
+
+  @override
+  String get chatNearestStation => 'Buufata poolisii dhiyoo waliin haasa\'i';
+
+  @override
+  String get dispatcherAvailableNow => 'Nama bilbila qindeessu amma argama';
+
+  @override
+  String estimatedWaitMinutes(Object minutes) {
+    return 'Yeroo eegamu: daqiiqaa $minutes';
+  }
+
+  @override
+  String get photoAttachment => 'Suuraa';
+
+  @override
+  String get videoAttachment => 'Viidiyoo';
+
+  @override
+  String get audioAttachment => 'Sagalee';
+
+  @override
+  String get fileAttachment => 'Faayila';
+
+  @override
+  String get couldNotSubmitFeedback => 'Yaada kee erguun hin danda\'amne.';
+
+  @override
+  String get submitAction => 'Ergi';
+
+  @override
+  String get reportsFollowUpChat => 'Hordoffii / Haasa\'aa';
+
+  @override
+  String get reportsSearchHint => 'Gabaasa barbaadi';
+
+  @override
+  String get reportFilterAll => 'Hunda';
+
+  @override
+  String get reportFilterActive => 'Hojii irra';
+
+  @override
+  String get reportFilterResolved => 'Furmaata argatan';
+
+  @override
+  String get reportFilterDrafts => 'Qabxiiwwan';
+
+  @override
+  String get photoCameraRecord => 'Suuraa kaasi / viidiyoo waraabi';
+
+  @override
+  String get crimeCategoryField => 'Gosa yakkaa';
+
+  @override
+  String get incidentDateTime => 'Guyyaa/yeroo balaa';
+
+  @override
+  String get enterLocationManually => 'Bakka harkaan galchi';
+
+  @override
+  String get otherwiseUseGps => 'Yookaan GPS fayyadami';
+
+  @override
+  String get addressLabel => 'Teessoo';
+
+  @override
+  String get latitudeLabel => 'Laatiitiyuudii';
+
+  @override
+  String get longitudeLabel => 'Longiitiyuudii';
+
+  @override
+  String get photo => 'Suuraa';
+
+  @override
+  String get video => 'Viidiyoo';
+
+  @override
+  String get audio => 'Sagalee';
+
+  @override
+  String get signLanguage => 'Afaan mallattoo';
+
+  @override
+  String get link => 'Geessituu';
+
+  @override
+  String get file => 'Faayila';
+
+  @override
+  String get saveAsDraft => 'Akka qabiitti olkaa\'i';
+
+  @override
+  String evidenceAttached(Object type) {
+    return '$type dabalameera.';
+  }
+
+  @override
+  String get crimeTheft => 'Hattuu';
+
+  @override
+  String get crimeRobbery => 'Saamicha';
+
+  @override
+  String get crimeAssault => 'Miidhaa qaamaa';
+
+  @override
+  String get crimeBurglary => 'Cabsanii seenuu / hattuu';
+
+  @override
+  String get crimeVandalism => 'Qabeenya mancaasuu';
+
+  @override
+  String get crimeFraud => 'Soba / gowwoomsuu';
+
+  @override
+  String get crimeHarassment => 'Rakkisuu';
+
+  @override
+  String get crimeDrug => 'Yakka qoricha sammuu hadoochuu';
+
+  @override
+  String get crimeTraffic => 'Balaa tiraafikaa';
+
+  @override
+  String get crimeDomesticViolence => 'Miidhaa maatii keessaa';
+
+  @override
+  String get crimeKidnapping => 'Nama butuu';
+
+  @override
+  String get crimeMurder => 'Ajjeechaa';
+
+  @override
+  String get crimeOther => 'Kan biraa';
+
+  @override
+  String get severityLow => 'Xiqqaa';
+
+  @override
+  String get severityMedium => 'Giddugaleessa';
+
+  @override
+  String get severityHigh => 'Olaanaa';
+
+  @override
+  String get severityCritical => 'Baay\'ee cimaa';
+
+  @override
+  String get reportsLoadFailed => 'Gabaasawwan amma fe\'uun hin danda\'amne.';
+
+  @override
+  String get reportSubmissionFailed =>
+      'Gabaasa erguun hin danda\'amne. Maaloo irra deebi\'ii yaali.';
+
+  @override
+  String get reportStatusPending => 'EEGAA JIRA';
+
+  @override
+  String get reportStatusSubmitted => 'ERGAMEERA';
+
+  @override
+  String get reportStatusInReview => 'SAKATAMAA JIRA';
+
+  @override
+  String get reportStatusInvestigating => 'QORANNAA IRRA JIRA';
+
+  @override
+  String get reportStatusAssigned => 'RAMADAMEERA';
+
+  @override
+  String get reportStatusRejected => 'DIDAMEERA';
+
+  @override
+  String get reportStatusClosed => 'CUFAMEERA';
+
+  @override
+  String get noReportsMatchFilter =>
+      'Gabaasni calallii kanaan wal simu hin jiru.';
+
+  @override
+  String get untitledReport => 'Gabaasa mata-duree hin qabne';
+
+  @override
+  String rateResponseForReport(Object title) {
+    return 'Deebii gabaasa kanaa madaali: $title';
+  }
+
+  @override
+  String get reportDetailsTitle => 'Bal\'ina gabaasaa';
+
+  @override
+  String get reportDetailsLoadFailed =>
+      'Gabaasa kana amma fe\'uun hin danda\'amne.';
+
+  @override
+  String get attachEvidence => 'Ragaa dabaladhu';
+
+  @override
+  String get working => 'Hojjechaa jira…';
+
+  @override
+  String get reportEvidenceAttached => 'Ragaan dabalameera.';
+
+  @override
+  String get reportEvidenceAttachFailed => 'Ragaa dabaluu hin dandeenye.';
+
+  @override
+  String get reportSubmittedForReview =>
+      'Gabaasni qorannoo irratti dhiyaateera.';
+
+  @override
+  String get reportSubmitFailed => 'Gabaasa erguun hin danda\'amne.';
+
+  @override
+  String get photoVideo => 'Suuraa / viidiyoo';
+
+  @override
+  String get documentAudio => 'Galmee / sagalee';
+
+  @override
+  String incidentDateTimeValue(Object value) {
+    return 'Guyyaa/yeroo balaa: $value';
+  }
+
+  @override
+  String reportedValue(Object value) {
+    return 'Gabaafame: $value';
+  }
+
+  @override
+  String resolvedValue(Object value) {
+    return 'Furmaata argate: $value';
+  }
+
+  @override
+  String locationCoordinates(Object latitude, Object longitude) {
+    return 'Bakka: $latitude, $longitude';
+  }
+
+  @override
+  String anonymousValue(Object value) {
+    return 'Maqaa malee: $value';
+  }
+
+  @override
+  String get yes => 'Eeyyee';
+
+  @override
+  String get no => 'Lakki';
+
+  @override
+  String get evidenceTitle => 'Ragaa';
+
+  @override
+  String get statusHistoryTitle => 'Seenaa haala';
+
+  @override
+  String get noHistoryYet => 'Seenaa ammaaf hin jiru.';
+
+  @override
+  String byUser(Object name) {
+    return '${name}n';
+  }
 }

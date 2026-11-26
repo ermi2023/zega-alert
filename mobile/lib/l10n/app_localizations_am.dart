@@ -1123,4 +1123,298 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get openMapAndBoundary => 'ካርታውን እና ወሰኑን ይክፈቱ።';
+
+  @override
+  String get conversationsLoadFailed => 'ውይይቶችን አሁን መጫን አልተቻለም።';
+
+  @override
+  String get fileUploadFailed => 'ፋይሉን መጫን አልተቻለም።';
+
+  @override
+  String newMessageLabel(Object message) {
+    return 'አዲስ መልዕክት፦ $message';
+  }
+
+  @override
+  String get enableLocationForNearestPolice =>
+      'በአቅራቢያ ያለውን ፖሊስ ጣቢያ ለማግኘት አካባቢውን ያብሩ።';
+
+  @override
+  String get stationChatStartFailed => 'ከፖሊስ ጣቢያው ጋር ውይይት መጀመር አልተቻለም።';
+
+  @override
+  String get rateConversation => 'ይህን ውይይት ደረጃ ይስጡ';
+
+  @override
+  String get noAccountForCall => 'ለዚህ ጥሪ መለያዎን ማወቅ አልተቻለም።';
+
+  @override
+  String get noOtherParticipant => 'ለመደወል ሌላ ተሳታፊ የለም።';
+
+  @override
+  String get callStartFailed => 'ጥሪውን መጀመር አልተቻለም።';
+
+  @override
+  String get videoCall => 'የቪዲዮ ጥሪ';
+
+  @override
+  String get chatNearestStation => 'ከአቅራቢያ ፖሊስ ጣቢያ ጋር ይወያዩ';
+
+  @override
+  String get dispatcherAvailableNow => 'የአደጋ ጊዜ ተቀባይ አሁን ይገኛል';
+
+  @override
+  String estimatedWaitMinutes(Object minutes) {
+    return 'የሚጠበቀው ጊዜ፦ $minutes ደቂቃ';
+  }
+
+  @override
+  String get photoAttachment => 'ፎቶ';
+
+  @override
+  String get videoAttachment => 'ቪዲዮ';
+
+  @override
+  String get audioAttachment => 'ድምፅ';
+
+  @override
+  String get fileAttachment => 'ፋይል';
+
+  @override
+  String get couldNotSubmitFeedback => 'አስተያየትዎን መላክ አልተቻለም።';
+
+  @override
+  String get submitAction => 'ይላኩ';
+
+  @override
+  String get reportsFollowUpChat => 'ክትትል / ውይይት';
+
+  @override
+  String get reportsSearchHint => 'ሪፖርቶችን ይፈልጉ';
+
+  @override
+  String get reportFilterAll => 'ሁሉም';
+
+  @override
+  String get reportFilterActive => 'ንቁ';
+
+  @override
+  String get reportFilterResolved => 'የተፈቱ';
+
+  @override
+  String get reportFilterDrafts => 'ረቂቆች';
+
+  @override
+  String get photoCameraRecord => 'ፎቶ አንሳ / ቪዲዮ ቅረጽ';
+
+  @override
+  String get crimeCategoryField => 'የወንጀል ምድብ';
+
+  @override
+  String get incidentDateTime => 'የክስተቱ ቀን/ሰዓት';
+
+  @override
+  String get enterLocationManually => 'አካባቢውን በእጅ ያስገቡ';
+
+  @override
+  String get otherwiseUseGps => 'ካልሆነ GPS ይጠቀሙ';
+
+  @override
+  String get addressLabel => 'አድራሻ';
+
+  @override
+  String get latitudeLabel => 'ኬክሮስ';
+
+  @override
+  String get longitudeLabel => 'ኬንትሮስ';
+
+  @override
+  String get photo => 'ፎቶ';
+
+  @override
+  String get video => 'ቪዲዮ';
+
+  @override
+  String get audio => 'ድምፅ';
+
+  @override
+  String get signLanguage => 'የምልክት ቋንቋ';
+
+  @override
+  String get link => 'አገናኝ';
+
+  @override
+  String get file => 'ፋይል';
+
+  @override
+  String get saveAsDraft => 'እንደ ረቂቅ ያስቀምጡ';
+
+  @override
+  String evidenceAttached(Object type) {
+    return '$type ተያይዟል።';
+  }
+
+  @override
+  String get crimeTheft => 'ስርቆት';
+
+  @override
+  String get crimeRobbery => 'ዝርፊያ';
+
+  @override
+  String get crimeAssault => 'ጥቃት';
+
+  @override
+  String get crimeBurglary => 'የቤት ስብራት / ስርቆት';
+
+  @override
+  String get crimeVandalism => 'ንብረት ማበላሸት';
+
+  @override
+  String get crimeFraud => 'ማጭበርበር';
+
+  @override
+  String get crimeHarassment => 'ትንኮሳ';
+
+  @override
+  String get crimeDrug => 'የአደንዛዥ እጽ ወንጀል';
+
+  @override
+  String get crimeTraffic => 'የትራፊክ ክስተት';
+
+  @override
+  String get crimeDomesticViolence => 'የቤት ውስጥ ጥቃት';
+
+  @override
+  String get crimeKidnapping => 'አፈና';
+
+  @override
+  String get crimeMurder => 'ግድያ';
+
+  @override
+  String get crimeOther => 'ሌላ';
+
+  @override
+  String get severityLow => 'ዝቅተኛ';
+
+  @override
+  String get severityMedium => 'መካከለኛ';
+
+  @override
+  String get severityHigh => 'ከፍተኛ';
+
+  @override
+  String get severityCritical => 'እጅግ አስቸኳይ';
+
+  @override
+  String get reportsLoadFailed => 'ሪፖርቶችን አሁን መጫን አልተቻለም።';
+
+  @override
+  String get reportSubmissionFailed => 'ሪፖርቱን መላክ አልተቻለም። እባክዎ እንደገና ይሞክሩ።';
+
+  @override
+  String get reportStatusPending => 'በመጠባበቅ ላይ';
+
+  @override
+  String get reportStatusSubmitted => 'ተልኳል';
+
+  @override
+  String get reportStatusInReview => 'በግምገማ ላይ';
+
+  @override
+  String get reportStatusInvestigating => 'በምርመራ ላይ';
+
+  @override
+  String get reportStatusAssigned => 'ተመድቧል';
+
+  @override
+  String get reportStatusRejected => 'ውድቅ ተደርጓል';
+
+  @override
+  String get reportStatusClosed => 'ተዘግቷል';
+
+  @override
+  String get noReportsMatchFilter => 'ከዚህ ማጣሪያ ጋር የሚዛመድ ሪፖርት የለም።';
+
+  @override
+  String get untitledReport => 'ርዕስ የሌለው ሪፖርት';
+
+  @override
+  String rateResponseForReport(Object title) {
+    return 'ለሪፖርቱ ምላሽ ደረጃ ይስጡ፦ $title';
+  }
+
+  @override
+  String get reportDetailsTitle => 'የሪፖርት ዝርዝሮች';
+
+  @override
+  String get reportDetailsLoadFailed => 'ይህን ሪፖርት አሁን መጫን አልተቻለም።';
+
+  @override
+  String get attachEvidence => 'ማስረጃ ያያይዙ';
+
+  @override
+  String get working => 'በመስራት ላይ…';
+
+  @override
+  String get reportEvidenceAttached => 'ማስረጃው ተያይዟል።';
+
+  @override
+  String get reportEvidenceAttachFailed => 'ማስረጃውን ማያያዝ አልተቻለም።';
+
+  @override
+  String get reportSubmittedForReview => 'ሪፖርቱ ለግምገማ ተልኳል።';
+
+  @override
+  String get reportSubmitFailed => 'ሪፖርቱን መላክ አልተቻለም።';
+
+  @override
+  String get photoVideo => 'ፎቶ / ቪዲዮ';
+
+  @override
+  String get documentAudio => 'ሰነድ / ድምፅ';
+
+  @override
+  String incidentDateTimeValue(Object value) {
+    return 'የክስተቱ ቀን/ሰዓት፦ $value';
+  }
+
+  @override
+  String reportedValue(Object value) {
+    return 'የቀረበበት ቀን፦ $value';
+  }
+
+  @override
+  String resolvedValue(Object value) {
+    return 'የተፈታበት ቀን፦ $value';
+  }
+
+  @override
+  String locationCoordinates(Object latitude, Object longitude) {
+    return 'አካባቢ፦ $latitude, $longitude';
+  }
+
+  @override
+  String anonymousValue(Object value) {
+    return 'ስም ሳይጠቅሱ፦ $value';
+  }
+
+  @override
+  String get yes => 'አዎ';
+
+  @override
+  String get no => 'አይ';
+
+  @override
+  String get evidenceTitle => 'ማስረጃ';
+
+  @override
+  String get statusHistoryTitle => 'የሁኔታ ታሪክ';
+
+  @override
+  String get noHistoryYet => 'እስካሁን ታሪክ የለም።';
+
+  @override
+  String byUser(Object name) {
+    return 'በ $name';
+  }
 }

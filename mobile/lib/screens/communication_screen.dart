@@ -55,7 +55,7 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
       setState(
         () => _loadError = Api.userMessage(
           e,
-          fallback: 'Could not load conversations right now.',
+          fallback: AppLocalizations.of(context).conversationsLoadFailed,
         ),
       );
     }
@@ -131,7 +131,10 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              Api.userMessage(e, fallback: 'Could not upload the file.'),
+              Api.userMessage(
+                e,
+                fallback: AppLocalizations.of(context).fileUploadFailed,
+              ),
             ),
           ),
         );
@@ -181,7 +184,10 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('New message: ${msg['body'] ?? ''}'),
+            content: Text(
+              AppLocalizations.of(context)
+                  .newMessageLabel(msg['body']?.toString() ?? ''),
+            ),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -191,16 +197,13 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
   }
 
   Future<void> _newChat() async {
+    final loc = AppLocalizations.of(context);
     try {
       final position = await LocationService.gps();
       if (!mounted) return;
       if (position == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Enable location to find the nearest police station.',
-            ),
-          ),
+          SnackBar(content: Text(loc.enableLocationForNearestPolice)),
         );
         return;
       }
@@ -215,10 +218,7 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              Api.userMessage(
-                error,
-                fallback: 'Could not start the station chat.',
-              ),
+              Api.userMessage(error, fallback: loc.stationChatStartFailed),
             ),
           ),
         );
@@ -228,13 +228,14 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
 
   Future<void> _rateChat() async {
     if (_active == null) return;
+    final loc = AppLocalizations.of(context);
     int rating = 5;
     final comment = TextEditingController();
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) => AlertDialog(
-          title: const Text('Rate this conversation'),
+          title: Text(loc.rateConversation),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -254,9 +255,9 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
               TextField(
                 controller: comment,
                 maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Comment (optional)',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: loc.commentOptional,
+                  border: const OutlineInputBorder(),
                 ),
               ),
             ],
@@ -264,11 +265,11 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
+              child: Text(loc.cancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Submit'),
+              child: Text(loc.submitAction),
             ),
           ],
         ),
@@ -281,15 +282,14 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
         'comment': comment.text.trim(),
       });
       if (mounted)
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Thanks for your feedback')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(loc.thanksFeedback)));
     } catch (e) {
       if (mounted)
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              Api.userMessage(e, fallback: 'Could not submit your feedback.'),
+              Api.userMessage(e, fallback: loc.couldNotSubmitFeedback),
             ),
           ),
         );
@@ -298,6 +298,7 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
 
   Future<void> _startVideoCall() async {
     if (_active == null) return;
+    final loc = AppLocalizations.of(context);
     final conv = _conversations.firstWhere(
       (c) => c['id'] == _active,
       orElse: () => null,
@@ -307,11 +308,8 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
     final currentUserId = Api.userId?.toString();
     if (currentUserId == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not identify your account for this call'),
-          ),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(loc.noAccountForCall)));
       }
       return;
     }
@@ -321,9 +319,8 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
     );
     if (other == null) {
       if (mounted)
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No other participant to call')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(loc.noOtherParticipant)));
       return;
     }
     try {
@@ -332,7 +329,7 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
           MaterialPageRoute(
             builder: (_) => VideoCallScreen(
               targetUserId: other.toString(),
-              targetName: conv['title'] ?? 'Officer',
+              targetName: conv['title'] ?? loc.police,
               callType: 'video',
             ),
           ),
@@ -342,9 +339,7 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
       if (mounted)
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              Api.userMessage(e, fallback: 'Could not start the call.'),
-            ),
+            content: Text(Api.userMessage(e, fallback: loc.callStartFailed)),
           ),
         );
     }
@@ -404,18 +399,18 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
                       IconButton(
                         onPressed: _rateChat,
                         icon: const Icon(Icons.star_border),
-                        tooltip: 'Rate this conversation',
+                        tooltip: loc.rateConversation,
                       ),
                     if (_active != null)
                       IconButton(
                         onPressed: _startVideoCall,
                         icon: const Icon(Icons.videocam),
-                        tooltip: 'Video call',
+                        tooltip: loc.videoCall,
                       ),
                     IconButton(
                       onPressed: _newChat,
                       icon: const Icon(Icons.add_circle),
-                      tooltip: 'Chat with nearest police station',
+                      tooltip: loc.chatNearestStation,
                     ),
                   ],
                 ),
@@ -431,8 +426,8 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
                   const SizedBox(width: 6),
                   Text(
                     _waitMinutes! <= 0
-                        ? 'A dispatcher is available now'
-                        : 'Estimated wait: $_waitMinutes min',
+                        ? loc.dispatcherAvailableNow
+                        : loc.estimatedWaitMinutes(_waitMinutes!),
                     style: const TextStyle(fontSize: 13, color: Colors.grey),
                   ),
                 ],
@@ -570,22 +565,22 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
                                 PopupMenuButton<String>(
                                   icon: const Icon(Icons.attach_file),
                                   onSelected: _pickAttachment,
-                                  itemBuilder: (_) => const [
+                                  itemBuilder: (_) => [
                                     PopupMenuItem(
                                       value: 'Photo',
-                                      child: Text('Photo'),
+                                      child: Text(loc.photoAttachment),
                                     ),
                                     PopupMenuItem(
                                       value: 'Video',
-                                      child: Text('Video'),
+                                      child: Text(loc.videoAttachment),
                                     ),
                                     PopupMenuItem(
                                       value: 'Audio',
-                                      child: Text('Audio'),
+                                      child: Text(loc.audioAttachment),
                                     ),
                                     PopupMenuItem(
                                       value: 'File',
-                                      child: Text('File'),
+                                      child: Text(loc.fileAttachment),
                                     ),
                                   ],
                                 ),

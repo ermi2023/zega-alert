@@ -1119,4 +1119,297 @@ class AppLocalizationsTi extends AppLocalizations {
 
   @override
   String get openMapAndBoundary => 'ካርታን ዶብን ክፈት።';
+
+  @override
+  String get conversationsLoadFailed => 'ዝርርባት ሕጂ ምጽዓን ኣይተኻእለን።';
+
+  @override
+  String get fileUploadFailed => 'ፋይል ምስቃል ኣይተኻእለን።';
+
+  @override
+  String newMessageLabel(Object message) {
+    return 'ሓድሽ መልእኽቲ: $message';
+  }
+
+  @override
+  String get enableLocationForNearestPolice => 'እቲ ቀረባ ጣብያ ፖሊስ ንምርካብ ቦታ ኣኽእል።';
+
+  @override
+  String get stationChatStartFailed => 'ምስቲ ጣብያ ዝርርብ ምጅማር ኣይተኻእለን።';
+
+  @override
+  String get rateConversation => 'ነዚ ዝርርብ ደረጃ ሃብ';
+
+  @override
+  String get noAccountForCall => 'ንዚ ጻውዒት ሕሳብካ ምፍላጥ ኣይተኻእለን።';
+
+  @override
+  String get noOtherParticipant => 'ካልእ ተሳታፊ ንምድዋል የለን።';
+
+  @override
+  String get callStartFailed => 'ጻውዒት ምጅማር ኣይተኻእለን።';
+
+  @override
+  String get videoCall => 'ቪድዮ ጻውዒት';
+
+  @override
+  String get chatNearestStation => 'ምስ ቀረባ ጣብያ ፖሊስ ዕላል';
+
+  @override
+  String get dispatcherAvailableNow => 'ኣብ ምድባር ዝሕግዝ ሰብ ሕጂ ይርከብ';
+
+  @override
+  String estimatedWaitMinutes(Object minutes) {
+    return 'ዝጽበየሉ ግዜ: $minutes ደቒቕ';
+  }
+
+  @override
+  String get photoAttachment => 'ስእሊ';
+
+  @override
+  String get videoAttachment => 'ቪድዮ';
+
+  @override
+  String get audioAttachment => 'ድምጺ';
+
+  @override
+  String get fileAttachment => 'ፋይል';
+
+  @override
+  String get couldNotSubmitFeedback => 'ርኢቶኻ ምልኣኽ ኣይተኻእለን።';
+
+  @override
+  String get submitAction => 'ኣቕርብ';
+
+  @override
+  String get reportsFollowUpChat => 'ምክትታል / ዝርርብ';
+
+  @override
+  String get reportsSearchHint => 'ሪፖርታት ድለ';
+
+  @override
+  String get reportFilterAll => 'ኩሉ';
+
+  @override
+  String get reportFilterActive => 'ንጡፍ';
+
+  @override
+  String get reportFilterResolved => 'ፍታሕ ዝረኸቡ';
+
+  @override
+  String get reportFilterDrafts => 'ንድፊ';
+
+  @override
+  String get photoCameraRecord => 'ስእሊ ኣልዕል / ቪድዮ ቅረጽ';
+
+  @override
+  String get crimeCategoryField => 'ምድብ ገበን';
+
+  @override
+  String get incidentDateTime => 'ዕለት/ሰዓት ፍጻመ';
+
+  @override
+  String get enterLocationManually => 'ቦታ ብኢድካ ኣእቱ';
+
+  @override
+  String get otherwiseUseGps => 'እንተዘይኮይኑ GPS ተጠቐም';
+
+  @override
+  String get addressLabel => 'ኣድራሻ';
+
+  @override
+  String get latitudeLabel => 'ላቲቱድ';
+
+  @override
+  String get longitudeLabel => 'ሎንጊቱድ';
+
+  @override
+  String get photo => 'ስእሊ';
+
+  @override
+  String get video => 'ቪድዮ';
+
+  @override
+  String get audio => 'ድምጺ';
+
+  @override
+  String get signLanguage => 'ቋንቋ ምልክት';
+
+  @override
+  String get link => 'መላግቦ';
+
+  @override
+  String get file => 'ፋይል';
+
+  @override
+  String get saveAsDraft => 'ከም ንድፊ ዓቅብ';
+
+  @override
+  String evidenceAttached(Object type) {
+    return '$type ተተሓሒዙ።';
+  }
+
+  @override
+  String get crimeTheft => 'ስርቂ';
+
+  @override
+  String get crimeRobbery => 'ዝርፊ';
+
+  @override
+  String get crimeAssault => 'መጥቃዕቲ';
+
+  @override
+  String get crimeBurglary => 'ገዛ ምስባር / ስርቂ';
+
+  @override
+  String get crimeVandalism => 'ንብረት ምብልሻው';
+
+  @override
+  String get crimeFraud => 'ምትላል';
+
+  @override
+  String get crimeHarassment => 'ምግፋዕ';
+
+  @override
+  String get crimeDrug => 'ገበን ዕጸ-ፋርስ';
+
+  @override
+  String get crimeTraffic => 'ፍጻመ ትራፊክ';
+
+  @override
+  String get crimeDomesticViolence => 'ዘቤታዊ ዓመጽ';
+
+  @override
+  String get crimeKidnapping => 'ምጭዋይ';
+
+  @override
+  String get crimeMurder => 'ቅትለት';
+
+  @override
+  String get crimeOther => 'ካልእ';
+
+  @override
+  String get severityLow => 'ትሑት';
+
+  @override
+  String get severityMedium => 'ማእከላይ';
+
+  @override
+  String get severityHigh => 'ልዑል';
+
+  @override
+  String get severityCritical => 'ኣዝዩ ኣስጋኢ';
+
+  @override
+  String get reportsLoadFailed => 'ሪፖርታት ሕጂ ምጽዓን ኣይተኻእለን።';
+
+  @override
+  String get reportSubmissionFailed => 'እቲ ሪፖርት ምልኣኽ ኣይተኻእለን። በጃኻ እንደገና ፈትን።';
+
+  @override
+  String get reportStatusPending => 'ይጽበ';
+
+  @override
+  String get reportStatusSubmitted => 'ተላኢኹ';
+
+  @override
+  String get reportStatusInReview => 'ኣብ ግምገማ';
+
+  @override
+  String get reportStatusInvestigating => 'ኣብ ምርመራ';
+
+  @override
+  String get reportStatusAssigned => 'ተመዲቡ';
+
+  @override
+  String get reportStatusRejected => 'ተነጺጉ';
+
+  @override
+  String get reportStatusClosed => 'ተዓጽዩ';
+
+  @override
+  String get noReportsMatchFilter => 'ምስዚ መጻረዪ ዝሰማማዕ ሪፖርት የለን።';
+
+  @override
+  String get untitledReport => 'ኣርእስቲ ዘይብሉ ሪፖርት';
+
+  @override
+  String rateResponseForReport(Object title) {
+    return 'ንምላሽ እዚ ሪፖርት ደረጃ ሃብ: $title';
+  }
+
+  @override
+  String get reportDetailsTitle => 'ዝርዝር ሪፖርት';
+
+  @override
+  String get reportDetailsLoadFailed => 'እዚ ሪፖርት ሕጂ ምጽዓን ኣይተኻእለን።';
+
+  @override
+  String get attachEvidence => 'መርትዖ ኣተሓሕዝ';
+
+  @override
+  String get working => 'ይሰርሕ ኣሎ…';
+
+  @override
+  String get reportEvidenceAttached => 'መርትዖ ተተሓሒዙ።';
+
+  @override
+  String get reportEvidenceAttachFailed => 'መርትዖ ምትሕሓዝ ኣይተኻእለን።';
+
+  @override
+  String get reportSubmittedForReview => 'ሪፖርት ንግምገማ ተላኢኹ።';
+
+  @override
+  String get reportSubmitFailed => 'ሪፖርት ምልኣኽ ኣይተኻእለን።';
+
+  @override
+  String get photoVideo => 'ስእሊ / ቪድዮ';
+
+  @override
+  String get documentAudio => 'ሰነድ / ድምጺ';
+
+  @override
+  String incidentDateTimeValue(Object value) {
+    return 'ዕለት/ሰዓት ፍጻመ: $value';
+  }
+
+  @override
+  String reportedValue(Object value) {
+    return 'ዝተሓበረሉ: $value';
+  }
+
+  @override
+  String resolvedValue(Object value) {
+    return 'ዝተፈትሓሉ: $value';
+  }
+
+  @override
+  String locationCoordinates(Object latitude, Object longitude) {
+    return 'ቦታ: $latitude, $longitude';
+  }
+
+  @override
+  String anonymousValue(Object value) {
+    return 'ብስም ኣልቦ: $value';
+  }
+
+  @override
+  String get yes => 'እወ';
+
+  @override
+  String get no => 'ኣይፋል';
+
+  @override
+  String get evidenceTitle => 'መርትዖ';
+
+  @override
+  String get statusHistoryTitle => 'ታሪኽ ኩነታት';
+
+  @override
+  String get noHistoryYet => 'ክሳብ ሕጂ ታሪኽ የለን።';
+
+  @override
+  String byUser(Object name) {
+    return 'ብ $name';
+  }
 }

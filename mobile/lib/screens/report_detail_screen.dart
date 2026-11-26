@@ -4,6 +4,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:zega_alert_mobile/models/models.dart';
 import 'package:zega_alert_mobile/services/api.dart';
 
+import '../l10n/app_localizations.dart';
+
 class ReportDetailScreen extends StatefulWidget {
   const ReportDetailScreen({super.key, required this.id});
   final String id;
@@ -24,6 +26,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
   }
 
   Future<void> _load() async {
+    final loc = AppLocalizations.of(context);
     setState(() {
       _loading = true;
       _error = null;
@@ -35,10 +38,8 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
       );
     } catch (e) {
       setState(
-        () => _error = Api.userMessage(
-          e,
-          fallback: 'Could not load this report right now.',
-        ),
+        () =>
+            _error = Api.userMessage(e, fallback: loc.reportDetailsLoadFailed),
       );
     } finally {
       setState(() => _loading = false);
@@ -48,6 +49,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
   bool _busy = false;
 
   Future<void> _attachEvidence() async {
+    final loc = AppLocalizations.of(context);
     final device = await showModalBottomSheet<String>(
       context: context,
       builder: (ctx) => SafeArea(
@@ -56,12 +58,12 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.photo),
-              title: const Text('Photo / video'),
+              title: Text(loc.photoVideo),
               onTap: () => Navigator.pop(ctx, 'media'),
             ),
             ListTile(
               leading: const Icon(Icons.attach_file),
-              title: const Text('Document / audio'),
+              title: Text(loc.documentAudio),
               onTap: () => Navigator.pop(ctx, 'file'),
             ),
           ],
@@ -98,13 +100,13 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
       await _load();
       if (mounted)
         ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Evidence attached.')));
+            .showSnackBar(SnackBar(content: Text(loc.reportEvidenceAttached)));
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              Api.userMessage(e, fallback: 'Could not attach the evidence.'),
+              Api.userMessage(e, fallback: loc.reportEvidenceAttachFailed),
             ),
           ),
         );
@@ -115,21 +117,20 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
   }
 
   Future<void> _submitDraft() async {
+    final loc = AppLocalizations.of(context);
     setState(() => _busy = true);
     try {
       await Api.patch('/reports/${widget.id}', {'status': 'pending'});
       await _load();
       if (mounted)
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Report submitted for review.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(loc.reportSubmittedForReview)));
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              Api.userMessage(e, fallback: 'Could not submit the report.'),
-            ),
+            content: Text(Api.userMessage(e, fallback: loc.reportSubmitFailed)),
           ),
         );
       }
@@ -152,10 +153,59 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
     _ => Colors.orange,
   };
 
+  String _statusLabel(String? status, AppLocalizations loc) => switch (status) {
+    'draft' => loc.reportFilterDrafts,
+    'pending' => loc.reportStatusPending,
+    'submitted' => loc.reportStatusSubmitted,
+    'in_review' => loc.reportStatusInReview,
+    'investigating' => loc.reportStatusInvestigating,
+    'assigned' => loc.reportStatusAssigned,
+    'resolved' => loc.reportFilterResolved,
+    'rejected' => loc.reportStatusRejected,
+    'closed' => loc.reportStatusClosed,
+    _ => status?.replaceAll('_', ' ').toUpperCase() ?? '—',
+  };
+
+  String _categoryLabel(String category, AppLocalizations loc) =>
+      switch (category) {
+        'theft' => loc.crimeTheft,
+        'robbery' => loc.crimeRobbery,
+        'assault' => loc.crimeAssault,
+        'burglary' => loc.crimeBurglary,
+        'vandalism' => loc.crimeVandalism,
+        'fraud' => loc.crimeFraud,
+        'harassment' => loc.crimeHarassment,
+        'drug' => loc.crimeDrug,
+        'traffic' => loc.crimeTraffic,
+        'domestic' => loc.crimeDomesticViolence,
+        'kidnapping' => loc.crimeKidnapping,
+        'murder' => loc.crimeMurder,
+        'other' => loc.crimeOther,
+        _ => category,
+      };
+
+  String _severityLabel(String severity, AppLocalizations loc) =>
+      switch (severity) {
+        'low' => loc.severityLow,
+        'medium' => loc.severityMedium,
+        'high' => loc.severityHigh,
+        'critical' => loc.severityCritical,
+        _ => severity,
+      };
+
+  String _evidenceLabel(String type, AppLocalizations loc) => switch (type) {
+    'image' || 'photo' => loc.photo,
+    'video' || 'sign_language_video' => loc.video,
+    'audio' => loc.audio,
+    'file' => loc.file,
+    _ => type,
+  };
+
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Report details')),
+      appBar: AppBar(title: Text(loc.reportDetailsTitle)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
@@ -166,7 +216,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
               ),
             )
           : _report == null
-          ? const Center(child: Text('No data'))
+          ? Center(child: Text(loc.notAvailable))
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
@@ -182,13 +232,13 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    Chip(label: Text(_report!.category)),
+                    Chip(label: Text(_categoryLabel(_report!.category, loc))),
                     Chip(
-                      label: Text(_report!.status.toUpperCase()),
+                      label: Text(_statusLabel(_report!.status, loc)),
                       backgroundColor: _statusColor(_report!.status)
                           .withValues(alpha: 0.15),
                     ),
-                    Chip(label: Text(_report!.severity)),
+                    Chip(label: Text(_severityLabel(_report!.severity, loc))),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -210,7 +260,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                           child: FilledButton.icon(
                             onPressed: _busy ? null : _submitDraft,
                             icon: const Icon(Icons.send_outlined),
-                            label: const Text('Submit report'),
+                            label: Text(loc.submitReport),
                           ),
                         ),
                       if (_report!.status == 'draft') const SizedBox(width: 8),
@@ -218,7 +268,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                         child: OutlinedButton.icon(
                           onPressed: _busy ? null : _attachEvidence,
                           icon: const Icon(Icons.attach_file),
-                          label: Text(_busy ? 'Working…' : 'Attach evidence'),
+                          label: Text(_busy ? loc.working : loc.attachEvidence),
                         ),
                       ),
                     ],
@@ -232,31 +282,38 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Incident date/time: ${_fmt(_report!.incidentAt)}',
+                          loc.incidentDateTimeValue(_fmt(_report!.incidentAt)),
                         ),
-                        Text('Reported: ${_fmt(_report!.reportedAt)}'),
+                        Text(loc.reportedValue(_fmt(_report!.reportedAt))),
                         if (_report!.resolvedAt != null)
-                          Text('Resolved: ${_fmt(_report!.resolvedAt)}'),
+                          Text(loc.resolvedValue(_fmt(_report!.resolvedAt))),
                         if (_report!.latitude != null &&
                             _report!.longitude != null)
                           Text(
-                            'Location: ${_report!.latitude!.toStringAsFixed(5)}, ${_report!.longitude!.toStringAsFixed(5)}',
+                            loc.locationCoordinates(
+                              _report!.latitude!.toStringAsFixed(5),
+                              _report!.longitude!.toStringAsFixed(5),
+                            ),
                           ),
                         if (_report!.addressText != null)
-                          Text('Address: ${_report!.addressText}'),
+                          Text('${loc.addressLabel}: ${_report!.addressText}'),
                         if (_report!.region != null)
-                          Text('Region: ${_report!.region}'),
+                          Text('${loc.region}: ${_report!.region}'),
                         if (_report!.subCity != null)
-                          Text('Sub-city: ${_report!.subCity}'),
-                        Text('Anonymous: ${_report!.isAnonymous}'),
+                          Text('${loc.subCity}: ${_report!.subCity}'),
+                        Text(
+                          loc.anonymousValue(
+                            _report!.isAnonymous ? loc.yes : loc.no,
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ),
                 if (_report!.evidence.isNotEmpty) ...[
                   const SizedBox(height: 12),
-                  const Text(
-                    'Evidence',
+                  Text(
+                    loc.evidenceTitle,
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 6),
@@ -264,23 +321,22 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                     (e) => Card(
                       child: ListTile(
                         dense: true,
-                        title: Text('${e['type']}'),
+                        title: Text(
+                          _evidenceLabel(e['type']?.toString() ?? '', loc),
+                        ),
                         subtitle: Text(e['value'] ?? ''),
                       ),
                     ),
                   ),
                 ],
                 const SizedBox(height: 16),
-                const Text(
-                  'Status history',
+                Text(
+                  loc.statusHistoryTitle,
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 6),
                 if (_report!.history.isEmpty)
-                  const Text(
-                    'No history yet.',
-                    style: TextStyle(color: Colors.grey),
-                  )
+                  Text(loc.noHistoryYet, style: TextStyle(color: Colors.grey))
                 else
                   ..._report!.history.map(
                     (h) => Card(
@@ -289,9 +345,9 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                           Icons.history,
                           color: _statusColor(h.status ?? ''),
                         ),
-                        title: Text((h.status ?? '—').toUpperCase()),
+                        title: Text(_statusLabel(h.status, loc)),
                         subtitle: Text(
-                          '${_fmt(h.changedAt)}${h.changedBy != null ? ' · by ${h.changedBy}' : ''}${h.notes != null && h.notes!.isNotEmpty ? '\n${h.notes}' : ''}',
+                          '${_fmt(h.changedAt)}${h.changedBy != null ? ' · ${loc.byUser(h.changedBy!)}' : ''}${h.notes != null && h.notes!.isNotEmpty ? '\n${h.notes}' : ''}',
                         ),
                         isThreeLine: true,
                       ),

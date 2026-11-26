@@ -1163,4 +1163,305 @@ class AppLocalizationsSo extends AppLocalizations {
 
   @override
   String get openMapAndBoundary => 'Fur khariidadda iyo xuduudda.';
+
+  @override
+  String get conversationsLoadFailed =>
+      'Hadda lama soo dejin karin wada sheekaysiyada.';
+
+  @override
+  String get fileUploadFailed => 'Lama soo gelin karin faylka.';
+
+  @override
+  String newMessageLabel(Object message) {
+    return 'Fariin cusub: $message';
+  }
+
+  @override
+  String get enableLocationForNearestPolice =>
+      'Daar goobta si aad u hesho saldhigga booliiska kuugu dhow.';
+
+  @override
+  String get stationChatStartFailed =>
+      'Lama bilaabi karin wada sheekaysiga saldhigga.';
+
+  @override
+  String get rateConversation => 'Qiimee wada sheekaysigan';
+
+  @override
+  String get noAccountForCall => 'Lama aqoonsan karin akoonkaaga wicitaankan.';
+
+  @override
+  String get noOtherParticipant => 'Ma jiro ka-qaybgale kale oo la waco.';
+
+  @override
+  String get callStartFailed => 'Lama bilaabi karin wicitaanka.';
+
+  @override
+  String get videoCall => 'Wicitaan muuqaal ah';
+
+  @override
+  String get chatNearestStation =>
+      'La sheekayso saldhigga booliiska kuugu dhow';
+
+  @override
+  String get dispatcherAvailableNow => 'Shaqaale gurmad ayaa hadda diyaar ah';
+
+  @override
+  String estimatedWaitMinutes(Object minutes) {
+    return 'Sugitaanka la qiyaasay: $minutes daqiiqo';
+  }
+
+  @override
+  String get photoAttachment => 'Sawir';
+
+  @override
+  String get videoAttachment => 'Muuqaal';
+
+  @override
+  String get audioAttachment => 'Cod';
+
+  @override
+  String get fileAttachment => 'Fayl';
+
+  @override
+  String get couldNotSubmitFeedback => 'Lama gudbin karin faalladaada.';
+
+  @override
+  String get submitAction => 'Gudbi';
+
+  @override
+  String get reportsFollowUpChat => 'La-socod / Wada sheekaysi';
+
+  @override
+  String get reportsSearchHint => 'Raadi warbixinnada';
+
+  @override
+  String get reportFilterAll => 'Dhammaan';
+
+  @override
+  String get reportFilterActive => 'Socda';
+
+  @override
+  String get reportFilterResolved => 'La xalliyey';
+
+  @override
+  String get reportFilterDrafts => 'Qabyo';
+
+  @override
+  String get photoCameraRecord => 'Sawir qaad / duub muuqaal';
+
+  @override
+  String get crimeCategoryField => 'Qaybta dambiga';
+
+  @override
+  String get incidentDateTime => 'Taariikhda/waqtiga dhacdada';
+
+  @override
+  String get enterLocationManually => 'Gacanta ku geli goobta';
+
+  @override
+  String get otherwiseUseGps => 'Haddii kale isticmaal GPS';
+
+  @override
+  String get addressLabel => 'Cinwaan';
+
+  @override
+  String get latitudeLabel => 'Loolka';
+
+  @override
+  String get longitudeLabel => 'Dhererka';
+
+  @override
+  String get photo => 'Sawir';
+
+  @override
+  String get video => 'Muuqaal';
+
+  @override
+  String get audio => 'Cod';
+
+  @override
+  String get signLanguage => 'Luqadda calaamadaha';
+
+  @override
+  String get link => 'Xiriiriye';
+
+  @override
+  String get file => 'Fayl';
+
+  @override
+  String get saveAsDraft => 'U kaydi qabyo ahaan';
+
+  @override
+  String evidenceAttached(Object type) {
+    return '$type waa lagu lifaaqay.';
+  }
+
+  @override
+  String get crimeTheft => 'Xatooyo';
+
+  @override
+  String get crimeRobbery => 'Boob';
+
+  @override
+  String get crimeAssault => 'Weerar';
+
+  @override
+  String get crimeBurglary => 'Jebin guri / xatooyo';
+
+  @override
+  String get crimeVandalism => 'Burburinta hanti';
+
+  @override
+  String get crimeFraud => 'Khiyaano';
+
+  @override
+  String get crimeHarassment => 'Dhibaatayn';
+
+  @override
+  String get crimeDrug => 'Dembi maandooriye';
+
+  @override
+  String get crimeTraffic => 'Dhacdo taraafik';
+
+  @override
+  String get crimeDomesticViolence => 'Rabshad qoys';
+
+  @override
+  String get crimeKidnapping => 'Afduub';
+
+  @override
+  String get crimeMurder => 'Dil';
+
+  @override
+  String get crimeOther => 'Kale';
+
+  @override
+  String get severityLow => 'Hoose';
+
+  @override
+  String get severityMedium => 'Dhexdhexaad';
+
+  @override
+  String get severityHigh => 'Sare';
+
+  @override
+  String get severityCritical => 'Aad u daran';
+
+  @override
+  String get reportsLoadFailed => 'Hadda lama soo dejin karin warbixinnada.';
+
+  @override
+  String get reportSubmissionFailed =>
+      'Lama gudbin karin warbixinta. Fadlan mar kale isku day.';
+
+  @override
+  String get reportStatusPending => 'LA SUGAYO';
+
+  @override
+  String get reportStatusSubmitted => 'LA DIRAY';
+
+  @override
+  String get reportStatusInReview => 'DIB-U-EEGIS KU JIRA';
+
+  @override
+  String get reportStatusInvestigating => 'BAARITAAN KU JIRA';
+
+  @override
+  String get reportStatusAssigned => 'LA QAYBIYEY';
+
+  @override
+  String get reportStatusRejected => 'LA DIIDAY';
+
+  @override
+  String get reportStatusClosed => 'LA XIRAY';
+
+  @override
+  String get noReportsMatchFilter =>
+      'Ma jiraan warbixino ku habboon shaandhayntan.';
+
+  @override
+  String get untitledReport => 'Warbixin aan cinwaan lahayn';
+
+  @override
+  String rateResponseForReport(Object title) {
+    return 'Qiimee jawaabta warbixinta: $title';
+  }
+
+  @override
+  String get reportDetailsTitle => 'Faahfaahinta warbixinta';
+
+  @override
+  String get reportDetailsLoadFailed =>
+      'Hadda lama soo dejin karin warbixintan.';
+
+  @override
+  String get attachEvidence => 'Ku lifaaq caddayn';
+
+  @override
+  String get working => 'Waa la shaqaynayaa…';
+
+  @override
+  String get reportEvidenceAttached => 'Caddaynta waa la lifaaqay.';
+
+  @override
+  String get reportEvidenceAttachFailed => 'Lama lifaaqi karin caddaynta.';
+
+  @override
+  String get reportSubmittedForReview =>
+      'Warbixinta waxaa loo gudbiyey dib-u-eegis.';
+
+  @override
+  String get reportSubmitFailed => 'Lama gudbin karin warbixinta.';
+
+  @override
+  String get photoVideo => 'Sawir / muuqaal';
+
+  @override
+  String get documentAudio => 'Dukumenti / cod';
+
+  @override
+  String incidentDateTimeValue(Object value) {
+    return 'Taariikhda/waqtiga dhacdada: $value';
+  }
+
+  @override
+  String reportedValue(Object value) {
+    return 'La soo sheegay: $value';
+  }
+
+  @override
+  String resolvedValue(Object value) {
+    return 'La xalliyey: $value';
+  }
+
+  @override
+  String locationCoordinates(Object latitude, Object longitude) {
+    return 'Goobta: $latitude, $longitude';
+  }
+
+  @override
+  String anonymousValue(Object value) {
+    return 'Magac la\'aan: $value';
+  }
+
+  @override
+  String get yes => 'Haa';
+
+  @override
+  String get no => 'Maya';
+
+  @override
+  String get evidenceTitle => 'Caddayn';
+
+  @override
+  String get statusHistoryTitle => 'Taariikhda xaaladda';
+
+  @override
+  String get noHistoryYet => 'Weli taariikh ma jirto.';
+
+  @override
+  String byUser(Object name) {
+    return 'Waxaa qoray $name';
+  }
 }

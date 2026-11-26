@@ -7,6 +7,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../l10n/app_localizations.dart';
 import '../services/api.dart';
 import '../services/location_service.dart';
 import '../services/socket_service.dart';
@@ -21,9 +22,10 @@ import 'auth_gate.dart';
 /// 4. Real-time ETA updates and live officer tracking map
 /// 5. Continuous background location streaming until deactivated
 Future<void> triggerEmergencySos(BuildContext context) async {
+  final loc = AppLocalizations.of(context);
   if (!await ensureAuthed(
     context,
-    reason: 'Sign in to send an SOS alert with your live location.',
+    reason: loc.signInToSendSos,
   )) {
     return;
   }
@@ -92,10 +94,11 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
 
   Future<void> _sendSos() async {
     if (_aborted) return;
+    final loc = AppLocalizations.of(context);
     setState(() {
       _sending = true;
       _secondsRemaining = 0;
-      _statusText = 'Acquiring GPS coordinates & connecting to dispatcher...';
+      _statusText = loc.sosSendingStatus;
     });
 
     try {
@@ -120,12 +123,14 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
           : const <String, dynamic>{};
       final stationName = dispatch['station_name']?.toString();
       final statusText = dispatch['recipient_count'] == 0
-          ? 'SOS alert saved, but no station officers or central dispatch recipients are available.'
+          ? loc.sosNoDispatchRecipients
           : dispatch['route'] == 'central_dispatch'
           ? (dispatch['station_id'] != null
-                ? 'Nearest station has no assigned officers. SOS sent to central dispatch.'
-                : 'SOS sent to central dispatch only because location was unavailable.')
-          : 'SOS sent to ${stationName ?? 'the nearest police station'}. Responding officers notified.';
+                ? loc.sosNearestNoOfficers
+                : loc.sosLocationMissingCentral)
+          : loc.sosSentToStation(
+              stationName ?? loc.nearestPoliceStation,
+            );
 
       if (sosId != null) {
         _sosId = sosId;
@@ -148,7 +153,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
           _sending = false;
           _statusText = Api.userMessage(
             e,
-            fallback: 'Could not send the emergency alert. Please try again.',
+            fallback: loc.sosSendFailed,
           );
         });
       }
@@ -156,6 +161,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
   }
 
   Future<void> _startLiveStream(String mediaType) async {
+    final loc = AppLocalizations.of(context);
     final sosId = _sosId;
     if (sosId == null ||
         _liveStatus == 'connecting' ||
@@ -186,7 +192,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
         _liveStatus = 'error';
         _liveError = Api.userMessage(
           error,
-          fallback: 'Could not connect the live stream. Please try again.',
+          fallback: loc.sosLiveStreamFailed,
         );
       });
     }
@@ -264,6 +270,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
   }
 
   Widget _buildCountdownView() {
+    final loc = AppLocalizations.of(context);
     return AlertDialog(
       backgroundColor: const Color(0xFF1E1010),
       shape: RoundedRectangleBorder(
@@ -305,7 +312,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
           ),
           const SizedBox(height: 20),
           const Text(
-            'EMERGENCY SOS',
+            loc.sosEmergencyTitle,
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -316,7 +323,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
           const SizedBox(height: 8),
           Text(
             _statusText ??
-                'Notifying nearest police officers in $_secondsRemaining seconds...',
+                loc.sosNotifyCountdown(_secondsRemaining),
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 14, color: Colors.white70),
           ),
@@ -334,7 +341,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
                 ),
               ),
               child: const Text(
-                'CANCEL / ABORT',
+                loc.sosCancelAbort,
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
@@ -345,6 +352,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
   }
 
   Widget _buildDispatchedView() {
+    final loc = AppLocalizations.of(context);
     return Dialog(
       backgroundColor: const Color(0xFF0F172A),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -371,7 +379,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'HELP IS ON THE WAY',
+                        loc.sosHelpIsOnWay,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -379,7 +387,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
                         ),
                       ),
                       Text(
-                        'Live patrol dispatch active',
+                        loc.sosLivePatrolActive,
                         style: TextStyle(fontSize: 12, color: Colors.white60),
                       ),
                     ],
@@ -395,7 +403,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Text(
-                    'DISPATCHED',
+                    loc.sosDispatched,
                     style: TextStyle(
                       color: Colors.greenAccent,
                       fontSize: 11,
@@ -468,8 +476,8 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
                           borderRadius: BorderRadius.circular(8),
                           child: IconButton(
                             tooltip: _satelliteMap
-                                ? 'Switch to street map'
-                                : 'Switch to satellite imagery',
+                                ? loc.switchToStreetMap
+                                : loc.switchToSatelliteImagery,
                             onPressed: () =>
                                 setState(() => _satelliteMap = !_satelliteMap),
                             icon: Icon(
@@ -486,7 +494,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
               ),
             const SizedBox(height: 12),
             const Text(
-              'Responding Patrol Units',
+              loc.sosRespondingUnits,
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -498,7 +506,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
               child: _units.isEmpty
                   ? const Center(
                       child: Text(
-                        'Routing nearest regional officer...',
+                        loc.sosRoutingOfficer,
                         style: TextStyle(color: Colors.white60),
                       ),
                     )
@@ -516,10 +524,10 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
                             ? (distM / 1000).toStringAsFixed(1)
                             : null;
                         final etaLabel = etaMin != null
-                            ? '$etaMin min'
-                            : 'calculating...';
+                            ? loc.sosEtaMinutes(etaMin)
+                            : loc.sosCalculating;
                         final distLabel = distKm != null
-                            ? ' · $distKm km away'
+                            ? loc.sosDistanceAway(distKm)
                             : '';
                         return Card(
                           color: const Color(0xFF1E293B),
@@ -532,14 +540,14 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
                             title: Text(
                               u['staff_name'] ??
                                   u['officer_name'] ??
-                                  'Officer On Duty',
+                                  loc.sosOfficerOnDuty,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             subtitle: Text(
-                              'ETA: $etaLabel$distLabel',
+                              loc.sosEtaWithDistance(etaLabel, distLabel),
                               style: const TextStyle(
                                 color: Colors.amberAccent,
                                 fontSize: 12,
@@ -555,9 +563,12 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                (u['status'] ?? 'En Route')
-                                    .toString()
-                                    .toUpperCase(),
+                                (u['status']?.toString().toLowerCase() ==
+                                        'en_route'
+                                    ? loc.sosStatusEnRoute
+                                    : (u['status'] ?? '')
+                                          .toString()
+                                          .toUpperCase()),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 10,
@@ -579,7 +590,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
                     style: FilledButton.styleFrom(
                       backgroundColor: Colors.green.shade700,
                     ),
-                    child: const Text('I AM SAFE / END EMERGENCY'),
+                    child: Text(loc.sosSafeEndEmergency),
                   ),
                 ),
               ],
@@ -591,18 +602,19 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
   }
 
   Widget _buildLiveStreamControls() {
+    final loc = AppLocalizations.of(context);
     final isStarting = _liveStatus == 'connecting';
     final isActive =
         _liveStatus == 'waiting' ||
         _liveStatus == 'live' ||
         _liveStatus == 'disconnected';
     final statusLabel = switch (_liveStatus) {
-      'connecting' => 'Connecting to dispatch...',
-      'waiting' => 'Waiting for dispatch to answer...',
-      'live' => 'Live with dispatch',
-      'disconnected' => 'Connection interrupted',
-      'ended' => 'Live stream ended',
-      'error' => 'Could not start live stream',
+      'connecting' => loc.sosLiveConnecting,
+      'waiting' => loc.sosLiveWaiting,
+      'live' => loc.sosLiveNow,
+      'disconnected' => loc.sosLiveInterrupted,
+      'ended' => loc.sosLiveEnded,
+      'error' => loc.sosLiveStartFailed,
       _ => null,
     };
 
@@ -617,12 +629,12 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
-            'Live audio/video for dispatch',
+            loc.sosLiveTitle,
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           const Text(
-            'Live media is streamed to dispatch staff and is not saved as a recording.',
+            loc.sosLivePrivacyNote,
             style: TextStyle(color: Colors.white60, fontSize: 11),
           ),
           if (statusLabel != null) ...[
@@ -653,7 +665,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
                 if (isActive)
                   TextButton(
                     onPressed: _stopLiveStream,
-                    child: const Text('END'),
+                    child: Text(loc.sosEnd),
                   ),
               ],
             ),
@@ -677,7 +689,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
                 OutlinedButton.icon(
                   onPressed: () => _startLiveStream('audio'),
                   icon: const Icon(Icons.mic),
-                  label: const Text('Start live audio'),
+                  label: Text(loc.sosStartLiveAudio),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
                     side: const BorderSide(color: Colors.white54),
@@ -686,7 +698,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
                 OutlinedButton.icon(
                   onPressed: () => _startLiveStream('video'),
                   icon: const Icon(Icons.videocam),
-                  label: const Text('Start live video'),
+                  label: Text(loc.sosStartLiveVideo),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
                     side: const BorderSide(color: Colors.white54),

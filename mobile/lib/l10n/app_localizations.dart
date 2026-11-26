@@ -2167,6 +2167,552 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open map and boundary.'**
   String get openMapAndBoundary;
+
+  /// No description provided for @conversationsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load conversations right now.'**
+  String get conversationsLoadFailed;
+
+  /// No description provided for @fileUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not upload the file.'**
+  String get fileUploadFailed;
+
+  /// No description provided for @newMessageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'New message: {message}'**
+  String newMessageLabel(Object message);
+
+  /// No description provided for @enableLocationForNearestPolice.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable location to find the nearest police station.'**
+  String get enableLocationForNearestPolice;
+
+  /// No description provided for @stationChatStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start the station chat.'**
+  String get stationChatStartFailed;
+
+  /// No description provided for @rateConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate this conversation'**
+  String get rateConversation;
+
+  /// No description provided for @noAccountForCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not identify your account for this call.'**
+  String get noAccountForCall;
+
+  /// No description provided for @noOtherParticipant.
+  ///
+  /// In en, this message translates to:
+  /// **'No other participant to call.'**
+  String get noOtherParticipant;
+
+  /// No description provided for @callStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start the call.'**
+  String get callStartFailed;
+
+  /// No description provided for @videoCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Video call'**
+  String get videoCall;
+
+  /// No description provided for @chatNearestStation.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat with nearest police station'**
+  String get chatNearestStation;
+
+  /// No description provided for @dispatcherAvailableNow.
+  ///
+  /// In en, this message translates to:
+  /// **'A dispatcher is available now'**
+  String get dispatcherAvailableNow;
+
+  /// No description provided for @estimatedWaitMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated wait: {minutes} min'**
+  String estimatedWaitMinutes(Object minutes);
+
+  /// No description provided for @photoAttachment.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get photoAttachment;
+
+  /// No description provided for @videoAttachment.
+  ///
+  /// In en, this message translates to:
+  /// **'Video'**
+  String get videoAttachment;
+
+  /// No description provided for @audioAttachment.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio'**
+  String get audioAttachment;
+
+  /// No description provided for @fileAttachment.
+  ///
+  /// In en, this message translates to:
+  /// **'File'**
+  String get fileAttachment;
+
+  /// No description provided for @couldNotSubmitFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not submit your feedback.'**
+  String get couldNotSubmitFeedback;
+
+  /// No description provided for @submitAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit'**
+  String get submitAction;
+
+  /// No description provided for @reportsFollowUpChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow-up / Chat'**
+  String get reportsFollowUpChat;
+
+  /// No description provided for @reportsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search reports'**
+  String get reportsSearchHint;
+
+  /// No description provided for @reportFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get reportFilterAll;
+
+  /// No description provided for @reportFilterActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get reportFilterActive;
+
+  /// No description provided for @reportFilterResolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved'**
+  String get reportFilterResolved;
+
+  /// No description provided for @reportFilterDrafts.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafts'**
+  String get reportFilterDrafts;
+
+  /// No description provided for @photoCameraRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a photo / record'**
+  String get photoCameraRecord;
+
+  /// No description provided for @crimeCategoryField.
+  ///
+  /// In en, this message translates to:
+  /// **'Crime category'**
+  String get crimeCategoryField;
+
+  /// No description provided for @incidentDateTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Incident date/time'**
+  String get incidentDateTime;
+
+  /// No description provided for @enterLocationManually.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter location manually'**
+  String get enterLocationManually;
+
+  /// No description provided for @otherwiseUseGps.
+  ///
+  /// In en, this message translates to:
+  /// **'Otherwise use GPS'**
+  String get otherwiseUseGps;
+
+  /// No description provided for @addressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get addressLabel;
+
+  /// No description provided for @latitudeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Latitude'**
+  String get latitudeLabel;
+
+  /// No description provided for @longitudeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Longitude'**
+  String get longitudeLabel;
+
+  /// No description provided for @photo.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get photo;
+
+  /// No description provided for @video.
+  ///
+  /// In en, this message translates to:
+  /// **'Video'**
+  String get video;
+
+  /// No description provided for @audio.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio'**
+  String get audio;
+
+  /// No description provided for @signLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign language'**
+  String get signLanguage;
+
+  /// No description provided for @link.
+  ///
+  /// In en, this message translates to:
+  /// **'Link'**
+  String get link;
+
+  /// No description provided for @file.
+  ///
+  /// In en, this message translates to:
+  /// **'File'**
+  String get file;
+
+  /// No description provided for @saveAsDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as draft'**
+  String get saveAsDraft;
+
+  /// No description provided for @evidenceAttached.
+  ///
+  /// In en, this message translates to:
+  /// **'{type} attached.'**
+  String evidenceAttached(Object type);
+
+  /// No description provided for @crimeTheft.
+  ///
+  /// In en, this message translates to:
+  /// **'Theft'**
+  String get crimeTheft;
+
+  /// No description provided for @crimeRobbery.
+  ///
+  /// In en, this message translates to:
+  /// **'Robbery'**
+  String get crimeRobbery;
+
+  /// No description provided for @crimeAssault.
+  ///
+  /// In en, this message translates to:
+  /// **'Assault'**
+  String get crimeAssault;
+
+  /// No description provided for @crimeBurglary.
+  ///
+  /// In en, this message translates to:
+  /// **'Burglary / break-in'**
+  String get crimeBurglary;
+
+  /// No description provided for @crimeVandalism.
+  ///
+  /// In en, this message translates to:
+  /// **'Vandalism'**
+  String get crimeVandalism;
+
+  /// No description provided for @crimeFraud.
+  ///
+  /// In en, this message translates to:
+  /// **'Fraud / scam'**
+  String get crimeFraud;
+
+  /// No description provided for @crimeHarassment.
+  ///
+  /// In en, this message translates to:
+  /// **'Harassment'**
+  String get crimeHarassment;
+
+  /// No description provided for @crimeDrug.
+  ///
+  /// In en, this message translates to:
+  /// **'Drug offence'**
+  String get crimeDrug;
+
+  /// No description provided for @crimeTraffic.
+  ///
+  /// In en, this message translates to:
+  /// **'Traffic incident'**
+  String get crimeTraffic;
+
+  /// No description provided for @crimeDomesticViolence.
+  ///
+  /// In en, this message translates to:
+  /// **'Domestic violence'**
+  String get crimeDomesticViolence;
+
+  /// No description provided for @crimeKidnapping.
+  ///
+  /// In en, this message translates to:
+  /// **'Kidnapping'**
+  String get crimeKidnapping;
+
+  /// No description provided for @crimeMurder.
+  ///
+  /// In en, this message translates to:
+  /// **'Murder / homicide'**
+  String get crimeMurder;
+
+  /// No description provided for @crimeOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get crimeOther;
+
+  /// No description provided for @severityLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get severityLow;
+
+  /// No description provided for @severityMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get severityMedium;
+
+  /// No description provided for @severityHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get severityHigh;
+
+  /// No description provided for @severityCritical.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical'**
+  String get severityCritical;
+
+  /// No description provided for @reportsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load reports right now.'**
+  String get reportsLoadFailed;
+
+  /// No description provided for @reportSubmissionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not submit the report. Please try again.'**
+  String get reportSubmissionFailed;
+
+  /// No description provided for @reportStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'PENDING'**
+  String get reportStatusPending;
+
+  /// No description provided for @reportStatusSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'SUBMITTED'**
+  String get reportStatusSubmitted;
+
+  /// No description provided for @reportStatusInReview.
+  ///
+  /// In en, this message translates to:
+  /// **'IN REVIEW'**
+  String get reportStatusInReview;
+
+  /// No description provided for @reportStatusInvestigating.
+  ///
+  /// In en, this message translates to:
+  /// **'INVESTIGATING'**
+  String get reportStatusInvestigating;
+
+  /// No description provided for @reportStatusAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'ASSIGNED'**
+  String get reportStatusAssigned;
+
+  /// No description provided for @reportStatusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'REJECTED'**
+  String get reportStatusRejected;
+
+  /// No description provided for @reportStatusClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'CLOSED'**
+  String get reportStatusClosed;
+
+  /// No description provided for @noReportsMatchFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'No reports match this filter.'**
+  String get noReportsMatchFilter;
+
+  /// No description provided for @untitledReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled report'**
+  String get untitledReport;
+
+  /// No description provided for @rateResponseForReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate response for report: {title}'**
+  String rateResponseForReport(Object title);
+
+  /// No description provided for @reportDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report details'**
+  String get reportDetailsTitle;
+
+  /// No description provided for @reportDetailsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load this report right now.'**
+  String get reportDetailsLoadFailed;
+
+  /// No description provided for @attachEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach evidence'**
+  String get attachEvidence;
+
+  /// No description provided for @working.
+  ///
+  /// In en, this message translates to:
+  /// **'Working…'**
+  String get working;
+
+  /// No description provided for @reportEvidenceAttached.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence attached.'**
+  String get reportEvidenceAttached;
+
+  /// No description provided for @reportEvidenceAttachFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not attach the evidence.'**
+  String get reportEvidenceAttachFailed;
+
+  /// No description provided for @reportSubmittedForReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Report submitted for review.'**
+  String get reportSubmittedForReview;
+
+  /// No description provided for @reportSubmitFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not submit the report.'**
+  String get reportSubmitFailed;
+
+  /// No description provided for @photoVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo / video'**
+  String get photoVideo;
+
+  /// No description provided for @documentAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Document / audio'**
+  String get documentAudio;
+
+  /// No description provided for @incidentDateTimeValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Incident date/time: {value}'**
+  String incidentDateTimeValue(Object value);
+
+  /// No description provided for @reportedValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Reported: {value}'**
+  String reportedValue(Object value);
+
+  /// No description provided for @resolvedValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved: {value}'**
+  String resolvedValue(Object value);
+
+  /// No description provided for @locationCoordinates.
+  ///
+  /// In en, this message translates to:
+  /// **'Location: {latitude}, {longitude}'**
+  String locationCoordinates(Object latitude, Object longitude);
+
+  /// No description provided for @anonymousValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Anonymous: {value}'**
+  String anonymousValue(Object value);
+
+  /// No description provided for @yes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get yes;
+
+  /// No description provided for @no.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get no;
+
+  /// No description provided for @evidenceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence'**
+  String get evidenceTitle;
+
+  /// No description provided for @statusHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Status history'**
+  String get statusHistoryTitle;
+
+  /// No description provided for @noHistoryYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No history yet.'**
+  String get noHistoryYet;
+
+  /// No description provided for @byUser.
+  ///
+  /// In en, this message translates to:
+  /// **'by {name}'**
+  String byUser(Object name);
 }
 
 class _AppLocalizationsDelegate

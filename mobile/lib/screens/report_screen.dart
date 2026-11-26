@@ -13,6 +13,24 @@ import '../services/api.dart';
 import '../services/database_service.dart';
 import '../services/location_service.dart';
 
+String _localizedCrimeCategory(String? value, AppLocalizations loc) =>
+    switch (value) {
+      'theft' => loc.crimeTheft,
+      'robbery' => loc.crimeRobbery,
+      'assault' => loc.crimeAssault,
+      'burglary' => loc.crimeBurglary,
+      'vandalism' => loc.crimeVandalism,
+      'fraud' => loc.crimeFraud,
+      'harassment' => loc.crimeHarassment,
+      'drug' => loc.crimeDrug,
+      'traffic' => loc.crimeTraffic,
+      'domestic' => loc.crimeDomesticViolence,
+      'kidnapping' => loc.crimeKidnapping,
+      'murder' => loc.crimeMurder,
+      'other' => loc.crimeOther,
+      _ => value ?? '',
+    };
+
 class ReportScreen extends StatefulWidget {
   const ReportScreen({super.key});
 
@@ -44,6 +62,7 @@ class _ReportScreenState extends State<ReportScreen>
   }
 
   Future<void> _load() async {
+    final loc = AppLocalizations.of(context);
     if (!Api.isLoggedIn) {
       setState(() {
         _loading = false;
@@ -69,10 +88,8 @@ class _ReportScreenState extends State<ReportScreen>
         });
       } else {
         setState(
-          () => _loadError = Api.userMessage(
-            e,
-            fallback: 'Could not load reports right now.',
-          ),
+          () =>
+              _loadError = Api.userMessage(e, fallback: loc.reportsLoadFailed),
         );
       }
     } finally {
@@ -152,7 +169,7 @@ class _ReportScreenState extends State<ReportScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              Api.userMessage(e, fallback: 'Could not submit your feedback.'),
+              Api.userMessage(e, fallback: loc.couldNotSubmitFeedback),
             ),
           ),
         );
@@ -160,7 +177,18 @@ class _ReportScreenState extends State<ReportScreen>
     }
   }
 
-  String _statusLabel(String s) => s.replaceAll('_', ' ').toUpperCase();
+  String _statusLabel(String s, AppLocalizations loc) => switch (s) {
+    'draft' => loc.reportFilterDrafts,
+    'pending' => loc.reportStatusPending,
+    'submitted' => loc.reportStatusSubmitted,
+    'in_review' => loc.reportStatusInReview,
+    'investigating' => loc.reportStatusInvestigating,
+    'assigned' => loc.reportStatusAssigned,
+    'resolved' => loc.reportFilterResolved,
+    'rejected' => loc.reportStatusRejected,
+    'closed' => loc.reportStatusClosed,
+    _ => s.replaceAll('_', ' ').toUpperCase(),
+  };
 
   Color _statusColor(String s) => switch (s) {
     'resolved' => Colors.green,
@@ -211,7 +239,7 @@ class _ReportScreenState extends State<ReportScreen>
               fontWeight: FontWeight.bold,
               fontSize: 14,
             ),
-            tabs: const [
+            tabs: [
               Tab(
                 iconMargin: EdgeInsets.zero,
                 child: Row(
@@ -219,7 +247,7 @@ class _ReportScreenState extends State<ReportScreen>
                   children: [
                     Icon(Icons.assignment_outlined, size: 18),
                     SizedBox(width: 8),
-                    Text('My Reports'),
+                    Text(loc.myReports),
                   ],
                 ),
               ),
@@ -230,7 +258,7 @@ class _ReportScreenState extends State<ReportScreen>
                   children: [
                     Icon(Icons.forum_outlined, size: 18),
                     SizedBox(width: 8),
-                    Text('Follow-up / Chat'),
+                    Text(loc.reportsFollowUpChat),
                   ],
                 ),
               ),
@@ -260,7 +288,7 @@ class _ReportScreenState extends State<ReportScreen>
                 const SizedBox(height: 16),
                 Semantics(
                   button: true,
-                  label: 'New crime report button. Double tap to open the crime report form.',
+                  label: loc.newCrimeReport,
                   child: SizedBox(
                     height: 72,
                     child: FilledButton.icon(
@@ -350,7 +378,7 @@ class _ReportScreenState extends State<ReportScreen>
                 const SizedBox(height: 8),
                 TextField(
                   decoration: InputDecoration(
-                    hintText: 'Search reports',
+                    hintText: loc.reportsSearchHint,
                     prefixIcon: const Icon(Icons.search),
                     isDense: true,
                     border: OutlineInputBorder(
@@ -364,11 +392,11 @@ class _ReportScreenState extends State<ReportScreen>
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      for (final entry in const [
-                        ('all', 'All'),
-                        ('active', 'Active'),
-                        ('resolved', 'Resolved'),
-                        ('draft', 'Drafts'),
+                      for (final entry in [
+                        ('all', loc.reportFilterAll),
+                        ('active', loc.reportFilterActive),
+                        ('resolved', loc.reportFilterResolved),
+                        ('draft', loc.reportFilterDrafts),
                       ])
                         Padding(
                           padding: const EdgeInsets.only(right: 6),
@@ -390,7 +418,7 @@ class _ReportScreenState extends State<ReportScreen>
                       child: Text(
                         _mine.isEmpty
                             ? loc.noReportsYet
-                            : 'No reports match this filter.',
+                            : loc.noReportsMatchFilter,
                         style: const TextStyle(color: Colors.grey),
                       ),
                     ),
@@ -400,7 +428,9 @@ class _ReportScreenState extends State<ReportScreen>
                     .map(
                       (r) => Semantics(
                         label:
-                            'Report: ${r['title'] ?? 'Untitled'}. Category: ${r['category'] ?? 'unknown'}. Status: ${_statusLabel((r['status'] ?? '').toString())}.',
+                            '${loc.title}: ${r['title'] ?? loc.untitledReport}. '
+                            '${loc.crimeCategoryField}: ${_localizedCrimeCategory(r['category']?.toString(), loc)}. '
+                            '${_statusLabel((r['status'] ?? '').toString(), loc)}.',
                         child: Card(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
@@ -412,12 +442,15 @@ class _ReportScreenState extends State<ReportScreen>
                                     (r['status'] ?? '').toString(),
                                   ),
                                 ),
-                                title: Text(r['title'] ?? 'Untitled'),
+                                title: Text(r['title'] ?? loc.untitledReport),
                                 subtitle: Text(
-                                  '${r['category'] ?? ''} · ${_shortDate(r['reported_at']?.toString())}',
+                                  '${_localizedCrimeCategory(r['category']?.toString(), loc)} · ${_shortDate(r['reported_at']?.toString())}',
                                 ),
                                 trailing: Text(
-                                  _statusLabel((r['status'] ?? '').toString()),
+                                  _statusLabel(
+                                    (r['status'] ?? '').toString(),
+                                    loc,
+                                  ),
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
@@ -450,8 +483,9 @@ class _ReportScreenState extends State<ReportScreen>
                                     alignment: Alignment.centerLeft,
                                     child: Semantics(
                                       button: true,
-                                      label:
-                                          'Rate response for report: ${r['title'] ?? "Untitled"}',
+                                      label: loc.rateResponseForReport(
+                                        r['title'] ?? loc.untitledReport,
+                                      ),
                                       child: TextButton.icon(
                                         onPressed: () => _rate(r),
                                         icon: const Icon(
@@ -512,21 +546,42 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
   final _manualLat = TextEditingController();
   final _manualLng = TextEditingController();
 
-  static const _categories = <({String value, String label})>[
-    (value: 'theft', label: 'Theft'),
-    (value: 'robbery', label: 'Robbery'),
-    (value: 'assault', label: 'Assault'),
-    (value: 'burglary', label: 'Burglary / break-in'),
-    (value: 'vandalism', label: 'Vandalism'),
-    (value: 'fraud', label: 'Fraud / scam'),
-    (value: 'harassment', label: 'Harassment'),
-    (value: 'drug', label: 'Drug offence'),
-    (value: 'traffic', label: 'Traffic incident'),
-    (value: 'domestic', label: 'Domestic violence'),
-    (value: 'kidnapping', label: 'Kidnapping'),
-    (value: 'murder', label: 'Murder / homicide'),
-    (value: 'other', label: 'Other'),
+  List<({String value, String label})> _categories(AppLocalizations loc) => [
+    (value: 'theft', label: _localizedCrimeCategory('theft', loc)),
+    (value: 'robbery', label: _localizedCrimeCategory('robbery', loc)),
+    (value: 'assault', label: _localizedCrimeCategory('assault', loc)),
+    (value: 'burglary', label: _localizedCrimeCategory('burglary', loc)),
+    (value: 'vandalism', label: _localizedCrimeCategory('vandalism', loc)),
+    (value: 'fraud', label: _localizedCrimeCategory('fraud', loc)),
+    (value: 'harassment', label: _localizedCrimeCategory('harassment', loc)),
+    (value: 'drug', label: _localizedCrimeCategory('drug', loc)),
+    (value: 'traffic', label: _localizedCrimeCategory('traffic', loc)),
+    (value: 'domestic', label: _localizedCrimeCategory('domestic', loc)),
+    (value: 'kidnapping', label: _localizedCrimeCategory('kidnapping', loc)),
+    (value: 'murder', label: _localizedCrimeCategory('murder', loc)),
+    (value: 'other', label: _localizedCrimeCategory('other', loc)),
   ];
+
+  String _severityLabel(String value, AppLocalizations loc) => switch (value) {
+    'low' => loc.severityLow,
+    'medium' => loc.severityMedium,
+    'high' => loc.severityHigh,
+    'critical' => loc.severityCritical,
+    _ => value,
+  };
+
+  String _evidenceLabel(String value, AppLocalizations loc) =>
+      switch (value.toLowerCase()) {
+        'photo' => loc.photo,
+        'video' => loc.video,
+        'audio' => loc.audio,
+        'sign language' ||
+        'sign_language' ||
+        'sign_language_video' => loc.signLanguage,
+        'link' => loc.link,
+        'file' => loc.file,
+        _ => value,
+      };
 
   String _fmtDt(DateTime d) {
     final l = d.toLocal();
@@ -534,6 +589,7 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
   }
 
   Future<void> _submit({bool draft = false}) async {
+    final loc = AppLocalizations.of(context);
     if (!_form.currentState!.validate()) return;
     setState(() {
       _busy = true;
@@ -615,10 +671,8 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
       Navigator.of(context).pop();
     } catch (e) {
       setState(
-        () => _status = Api.userMessage(
-          e,
-          fallback: 'Could not submit the report. Please try again.',
-        ),
+        () =>
+            _status = Api.userMessage(e, fallback: loc.reportSubmissionFailed),
       );
     } finally {
       setState(() => _busy = false);
@@ -632,7 +686,7 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
       final ok = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: Text(loc.addType(type)),
+          title: Text(loc.addType(_evidenceLabel(type, loc))),
           content: TextField(
             controller: value,
             keyboardType: TextInputType.url,
@@ -739,6 +793,7 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
   }
 
   Future<void> _uploadEvidence(dynamic file, String type) async {
+    final loc = AppLocalizations.of(context);
     try {
       String? url;
       if (kIsWeb) {
@@ -763,7 +818,9 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
       if (mounted) setState(() => _evidence.add({'type': type, 'value': url!}));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${type.replaceAll('_', ' ')} attached.')),
+          SnackBar(
+            content: Text(loc.evidenceAttached(_evidenceLabel(type, loc))),
+          ),
         );
       }
     } catch (e) {
@@ -772,6 +829,7 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
   }
 
   Future<ImageSource?> _pickSource() async {
+    final loc = AppLocalizations.of(context);
     return showModalBottomSheet<ImageSource>(
       context: context,
       showDragHandle: true,
@@ -781,12 +839,12 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.photo_camera_outlined),
-              title: const Text('Take a photo / record'),
+              title: Text(loc.photoCameraRecord),
               onTap: () => Navigator.pop(ctx, ImageSource.camera),
             ),
             ListTile(
               leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Choose from gallery'),
+              title: Text(loc.chooseFromGallery),
               onTap: () => Navigator.pop(ctx, ImageSource.gallery),
             ),
           ],
@@ -798,6 +856,7 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final categories = _categories(loc);
     return Scaffold(
       appBar: AppBar(title: Text(loc.newCrimeReport)),
       body: ListView(
@@ -821,7 +880,7 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Semantics(
-                  label: 'Title input. Required.',
+                  label: '${loc.title}. ${loc.required}',
                   child: TextFormField(
                     controller: _title,
                     decoration: InputDecoration(
@@ -834,7 +893,7 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
                 ),
                 const SizedBox(height: 12),
                 Semantics(
-                  label: 'Description input. Required.',
+                  label: '${loc.description}. ${loc.required}',
                   child: TextFormField(
                     controller: _desc,
                     maxLines: 4,
@@ -848,15 +907,14 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
                 ),
                 const SizedBox(height: 12),
                 Semantics(
-                  label:
-                      'Crime category dropdown. Currently set to $_category.',
+                  label: loc.crimeCategoryField,
                   child: DropdownButtonFormField<String>(
                     initialValue: _category,
-                    decoration: const InputDecoration(
-                      labelText: 'Crime category',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: loc.crimeCategoryField,
+                      border: const OutlineInputBorder(),
                     ),
-                    items: _categories
+                    items: categories
                         .map(
                           (c) => DropdownMenuItem(
                             value: c.value,
@@ -869,12 +927,11 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
                 ),
                 const SizedBox(height: 12),
                 Semantics(
-                  label:
-                      'Incident date and time picker. Currently set to ${_incidentAt.toLocal()}',
+                  label: loc.incidentDateTime,
                   child: ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.calendar_today),
-                    title: const Text('Incident date/time'),
+                    title: Text(loc.incidentDateTime),
                     subtitle: Text(_fmtDt(_incidentAt)),
                     onTap: () async {
                       final d = await showDatePicker(
@@ -904,8 +961,8 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
                 const SizedBox(height: 12),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Enter location manually'),
-                  subtitle: const Text('Otherwise use GPS'),
+                  title: Text(loc.enterLocationManually),
+                  subtitle: Text(loc.otherwiseUseGps),
                   value: _useManualLocation,
                   onChanged: (v) => setState(() => _useManualLocation = v),
                 ),
@@ -913,8 +970,8 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
                   const SizedBox(height: 8),
                   TextField(
                     controller: _manualAddress,
-                    decoration: const InputDecoration(
-                      labelText: 'Address',
+                    decoration: InputDecoration(
+                      labelText: loc.addressLabel,
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -924,8 +981,8 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
                       Expanded(
                         child: TextField(
                           controller: _manualLat,
-                          decoration: const InputDecoration(
-                            labelText: 'Latitude',
+                          decoration: InputDecoration(
+                            labelText: loc.latitudeLabel,
                             border: OutlineInputBorder(),
                           ),
                           keyboardType: const TextInputType.numberWithOptions(
@@ -938,8 +995,8 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
                       Expanded(
                         child: TextField(
                           controller: _manualLng,
-                          decoration: const InputDecoration(
-                            labelText: 'Longitude',
+                          decoration: InputDecoration(
+                            labelText: loc.longitudeLabel,
                             border: OutlineInputBorder(),
                           ),
                           keyboardType: const TextInputType.numberWithOptions(
@@ -953,7 +1010,7 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
                 ],
                 const SizedBox(height: 12),
                 Semantics(
-                  label: 'Severity dropdown. Currently set to $_severity.',
+                  label: '${loc.severity}: ${_severityLabel(_severity, loc)}',
                   child: DropdownButtonFormField<String>(
                     initialValue: _severity,
                     decoration: InputDecoration(
@@ -961,15 +1018,19 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
                       border: const OutlineInputBorder(),
                     ),
                     items: ['low', 'medium', 'high', 'critical']
-                        .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                        .map(
+                          (s) => DropdownMenuItem(
+                            value: s,
+                            child: Text(_severityLabel(s, loc)),
+                          ),
+                        )
                         .toList(),
                     onChanged: (v) => setState(() => _severity = v!),
                   ),
                 ),
                 const SizedBox(height: 12),
                 Semantics(
-                  label:
-                      'Report anonymously toggle. ${_anonymous ? "Currently on" : "Currently off"}',
+                  label: loc.reportAnonymously,
                   child: SwitchListTile(
                     contentPadding: EdgeInsets.zero,
                     title: Text(loc.reportAnonymously),
@@ -992,32 +1053,32 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
                   children: [
                     ActionChip(
                       avatar: const Icon(Icons.photo_camera_outlined, size: 18),
-                      label: const Text('Photo'),
+                      label: Text(loc.photo),
                       onPressed: () => _addEvidence('Photo'),
                     ),
                     ActionChip(
                       avatar: const Icon(Icons.videocam_outlined, size: 18),
-                      label: const Text('Video'),
+                      label: Text(loc.video),
                       onPressed: () => _addEvidence('Video'),
                     ),
                     ActionChip(
                       avatar: const Icon(Icons.mic_none, size: 18),
-                      label: const Text('Audio'),
+                      label: Text(loc.audio),
                       onPressed: () => _addEvidence('Audio'),
                     ),
                     ActionChip(
                       avatar: const Icon(Icons.sign_language, size: 18),
-                      label: const Text('Sign language'),
+                      label: Text(loc.signLanguage),
                       onPressed: () => _addEvidence('Sign language'),
                     ),
                     ActionChip(
                       avatar: const Icon(Icons.link, size: 18),
-                      label: const Text('Link'),
+                      label: Text(loc.link),
                       onPressed: () => _addEvidence('Link'),
                     ),
                     ActionChip(
                       avatar: const Icon(Icons.attach_file, size: 18),
-                      label: const Text('File'),
+                      label: Text(loc.file),
                       onPressed: () => _addEvidence('File'),
                     ),
                   ],
@@ -1029,7 +1090,9 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
                       child: ListTile(
                         dense: true,
                         leading: const Icon(Icons.cloud_upload_outlined),
-                        title: Text('${e['type']}'),
+                        title: Text(
+                          _evidenceLabel(e['type']?.toString() ?? '', loc),
+                        ),
                         subtitle: Text(e['value'] ?? ''),
                         trailing: IconButton(
                           icon: const Icon(Icons.close),
@@ -1042,9 +1105,7 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
                 const SizedBox(height: 16),
                 Semantics(
                   button: true,
-                  label: _busy
-                      ? 'Submitting report'
-                      : 'Submit report. Double tap to send your crime report.',
+                  label: _busy ? loc.submitting : loc.submitReport,
                   child: FilledButton(
                     onPressed: _busy ? null : _submit,
                     child: Text(_busy ? loc.submitting : loc.submitReport),
@@ -1054,7 +1115,7 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
                 OutlinedButton.icon(
                   onPressed: _busy ? null : () => _submit(draft: true),
                   icon: const Icon(Icons.save_outlined),
-                  label: const Text('Save as draft'),
+                  label: Text(loc.saveAsDraft),
                 ),
               ],
             ),

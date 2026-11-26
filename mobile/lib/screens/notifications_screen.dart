@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../services/api.dart';
 import '../services/notification_state.dart';
 import 'geofence_map_screen.dart';
@@ -127,7 +128,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'This area is no longer active. Check Home for current safety zones.',
+              'This area is no longer active. Check Safety Zones for current information.',
             ),
           ),
         );
@@ -147,7 +148,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           content: Text(
             Api.userMessage(
               error,
-              fallback: 'Could not open this safety-zone map.',
+              fallback: AppLocalizations.of(context).couldNotOpenSafetyZone,
             ),
           ),
         ),
@@ -170,17 +171,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final unread = _notifications
         .where((n) => n is Map && n['is_read'] != true)
         .length;
     return Scaffold(
       appBar: AppBar(
-        title: Text(unread > 0 ? 'Notifications ($unread)' : 'Notifications'),
+        title: Text(
+          unread > 0 ? '${loc.notifications} ($unread)' : loc.notifications,
+        ),
         actions: [
           if (unread > 0)
             TextButton(
               onPressed: _markAllRead,
-              child: const Text('Mark all read'),
+              child: Text(loc.markAllRead),
             ),
           IconButton(icon: const Icon(Icons.refresh), onPressed: _load),
         ],
@@ -194,12 +198,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 children: [
                   Text(_error!, style: const TextStyle(color: Colors.blueGrey)),
                   const SizedBox(height: 12),
-                  FilledButton(onPressed: _load, child: const Text('Retry')),
+                  FilledButton(onPressed: _load, child: Text(loc.retry)),
                 ],
               ),
             )
           : _notifications.isEmpty
-          ? const Center(child: Text('No notifications yet.'))
+          ? Center(child: Text(loc.noNotificationsYet))
           : RefreshIndicator(
               onRefresh: _load,
               child: ListView.builder(
@@ -281,7 +285,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               color: Colors.blue,
                               size: 20,
                             ),
-                            tooltip: 'Mark read',
+                            tooltip: loc.markRead,
                             onPressed: id != null ? () => _markRead(id) : null,
                           ),
                     isThreeLine: true,

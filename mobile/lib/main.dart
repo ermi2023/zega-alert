@@ -10,8 +10,8 @@ import 'package:flutter/rendering.dart';
 
 import 'firebase_options.dart';
 
-import 'l10n/app_localizations.dart';
 import 'l10n/fallback_localizations.dart';
+import 'l10n/app_localizations.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
@@ -575,13 +575,13 @@ class _MainShellState extends State<MainShell> {
                 style: const TextStyle(color: Colors.white),
                 onChanged: _updateHomeSearch,
                 decoration: InputDecoration(
-                  hintText: 'Search missing or wanted people',
+                  hintText: loc.searchMissingWantedPeople,
                   hintStyle: const TextStyle(color: Colors.white70),
                   border: InputBorder.none,
                   suffixIcon: _homeSearchQuery.isEmpty
                       ? null
                       : IconButton(
-                          tooltip: 'Clear search',
+                          tooltip: loc.clearSearch,
                           icon: const Icon(Icons.close),
                           onPressed: () {
                             _searchController.clear();
@@ -593,7 +593,7 @@ class _MainShellState extends State<MainShell> {
             : _index == 0
             ? const SizedBox.shrink()
             : const Text(
-                'ZEGA-ALERT',
+                loc.appTitle,
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -605,12 +605,12 @@ class _MainShellState extends State<MainShell> {
         actions: [
           if (_index == 0)
             IconButton(
-              tooltip: _searchExpanded ? 'Close search' : 'Search people',
+              tooltip: _searchExpanded ? loc.closeSearch : loc.searchPeople,
               icon: Icon(_searchExpanded ? Icons.close : Icons.search),
               onPressed: _toggleHomeSearch,
             ),
           IconButton(
-            tooltip: 'Settings',
+            tooltip: loc.settings,
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => _selectTab(5),
           ),
@@ -812,8 +812,9 @@ class _NotificationBellState extends State<_NotificationBell> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return IconButton(
-      tooltip: 'Notifications',
+      tooltip: loc.notifications,
       icon: Badge(
         isLabelVisible: _unread > 0,
         label: Text('$_unread'),

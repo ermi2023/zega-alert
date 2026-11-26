@@ -601,4 +601,203 @@ class AppLocalizationsOm extends AppLocalizations {
   String sosUpdated(Object status) {
     return 'SOS kee amma $status jira';
   }
+
+  @override
+  String get searchMissingWantedPeople =>
+      'Namoota badan ykn barbaadaman barbaadi';
+
+  @override
+  String get clearSearch => 'Barbaacha qulqulleessi';
+
+  @override
+  String get closeSearch => 'Barbaacha cufi';
+
+  @override
+  String get searchPeople => 'Namoota barbaadi';
+
+  @override
+  String get notifications => 'Beeksisoota';
+
+  @override
+  String get markAllRead => 'Hunda dubbifame jedhi';
+
+  @override
+  String get markRead => 'Dubbifame jedhi';
+
+  @override
+  String get noNotificationsYet => 'Hanga ammaatti beeksisni hin jiru.';
+
+  @override
+  String get retry => 'Irra deebi\'ii yaali';
+
+  @override
+  String get safetyZoneNoLongerActive =>
+      'Naannoon kun amma hin hojjetu. Odeeffannoo haaraa Aanaalee Nageenyaa keessatti ilaali.';
+
+  @override
+  String get couldNotOpenSafetyZone =>
+      'Kaartaa aanaa nageenyaa banuun hin danda\'amne.';
+
+  @override
+  String get helpAndAccessibility => 'Gargaarsa fi qaqqabummaa';
+
+  @override
+  String get policeRescueContacts => 'Quunnamtii poolisii fi baraarsaa';
+
+  @override
+  String get personalInformation => 'Odeeffannoo dhuunfaa';
+
+  @override
+  String get emailAddress => 'Teessoo imeelii';
+
+  @override
+  String get safetyZoneEntryAlerts => 'Beeksisa yeroo aanaa nageenyaa seentu';
+
+  @override
+  String get safetyZoneEntryAlertsDescription =>
+      'Yeroo banamu, ZEGA Alert duubaan bakka kee ilaalee aanaa nageenyaa hojii irra jiru yeroo seentu si beeksisa. Android irratti ni hojjeta.';
+
+  @override
+  String get safetyZoneLocationPrivacy =>
+      'Bakka sirrii beeksisa kanaaf fayyadu bilbila kana irratti qofa tura; hin ergamu. Yeroo hordoffiin jiru Android beeksisa itti fufaa agarsiisa; baatirii dabalataan fayyadamuu danda\'a. SOS fi gabaasni bakka addaan fayyadamu danda\'u. Naannoo/naannoo xiqqaa ati galchite filannoo harkaa fi odeeffannoo naannoo irratti itti fufa.';
+
+  @override
+  String get allowBackgroundLocation => 'Bakka duubaa hayyami';
+
+  @override
+  String get allowBackgroundLocationDescription =>
+      'ZEGA Alert cufamee yeroo aanaa nageenyaa seentu ilaaluuf Android bakka yeroo hunda fayyadamu hayyamuu qaba. Hayyama app keessatti “Yeroo hunda hayyami” filadhu.';
+
+  @override
+  String get openAppSettings => 'Qindaa\'ina app bani';
+
+  @override
+  String get notNow => 'Amma miti';
+
+  @override
+  String get safetyZoneAlertsOn =>
+      'Beeksisni yeroo aanaa nageenyaa seentu banameera.';
+
+  @override
+  String get safetyZoneAlertsOff =>
+      'Beeksisni bakka aanaa nageenyaa cufameera.';
+
+  @override
+  String get safetyZoneAlertsOnNoZones =>
+      'Beeksisni bakka banameera. Aanaaleen nageenyaa maxxanfaman ammaaf hin jiran.';
+
+  @override
+  String get security => 'Nageenya';
+
+  @override
+  String get preferences => 'Filannoowwan';
+
+  @override
+  String get offlineData => 'Odeeffannoo interneetii malee';
+
+  @override
+  String get savePersonPhotos => 'Suuraa namoota barbaadamaa fi badan kuusi';
+
+  @override
+  String get savePersonPhotosDescription =>
+      'Suuraawwan ilaalte bilbila kana irratti interneetii malee fayyadamuuf kuufamu. Durtiidhaan cufaa dha.';
+
+  @override
+  String get clearSavedPhotos => 'Suuraawwan namootaa kuufaman haqi';
+
+  @override
+  String get clearSavedPhotosConfirmation =>
+      'Suuraawwan namootaa kuufaman haa haqamu?';
+
+  @override
+  String get clearSavedPhotosDescription =>
+      'Kun suuraawwan namoota barbaadamaa fi badan bilbila kana irratti kuufaman haqa. Kuusaan suuraa yoo baname irra deebi\'anii kuufamuu danda\'u.';
+
+  @override
+  String photosCountAndStorage(Object count, Object size) {
+    return 'Suuraa $count · $size fayyadame';
+  }
+
+  @override
+  String get officialSafetyAreasDescription =>
+      'Aanaalee nageenyaa aangawoonni naannoo maxxansan ilaali. Aanaalee haaraa ykn jijjiiraman, akkasumas balaa aanaa keessatti mudatan Beeksisa keessatti mul\'atu; beeksisa bilbilaa argachuuf beeksisni bilbilaa banamuu qaba. Odeeffannoon kun nageenya hin mirkaneessu.';
+
+  @override
+  String get noOfficialSafetyAreas =>
+      'Naannoo kanaaf hanga ammaatti aanaaleen nageenyaa mootummaa hin jiran.';
+
+  @override
+  String officialSafetyArea(Object name, Object type) {
+    return 'Aanaa nageenyaa mootummaa: $name. Akaakuu: $type.';
+  }
+
+  @override
+  String get mappedBoundary => 'Daangaa kaartaa irratti';
+
+  @override
+  String get currentPassword => 'Jecha darbii ammaa';
+
+  @override
+  String get newPassword => 'Jecha darbii haaraa';
+
+  @override
+  String get confirmNewPassword => 'Jecha darbii haaraa mirkaneessi';
+
+  @override
+  String get currentPasswordRequired => 'Maaloo jecha darbii ammaa galchi.';
+
+  @override
+  String get passwordMinimumLength => 'Yoo xiqqaate qubee 8 fayyadami.';
+
+  @override
+  String get passwordsDoNotMatch => 'Jechoonni darbii wal hin siman.';
+
+  @override
+  String get updatePassword => 'Jecha darbii haaromsi';
+
+  @override
+  String get welcomeBack => 'Baga deebite';
+
+  @override
+  String get welcomeSafetyMessage =>
+      'Hawaasa keenya nageenyaan tursiisuuf gargaarsa keetiif galatoomi.';
+
+  @override
+  String get phoneNumberOrEmail => 'Lakkoofsa bilbilaa ykn imeelii';
+
+  @override
+  String get enterPassword => 'Jecha darbii kee galchi';
+
+  @override
+  String get logIn => 'Seeni';
+
+  @override
+  String get forgotPassword => 'Jecha darbii dagatte?';
+
+  @override
+  String get signInBiometrics => 'Baayomeetiriksiin seeni';
+
+  @override
+  String get continueAsGuest => 'Akka keessummaatti itti fufi';
+
+  @override
+  String get signUp => 'Galmaa\'i';
+
+  @override
+  String get validEmailRequired => 'Teessoo imeelii sirrii galchi.';
+
+  @override
+  String get validPhoneOrEmailRequired =>
+      'Lakkoofsa bilbilaa ykn imeelii sirrii galchi.';
+
+  @override
+  String get invalidCredentials =>
+      'Bilbila/imeelii ykn jechi darbii sirrii miti. Irra deebi\'ii yaali.';
+
+  @override
+  String get accountNotFound =>
+      'Lakkoofsa bilbilaa/imeelii kanaan herregni hin argamne.';
+
+  @override
+  String get signInFailed => 'Seenuun hin danda\'amne. Irra deebi\'ii yaali.';
 }

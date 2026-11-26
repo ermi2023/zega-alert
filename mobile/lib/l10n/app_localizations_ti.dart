@@ -591,4 +591,194 @@ class AppLocalizationsTi extends AppLocalizations {
   String sosUpdated(Object status) {
     return 'SOSኻ ሕጂ $status እዩ';
   }
+
+  @override
+  String get searchMissingWantedPeople => 'ዝጠፍኡ ወይ ዝድለዩ ሰባት ድለ';
+
+  @override
+  String get clearSearch => 'ምድላይ ኣጽርይ';
+
+  @override
+  String get closeSearch => 'ምድላይ ዕጾ';
+
+  @override
+  String get searchPeople => 'ሰባት ድለ';
+
+  @override
+  String get notifications => 'ምልክታታት';
+
+  @override
+  String get markAllRead => 'ንኹሉ ከም ዝተነበበ ምልክት ግበር';
+
+  @override
+  String get markRead => 'ከም ዝተነበበ ምልክት ግበር';
+
+  @override
+  String get noNotificationsYet => 'ክሳብ ሕጂ ምልክታ የለን።';
+
+  @override
+  String get retry => 'እንደገና ፈትን';
+
+  @override
+  String get safetyZoneNoLongerActive =>
+      'እዚ ቦታ ድሕሪ ሕጂ ኣይንጡፍን እዩ። ኣብ ዞባታት ድሕነት ሓድሽ ሓበሬታ ርአ።';
+
+  @override
+  String get couldNotOpenSafetyZone => 'ካርታ ናይዚ ዞባ ድሕነት ምኽፋት ኣይተኻእለን።';
+
+  @override
+  String get helpAndAccessibility => 'ሓገዝን ተበጻሕነትን';
+
+  @override
+  String get policeRescueContacts => 'ርክብ ፖሊስን ህጹጽ ሓገዝን';
+
+  @override
+  String get personalInformation => 'ውልቃዊ ሓበሬታ';
+
+  @override
+  String get emailAddress => 'ኣድራሻ ኢመይል';
+
+  @override
+  String get safetyZoneEntryAlerts => 'ኣብ ዞባ ድሕነት እንተኣቲኻ ምልክታ';
+
+  @override
+  String get safetyZoneEntryAlertsDescription =>
+      'እንተነቒሑ፣ ZEGA Alert ኣብ ድሕረ ባይታ ቦታኻ ይምርምር፣ ናብ ንጡፍ ዝተሓበረ ዞባ ድሕነት ምስ እትኣቱ የጠንቅቐካ። ኣብ Android ይርከብ።';
+
+  @override
+  String get safetyZoneLocationPrivacy =>
+      'ንእዚ ምልክታ ዝጥቀመሉ ትኽክለኛ ቦታ ኣብዚ ስልኪ ይተርፍ፤ ኣይለኣኽን። ክትትል እናተኻየደ Android ቀጻሊ ምልክታ የርኢ፤ ባትሪ ዝያዳ ክጥቀም ይኽእል። SOSን ጸብጻባትን ቦታ ብፍሉይ ክጥቀሙ ይኽእሉ። ዝተቐመጠ ክልል/ንኡስ ከተማ ከም ናይ ኢድ ኣማራጺ ይተርፍ።';
+
+  @override
+  String get allowBackgroundLocation => 'ናይ ድሕረ ባይታ ቦታ ፍቐድ';
+
+  @override
+  String get allowBackgroundLocationDescription =>
+      'ZEGA Alert ተዓጽዩ ከሎ ኣብ ዞባ ድሕነት ምእታው ንምርኣይ Android ኩሉ ግዜ ቦታ ክጥቀም ፍቓድ የድልዮ። ኣብ ፍቓዳት app “ኩሉ ግዜ ፍቐድ” ምረጽ።';
+
+  @override
+  String get openAppSettings => 'ቅጥዕታት app ክፈት';
+
+  @override
+  String get notNow => 'ሕጂ ኣይኮነን';
+
+  @override
+  String get safetyZoneAlertsOn => 'ናይ ዞባ ድሕነት ምልክታ ምእታው በሪሁ ኣሎ።';
+
+  @override
+  String get safetyZoneAlertsOff => 'ናይ ዞባ ድሕነት ምልክታ ተዓጽዩ ኣሎ።';
+
+  @override
+  String get safetyZoneAlertsOnNoZones =>
+      'ምልክታ ቦታ በሪሁ ኣሎ። ክሳብ ሕጂ ዝተሓበረ ዞባ ድሕነት የለን።';
+
+  @override
+  String get security => 'ድሕነት';
+
+  @override
+  String get preferences => 'ምርጫታት';
+
+  @override
+  String get offlineData => 'ካብ መስመር ወጻኢ ሓበሬታ';
+
+  @override
+  String get savePersonPhotos => 'ፎቶ ናይ ዝድለዩን ዝጠፍኡን ሰባት ዓቅብ';
+
+  @override
+  String get savePersonPhotosDescription =>
+      'እትርእዮም ፎቶታት ካብ መስመር ወጻኢ ንምጥቃም ኣብዚ ስልኪ ይዕቀቡ። ብነባሪ ተዓጽዩ እዩ።';
+
+  @override
+  String get clearSavedPhotos => 'ዝተዓቀቡ ፎቶታት ሰባት ኣጽርይ';
+
+  @override
+  String get clearSavedPhotosConfirmation => 'ዝተዓቀቡ ፎቶታት ሰባት ይጽረዩ?';
+
+  @override
+  String get clearSavedPhotosDescription =>
+      'እዚ ኣብዚ ስልኪ ዝተዓቀቡ ፎቶታት ናይ ዝድለዩን ዝጠፍኡን ሰባት የርሕቕ። ምዕቃብ ፎቶ እንተነቒሑ ዳግማይ ክዕቀቡ ይኽእሉ።';
+
+  @override
+  String photosCountAndStorage(Object count, Object size) {
+    return '$count ፎቶ · $size ተጠቒሙ';
+  }
+
+  @override
+  String get officialSafetyAreasDescription =>
+      'ብኣካባቢ ሰበስልጣናት ዝተሓበሩ ወግዓዊ ቦታታት ድሕነት ርአ። ሓደሽቲ ወይ ዝተቐየሩ ቦታታትን ኣብ ዞባ ዘጋጥሙ ህጹጽ ኩነታትን ኣብ ምልክታታት ይርአዩ፤ ምልክታ ንምቕባል ናይ ስልኪ ምልክታታት ክፉታት ክኾኑ ኣለዎም። እዚ ሓበሬታ ድሕነት ኣየረጋግጽን።';
+
+  @override
+  String get noOfficialSafetyAreas => 'ንእዚ ክልል ክሳብ ሕጂ ወግዓዊ ቦታታት ድሕነት የለዉን።';
+
+  @override
+  String officialSafetyArea(Object name, Object type) {
+    return 'ወግዓዊ ቦታ ድሕነት፦ $name። ዓይነት፦ $type።';
+  }
+
+  @override
+  String get mappedBoundary => 'ኣብ ካርታ ዝተሓንጸጸ ዶብ';
+
+  @override
+  String get currentPassword => 'ናይ ሕጂ መሕለፊ ቃል';
+
+  @override
+  String get newPassword => 'ሓድሽ መሕለፊ ቃል';
+
+  @override
+  String get confirmNewPassword => 'ነቲ ሓድሽ መሕለፊ ቃል ኣረጋግጽ';
+
+  @override
+  String get currentPasswordRequired => 'በጃኻ ናይ ሕጂ መሕለፊ ቃል ኣእቱ።';
+
+  @override
+  String get passwordMinimumLength => 'እንተወሓደ 8 ፊደላት ተጠቐም።';
+
+  @override
+  String get passwordsDoNotMatch => 'መሕለፊ ቃላት ኣይመሳሰሉን።';
+
+  @override
+  String get updatePassword => 'መሕለፊ ቃል ኣሐድስ';
+
+  @override
+  String get welcomeBack => 'እንኳዕ ብደሓን ተመለስካ';
+
+  @override
+  String get welcomeSafetyMessage => 'ማሕበረሰብና ድሕነቱ ንምሕላው ስለ ዝሓገዝካ ነመስግነካ።';
+
+  @override
+  String get phoneNumberOrEmail => 'ቁጽሪ ተሌፎን ወይ ኢመይል';
+
+  @override
+  String get enterPassword => 'መሕለፊ ቃልካ ኣእቱ';
+
+  @override
+  String get logIn => 'እቶ';
+
+  @override
+  String get forgotPassword => 'መሕለፊ ቃልካ ረሲዕካዮ?';
+
+  @override
+  String get signInBiometrics => 'ብባዮሜትሪክስ እቶ';
+
+  @override
+  String get continueAsGuest => 'ከም ጋሻ ቀጽል';
+
+  @override
+  String get signUp => 'ተመዝገብ';
+
+  @override
+  String get validEmailRequired => 'ትኽክለኛ ኣድራሻ ኢመይል ኣእቱ።';
+
+  @override
+  String get validPhoneOrEmailRequired => 'ትኽክለኛ ቁጽሪ ተሌፎን ወይ ኢመይል ኣእቱ።';
+
+  @override
+  String get invalidCredentials =>
+      'ቁጽሪ ተሌፎን/ኢመይል ወይ መሕለፊ ቃል ትኽክል ኣይኮነን። ዳግማይ ፈትን።';
+
+  @override
+  String get accountNotFound => 'ብእዚ ቁጽሪ ተሌፎን/ኢመይል ዝተመዝገበ ሕሳብ ኣይተረኽበን።';
+
+  @override
+  String get signInFailed => 'ምእታው ኣይተኻእለን። ዳግማይ ፈትን።';
 }

@@ -107,7 +107,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'ZEGA-ALERT'**
+  /// **'Zega-alert'**
   String get appTitle;
 
   /// No description provided for @appSubtitle.
@@ -386,6 +386,30 @@ abstract class AppLocalizations {
   /// **'Safety zones (geofences)'**
   String get safetyZones;
 
+  /// No description provided for @safetyZonesTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Zones'**
+  String get safetyZonesTab;
+
+  /// No description provided for @safetyZonesHomeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety-zone updates and emergency incidents inside a zone are added to your notification inbox and sent as push alerts when notifications are enabled. Select an area below to see its map and boundary. Follow local instructions; a zone does not guarantee safety.'**
+  String get safetyZonesHomeDescription;
+
+  /// No description provided for @noSafetyZonesAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No official safety zones are currently published for your region.'**
+  String get noSafetyZonesAvailable;
+
+  /// No description provided for @safetyZonesLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety-zone information could not be loaded. Try again.'**
+  String get safetyZonesLoadFailed;
+
   /// No description provided for @addSafetyZone.
   ///
   /// In en, this message translates to:
@@ -479,7 +503,7 @@ abstract class AppLocalizations {
   /// No description provided for @emergencyAndCrime.
   ///
   /// In en, this message translates to:
-  /// **'ZEGA-ALERT · Emergency & crime reporting'**
+  /// **'Zega-alert · Emergency & crime reporting'**
   String get emergencyAndCrime;
 
   /// No description provided for @phone.
@@ -1177,6 +1201,546 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your SOS is now {status}'**
   String sosUpdated(Object status);
+
+  /// No description provided for @searchMissingWantedPeople.
+  ///
+  /// In en, this message translates to:
+  /// **'Search missing or wanted people'**
+  String get searchMissingWantedPeople;
+
+  /// No description provided for @clearSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get clearSearch;
+
+  /// No description provided for @closeSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Close search'**
+  String get closeSearch;
+
+  /// No description provided for @searchPeople.
+  ///
+  /// In en, this message translates to:
+  /// **'Search people'**
+  String get searchPeople;
+
+  /// No description provided for @notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notifications;
+
+  /// No description provided for @markAllRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark all read'**
+  String get markAllRead;
+
+  /// No description provided for @markRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark read'**
+  String get markRead;
+
+  /// No description provided for @noNotificationsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No notifications yet.'**
+  String get noNotificationsYet;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
+  /// No description provided for @safetyZoneNoLongerActive.
+  ///
+  /// In en, this message translates to:
+  /// **'This area is no longer active. Check Safety Zones for current information.'**
+  String get safetyZoneNoLongerActive;
+
+  /// No description provided for @couldNotOpenSafetyZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open this safety-zone map.'**
+  String get couldNotOpenSafetyZone;
+
+  /// No description provided for @helpAndAccessibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Help & accessibility'**
+  String get helpAndAccessibility;
+
+  /// No description provided for @policeRescueContacts.
+  ///
+  /// In en, this message translates to:
+  /// **'Police and rescue contacts'**
+  String get policeRescueContacts;
+
+  /// No description provided for @personalInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal information'**
+  String get personalInformation;
+
+  /// No description provided for @emailAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Email address'**
+  String get emailAddress;
+
+  /// No description provided for @safetyZoneEntryAlerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety Zone entry alerts'**
+  String get safetyZoneEntryAlerts;
+
+  /// No description provided for @safetyZoneEntryAlertsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When enabled, ZEGA Alert checks your location in the background and alerts you when you enter an active published Safety Zone. Available on Android.'**
+  String get safetyZoneEntryAlertsDescription;
+
+  /// No description provided for @safetyZoneLocationPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Precise location for these alerts stays on this device and is not uploaded. Android shows an ongoing notification while monitoring; this can use more battery. SOS and report actions may use location separately. Your saved Region/Sub-city fields remain the manual fallback and still control area-based information.'**
+  String get safetyZoneLocationPrivacy;
+
+  /// No description provided for @allowBackgroundLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow background location'**
+  String get allowBackgroundLocation;
+
+  /// No description provided for @allowBackgroundLocationDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'To check for Safety Zone entry while ZEGA Alert is closed, Android must allow location access all the time. In app permissions, choose “Allow all the time”.'**
+  String get allowBackgroundLocationDescription;
+
+  /// No description provided for @openAppSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open app settings'**
+  String get openAppSettings;
+
+  /// No description provided for @notNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get notNow;
+
+  /// No description provided for @safetyZoneAlertsOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety Zone entry alerts are on.'**
+  String get safetyZoneAlertsOn;
+
+  /// No description provided for @safetyZoneAlertsOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety Zone location alerts are off.'**
+  String get safetyZoneAlertsOff;
+
+  /// No description provided for @safetyZoneAlertsOnNoZones.
+  ///
+  /// In en, this message translates to:
+  /// **'Location alerts are on. No published Safety Zones are available yet.'**
+  String get safetyZoneAlertsOnNoZones;
+
+  /// No description provided for @security.
+  ///
+  /// In en, this message translates to:
+  /// **'Security'**
+  String get security;
+
+  /// No description provided for @preferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get preferences;
+
+  /// No description provided for @offlineData.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline data'**
+  String get offlineData;
+
+  /// No description provided for @savePersonPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Save wanted and missing-person photos'**
+  String get savePersonPhotos;
+
+  /// No description provided for @savePersonPhotosDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos you view are stored on this device for offline access. This is off by default.'**
+  String get savePersonPhotosDescription;
+
+  /// No description provided for @clearSavedPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear saved person photos'**
+  String get clearSavedPhotos;
+
+  /// No description provided for @clearSavedPhotosConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear saved person photos?'**
+  String get clearSavedPhotosConfirmation;
+
+  /// No description provided for @clearSavedPhotosDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes wanted and missing-person photos saved on this device. They can be saved again while photo storage is enabled.'**
+  String get clearSavedPhotosDescription;
+
+  /// No description provided for @photosCountAndStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} photos · {size} used'**
+  String photosCountAndStorage(Object count, Object size);
+
+  /// No description provided for @officialSafetyAreasDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'View official safety areas published by local authorities. New or changed areas and emergency incidents inside a zone appear in Notifications; push alerts require device notifications to be enabled. This information does not guarantee safety.'**
+  String get officialSafetyAreasDescription;
+
+  /// No description provided for @noOfficialSafetyAreas.
+  ///
+  /// In en, this message translates to:
+  /// **'No official safety areas are available for this region yet.'**
+  String get noOfficialSafetyAreas;
+
+  /// No description provided for @officialSafetyArea.
+  ///
+  /// In en, this message translates to:
+  /// **'Official safety area: {name}. Type: {type}.'**
+  String officialSafetyArea(Object name, Object type);
+
+  /// No description provided for @mappedBoundary.
+  ///
+  /// In en, this message translates to:
+  /// **'Mapped boundary'**
+  String get mappedBoundary;
+
+  /// No description provided for @currentPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Current password'**
+  String get currentPassword;
+
+  /// No description provided for @newPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get newPassword;
+
+  /// No description provided for @confirmNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm new password'**
+  String get confirmNewPassword;
+
+  /// No description provided for @currentPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your current password.'**
+  String get currentPasswordRequired;
+
+  /// No description provided for @passwordMinimumLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Use at least 8 characters.'**
+  String get passwordMinimumLength;
+
+  /// No description provided for @passwordsDoNotMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match.'**
+  String get passwordsDoNotMatch;
+
+  /// No description provided for @updatePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Update password'**
+  String get updatePassword;
+
+  /// No description provided for @welcomeBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back'**
+  String get welcomeBack;
+
+  /// No description provided for @welcomeSafetyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you for helping keep our community safe.'**
+  String get welcomeSafetyMessage;
+
+  /// No description provided for @phoneNumberOrEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number or email'**
+  String get phoneNumberOrEmail;
+
+  /// No description provided for @enterPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your password'**
+  String get enterPassword;
+
+  /// No description provided for @logIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Log in'**
+  String get logIn;
+
+  /// No description provided for @forgotPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot your password?'**
+  String get forgotPassword;
+
+  /// No description provided for @signInBiometrics.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with biometrics'**
+  String get signInBiometrics;
+
+  /// No description provided for @continueAsGuest.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue as guest'**
+  String get continueAsGuest;
+
+  /// No description provided for @signUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign up'**
+  String get signUp;
+
+  /// No description provided for @validEmailRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email address.'**
+  String get validEmailRequired;
+
+  /// No description provided for @validPhoneOrEmailRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid phone number or email.'**
+  String get validPhoneOrEmailRequired;
+
+  /// No description provided for @invalidCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid phone/email or password. Please try again.'**
+  String get invalidCredentials;
+
+  /// No description provided for @accountNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No account found with this phone/email.'**
+  String get accountNotFound;
+
+  /// No description provided for @signInFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in could not be completed. Please try again.'**
+  String get signInFailed;
+
+  /// No description provided for @police.
+  ///
+  /// In en, this message translates to:
+  /// **'Police'**
+  String get police;
+
+  /// No description provided for @ambulanceRescue.
+  ///
+  /// In en, this message translates to:
+  /// **'Ambulance / rescue'**
+  String get ambulanceRescue;
+
+  /// No description provided for @regionSelectedSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Region dropdown. Currently set to {region}.'**
+  String regionSelectedSemantics(Object region);
+
+  /// No description provided for @subCitySelectedSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Sub-city dropdown. Currently set to {subCity}.'**
+  String subCitySelectedSemantics(Object subCity);
+
+  /// No description provided for @languageSelectedSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferred language dropdown. Currently set to {language}.'**
+  String languageSelectedSemantics(Object language);
+
+  /// No description provided for @citizenProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Citizen profile'**
+  String get citizenProfile;
+
+  /// No description provided for @verifiedAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified account'**
+  String get verifiedAccount;
+
+  /// No description provided for @unverifiedAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Unverified account'**
+  String get unverifiedAccount;
+
+  /// No description provided for @editProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit profile'**
+  String get editProfile;
+
+  /// No description provided for @notAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available'**
+  String get notAvailable;
+
+  /// No description provided for @memberSince.
+  ///
+  /// In en, this message translates to:
+  /// **'Member since'**
+  String get memberSince;
+
+  /// No description provided for @verificationStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification status'**
+  String get verificationStatus;
+
+  /// No description provided for @guestBrowsing.
+  ///
+  /// In en, this message translates to:
+  /// **'Browsing as guest'**
+  String get guestBrowsing;
+
+  /// No description provided for @guestFeaturesInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to file reports, send SOS, message officers and verify your ID.'**
+  String get guestFeaturesInfo;
+
+  /// No description provided for @signInCreateAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in / Create account'**
+  String get signInCreateAccount;
+
+  /// No description provided for @fanIdentityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'FAN identity verification'**
+  String get fanIdentityTitle;
+
+  /// No description provided for @fanIdentityDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan your original ID QR or enter its 16-digit FAN to check the administrator’s mock record.'**
+  String get fanIdentityDescription;
+
+  /// No description provided for @settingsSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile and settings saved.'**
+  String get settingsSaved;
+
+  /// No description provided for @settingsSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save your profile.'**
+  String get settingsSaveFailed;
+
+  /// No description provided for @notificationLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load notifications right now.'**
+  String get notificationLoadFailed;
+
+  /// No description provided for @backgroundLocationPermissionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose “Allow all the time” in app permissions, then turn on Safety Zone alerts again.'**
+  String get backgroundLocationPermissionRequired;
+
+  /// No description provided for @backgroundLocationAndroidOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Background Safety Zone alerts are currently available on Android.'**
+  String get backgroundLocationAndroidOnly;
+
+  /// No description provided for @turnOnDeviceLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on device Location to enable Safety Zone alerts.'**
+  String get turnOnDeviceLocation;
+
+  /// No description provided for @alwaysLocationPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow ZEGA Alert to access location all the time in app permissions, then turn Safety Zone alerts on again.'**
+  String get alwaysLocationPermission;
+
+  /// No description provided for @safetyNotificationsUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety Zone notifications are not available on this device.'**
+  String get safetyNotificationsUnavailable;
+
+  /// No description provided for @allowSafetyNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow notifications for ZEGA Alert to receive Safety Zone entry alerts.'**
+  String get allowSafetyNotifications;
+
+  /// No description provided for @couldNotEnableSafetyZoneAlerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not enable Safety Zone alerts. Check your connection, location permission, and notification settings.'**
+  String get couldNotEnableSafetyZoneAlerts;
+
+  /// No description provided for @couldNotStartLocationMonitoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start Safety Zone location monitoring.'**
+  String get couldNotStartLocationMonitoring;
+
+  /// No description provided for @couldNotRestartLocationMonitoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not restart Safety Zone location monitoring.'**
+  String get couldNotRestartLocationMonitoring;
+
+  /// No description provided for @locationMonitoringStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Location monitoring stopped. Check device Location and permissions.'**
+  String get locationMonitoringStopped;
+
+  /// No description provided for @couldNotCheckZoneBoundaries.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not check the current Safety Zone boundaries.'**
+  String get couldNotCheckZoneBoundaries;
 }
 
 class _AppLocalizationsDelegate

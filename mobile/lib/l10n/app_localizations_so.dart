@@ -155,6 +155,21 @@ class AppLocalizationsSo extends AppLocalizations {
   String get safetyZones => 'Aagagga badbaadada (geofences)';
 
   @override
+  String get safetyZonesTab => 'Aagag';
+
+  @override
+  String get safetyZonesHomeDescription =>
+      'Cusboonaysiinta aagagga badbaadada iyo xaaladaha degdegga ah ee ka dhaca gudaha aag waxaa lagu daraa sanduuqa ogeysiisyada, waxaana loo diraa ogeysiis degdeg ah haddii ogeysiisyadu daaran yihiin. Dooro aag hoose si aad u aragto khariidad iyo xuduud. Raac tilmaamaha maamulka; aaggu ma dammaanad qaado badbaado.';
+
+  @override
+  String get noSafetyZonesAvailable =>
+      'Gobolkaaga hadda lagama diiwaangelin aag badbaado oo rasmi ah.';
+
+  @override
+  String get safetyZonesLoadFailed =>
+      'Xogta aagagga badbaadada lama soo dejin karin. Mar kale isku day.';
+
+  @override
   String get addSafetyZone => 'Ku dar aagga badbaadada';
 
   @override
@@ -597,4 +612,317 @@ class AppLocalizationsSo extends AppLocalizations {
   String sosUpdated(Object status) {
     return 'SOS kaaga hadda waa $status';
   }
+
+  @override
+  String get searchMissingWantedPeople => 'Raadi dadka maqan ama la doonayo';
+
+  @override
+  String get clearSearch => 'Nadiifi raadinta';
+
+  @override
+  String get closeSearch => 'Xir raadinta';
+
+  @override
+  String get searchPeople => 'Raadi dadka';
+
+  @override
+  String get notifications => 'Ogeysiisyada';
+
+  @override
+  String get markAllRead => 'Dhammaan u calaamadee in la akhriyey';
+
+  @override
+  String get markRead => 'U calaamadee in la akhriyey';
+
+  @override
+  String get noNotificationsYet => 'Weli ogeysiis ma jiro.';
+
+  @override
+  String get retry => 'Mar kale isku day';
+
+  @override
+  String get safetyZoneNoLongerActive =>
+      'Aaggani hadda ma shaqaynayo. Ka eeg Aagagga Badbaadada xogta hadda jirta.';
+
+  @override
+  String get couldNotOpenSafetyZone =>
+      'Lama furi karin khariidadda aagga badbaadada.';
+
+  @override
+  String get helpAndAccessibility => 'Caawimo iyo fududaynta isticmaalka';
+
+  @override
+  String get policeRescueContacts => 'Xiriirrada booliiska iyo gurmadka';
+
+  @override
+  String get personalInformation => 'Xogta gaarka ah';
+
+  @override
+  String get emailAddress => 'Cinwaanka iimaylka';
+
+  @override
+  String get safetyZoneEntryAlerts => 'Ogeysiiska gelitaanka aagga badbaadada';
+
+  @override
+  String get safetyZoneEntryAlertsDescription =>
+      'Marka la shido, ZEGA Alert waxay gadaal ka hubinaysaa goobtaada oo ku wargelinaysaa markaad gasho aag badbaado oo firfircoon oo la daabacay. Waxaa laga heli karaa Android.';
+
+  @override
+  String get safetyZoneLocationPrivacy =>
+      'Goobta saxda ah ee ogeysiisyadani waxay ku hadhaysaa qalabkan mana la dirayo. Android waxay muujinaysaa ogeysiis joogto ah inta lala socdo; tani waxay isticmaali kartaa baytari dheeraad ah. SOS iyo warbixinnadu si gaar ah ayay goobta u isticmaali karaan. Gobolka/Magaalada-hoose ee aad kaydisay waxay ahaanayaan beddelka gacanta iyo xogta aagagga.';
+
+  @override
+  String get allowBackgroundLocation => 'Oggolow goobta gadaal';
+
+  @override
+  String get allowBackgroundLocationDescription =>
+      'Si loo hubiyo gelitaanka aagga badbaadada marka ZEGA Alert xiran yahay, Android waa inay oggolaataa goobta mar kasta. Oggolaanshaha app-ka ka dooro “Oggolow mar kasta”.';
+
+  @override
+  String get openAppSettings => 'Fur dejinta app-ka';
+
+  @override
+  String get notNow => 'Hadda ma aha';
+
+  @override
+  String get safetyZoneAlertsOn =>
+      'Ogeysiiska gelitaanka aagga badbaadada waa shidan yahay.';
+
+  @override
+  String get safetyZoneAlertsOff =>
+      'Ogeysiiska goobta aagga badbaadada waa dansan yahay.';
+
+  @override
+  String get safetyZoneAlertsOnNoZones =>
+      'Ogeysiiska goobtu waa shidan yahay. Weli lama daabicin aagag badbaado.';
+
+  @override
+  String get security => 'Amniga';
+
+  @override
+  String get preferences => 'Doorbidyada';
+
+  @override
+  String get offlineData => 'Xog aan internet u baahnayn';
+
+  @override
+  String get savePersonPhotos =>
+      'Kaydi sawirrada dadka maqan iyo kuwa la doonayo';
+
+  @override
+  String get savePersonPhotosDescription =>
+      'Sawirrada aad aragto waxaa lagu kaydiyaa qalabkan si offline loogu isticmaalo. Sida caadiga ah waa dansan yahay.';
+
+  @override
+  String get clearSavedPhotos => 'Tirtir sawirrada dadka la kaydiyey';
+
+  @override
+  String get clearSavedPhotosConfirmation =>
+      'Ma tirtirtaa sawirrada dadka la kaydiyey?';
+
+  @override
+  String get clearSavedPhotosDescription =>
+      'Tani waxay ka saaraysaa qalabkan sawirrada dadka maqan iyo kuwa la doonayo. Mar kale waa la kaydin karaa haddii kaydinta sawirradu shidan tahay.';
+
+  @override
+  String photosCountAndStorage(Object count, Object size) {
+    return '$count sawir · $size la isticmaalay';
+  }
+
+  @override
+  String get officialSafetyAreasDescription =>
+      'Eeg aagagga badbaadada rasmiga ah ee ay daabaceen maamulka deegaanka. Aagagga cusub ama la beddelay iyo xaaladaha degdegga ah ee ka dhaca gudaha aagga waxay ka muuqdaan Ogeysiisyada; ogeysiisyada tooska ah waxay u baahan yihiin in ogeysiisyada qalabku shidan yihiin. Xogtani ma dammaanad qaaddo badbaado.';
+
+  @override
+  String get noOfficialSafetyAreas =>
+      'Weli ma jiraan aagag badbaado rasmi ah oo gobolkan loo heli karo.';
+
+  @override
+  String officialSafetyArea(Object name, Object type) {
+    return 'Aagga badbaadada rasmiga ah: $name. Nooca: $type.';
+  }
+
+  @override
+  String get mappedBoundary => 'Xuduud khariidadda ku calaamadsan';
+
+  @override
+  String get currentPassword => 'Furaha sirta ah ee hadda';
+
+  @override
+  String get newPassword => 'Fure sir ah oo cusub';
+
+  @override
+  String get confirmNewPassword => 'Xaqiiji furaha cusub';
+
+  @override
+  String get currentPasswordRequired => 'Fadlan geli furaha sirta ah ee hadda.';
+
+  @override
+  String get passwordMinimumLength => 'Isticmaal ugu yaraan 8 xaraf.';
+
+  @override
+  String get passwordsDoNotMatch => 'Furayaasha sirta ahi isma waafaqaan.';
+
+  @override
+  String get updatePassword => 'Cusboonaysii furaha sirta ah';
+
+  @override
+  String get welcomeBack => 'Soo dhawoow';
+
+  @override
+  String get welcomeSafetyMessage =>
+      'Waad ku mahadsan tahay inaad naga caawiso ilaalinta badbaadada bulshada.';
+
+  @override
+  String get phoneNumberOrEmail => 'Lambarka telefoonka ama iimaylka';
+
+  @override
+  String get enterPassword => 'Geli furahaaga sirta ah';
+
+  @override
+  String get logIn => 'Soo gal';
+
+  @override
+  String get forgotPassword => 'Ma illowday furaha sirta ah?';
+
+  @override
+  String get signInBiometrics => 'Ku gal aqoonsiga biometriga';
+
+  @override
+  String get continueAsGuest => 'Ku sii wad marti ahaan';
+
+  @override
+  String get signUp => 'Is diiwaangeli';
+
+  @override
+  String get validEmailRequired => 'Geli cinwaan iimayl oo sax ah.';
+
+  @override
+  String get validPhoneOrEmailRequired =>
+      'Geli lambar telefoon ama iimayl sax ah.';
+
+  @override
+  String get invalidCredentials =>
+      'Lambarka telefoonka/iimaylka ama furaha sirta ahi waa khaldan yahay. Mar kale isku day.';
+
+  @override
+  String get accountNotFound =>
+      'Akoon lambarkan telefoonka/iimaylkan ku jira lama helin.';
+
+  @override
+  String get signInFailed =>
+      'Soo gelitaanku ma suurtagelin. Mar kale isku day.';
+
+  @override
+  String get police => 'Booliiska';
+
+  @override
+  String get ambulanceRescue => 'Ambalaas / gurmad';
+
+  @override
+  String regionSelectedSemantics(Object region) {
+    return 'Doorashada gobolka. Hadda $region ayaa la doortay.';
+  }
+
+  @override
+  String subCitySelectedSemantics(Object subCity) {
+    return 'Doorashada magaalada-hoose. Hadda $subCity ayaa la doortay.';
+  }
+
+  @override
+  String languageSelectedSemantics(Object language) {
+    return 'Doorashada luqadda. Hadda $language ayaa la doortay.';
+  }
+
+  @override
+  String get citizenProfile => 'Xogta muwaadinka';
+
+  @override
+  String get verifiedAccount => 'Akoon la xaqiijiyey';
+
+  @override
+  String get unverifiedAccount => 'Akoon aan la xaqiijin';
+
+  @override
+  String get editProfile => 'Wax ka beddel xogta';
+
+  @override
+  String get notAvailable => 'Lama hayo';
+
+  @override
+  String get memberSince => 'Xubin laga soo bilaabo';
+
+  @override
+  String get verificationStatus => 'Xaaladda xaqiijinta';
+
+  @override
+  String get guestBrowsing => 'Waxaad u baadhaysaa marti ahaan';
+
+  @override
+  String get guestFeaturesInfo =>
+      'Soo gal si aad warbixin u gudbiso, SOS u dirto, saraakiisha farriin ugu dirto oo aqoonsigaaga u xaqiijiso.';
+
+  @override
+  String get signInCreateAccount => 'Soo gal / Akoon samee';
+
+  @override
+  String get fanIdentityTitle => 'Xaqiijinta aqoonsiga FAN';
+
+  @override
+  String get fanIdentityDescription =>
+      'Sawir QR-ka aqoonsigaaga asalka ah ama geli FAN-ka 16-ka lambar ah si loo eego diiwaanka tusaalaha ee maamulka.';
+
+  @override
+  String get settingsSaved => 'Xogta iyo dejimaha waa la kaydiyey.';
+
+  @override
+  String get settingsSaveFailed => 'Xogtaada lama kaydin karin.';
+
+  @override
+  String get notificationLoadFailed =>
+      'Ogeysiisyada hadda lama soo dejin karin.';
+
+  @override
+  String get backgroundLocationPermissionRequired =>
+      'Dejinta oggolaanshaha app-ka ka dooro “Oggolow mar kasta”, dabadeed mar kale daar ogeysiisyada Aagga Badbaadada.';
+
+  @override
+  String get backgroundLocationAndroidOnly =>
+      'Ogeysiisyada Aagga Badbaadada ee gadaal waxay hadda ka shaqeeyaan Android oo keliya.';
+
+  @override
+  String get turnOnDeviceLocation =>
+      'Daar goobta qalabka si aad u shiddo ogeysiisyada Aagga Badbaadada.';
+
+  @override
+  String get alwaysLocationPermission =>
+      'Oggolaanshaha app-ka u oggolow ZEGA Alert inay goobta isticmaasho mar kasta, dabadeed mar kale daar ogeysiisyada Aagga Badbaadada.';
+
+  @override
+  String get safetyNotificationsUnavailable =>
+      'Ogeysiisyada Aagga Badbaadada lagama heli karo qalabkan.';
+
+  @override
+  String get allowSafetyNotifications =>
+      'Oggolow ogeysiisyada ZEGA Alert si aad u hesho digniinaha gelitaanka Aagga Badbaadada.';
+
+  @override
+  String get couldNotEnableSafetyZoneAlerts =>
+      'Lama shidi karin ogeysiisyada Aagga Badbaadada. Hubi internetka, oggolaanshaha goobta iyo dejinta ogeysiisyada.';
+
+  @override
+  String get couldNotStartLocationMonitoring =>
+      'Lama bilaabi karin la socodka goobta Aagga Badbaadada.';
+
+  @override
+  String get couldNotRestartLocationMonitoring =>
+      'Lama bilaabi karin mar kale la socodka goobta Aagga Badbaadada.';
+
+  @override
+  String get locationMonitoringStopped =>
+      'La socodka goobtu wuu joogsaday. Hubi goobta qalabka iyo oggolaanshaha.';
+
+  @override
+  String get couldNotCheckZoneBoundaries =>
+      'Lama hubin karin xuduudaha hadda ee Aagga Badbaadada.';
 }

@@ -1,26 +1,33 @@
 import 'dart:async';
+
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
+
 import '../l10n/app_localizations.dart';
 import '../services/api.dart';
 import '../widgets/auth_gate.dart';
 import '../widgets/fullscreen_image_viewer.dart';
+import '../widgets/offline_person_image.dart';
 import '../widgets/road_closure_map_widget.dart';
 import '../widgets/translatable_text.dart';
 import '../services/database_service.dart';
+import '../services/notification_state.dart';
 import 'announcement_detail_screen.dart';
-import 'id_verification_screen.dart';
 import 'missing_report_screen.dart';
 import 'person_detail_screen.dart';
 
 class NewsScreen extends StatefulWidget {
-  const NewsScreen({super.key});
+  const NewsScreen({super.key, this.initialTab = 0});
+
+  final int initialTab;
 
   @override
   State<NewsScreen> createState() => _NewsScreenState();
 }
 
-class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateMixin {
+class _NewsScreenState extends State<NewsScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabs;
   List<dynamic> _items = [];
   List<dynamic> _legal = [];
@@ -33,6 +40,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
   bool _loading = true;
   String? _loadError;
   bool _offline = false;
+  bool _showFilterBar = false;
 
   // Social interactions state: entityKey -> reaction ('like' / 'dislike' / null)
   final Map<String, String?> _userReactions = {};
@@ -49,7 +57,11 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 6, vsync: this);
+    _tabs = TabController(
+      length: 6,
+      initialIndex: widget.initialTab.clamp(0, 5).toInt(),
+      vsync: this,
+    );
     _loadNews();
   }
 
@@ -62,6 +74,26 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
     super.dispose();
   }
 
+  bool _handleFilterBarScroll(ScrollNotification notification) {
+    if (notification.metrics.axis != Axis.vertical) return false;
+    var shouldShow = _showFilterBar;
+    if (notification is UserScrollNotification) {
+      if (notification.direction == ScrollDirection.reverse) {
+        shouldShow = true;
+      } else if (notification.direction == ScrollDirection.forward) {
+        shouldShow = false;
+      }
+    } else if (notification is ScrollEndNotification &&
+        notification.metrics.pixels <=
+            notification.metrics.minScrollExtent + 1) {
+      shouldShow = false;
+    }
+    if (_showFilterBar != shouldShow) {
+      setState(() => _showFilterBar = shouldShow);
+    }
+    return false;
+  }
+
   TextEditingController _getCommentController(String key) {
     if (!_commentControllers.containsKey(key)) {
       _commentControllers[key] = TextEditingController();
@@ -69,7 +101,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
     return _commentControllers[key]!;
   }
 
-  Future<void> _loadNews() async {
+  Future<void> _loadNews({bool clearContentNotifications = false}) async {
     setState(() {
       _loading = true;
       _loadError = null;
@@ -103,6 +135,21 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
           _loading = false;
         });
       }
+      if (clearContentNotifications && mounted && Api.isLoggedIn) {
+        try {
+          await Api.post('/notifications/read-content-updates', {});
+          NotificationState.notifyChanged();
+        } catch (e) {
+          if (mounted) {
+            setState(() {
+              _loadError = Api.userMessage(
+                e,
+                fallback: 'The feed refreshed, but notifications could not be cleared.',
+              );
+            });
+          }
+        }
+      }
     } catch (e) {
       final cached = await DatabaseService.getCachedList('announcements');
       if (mounted) {
@@ -123,7 +170,10 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
           }
         } else {
           setState(() {
-            _loadError = 'Failed to load updates: $e';
+            _loadError = Api.userMessage(
+              e,
+              fallback: 'Could not load updates right now.',
+            );
             _loading = false;
           });
         }
@@ -133,14 +183,23 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
 
   Future<void> _loadLegal() async {
     final params = <String>[];
-    if (_legalCategory != null && _legalCategory!.isNotEmpty) params.add('category=$_legalCategory');
-    if (_legalLang != null && _legalLang!.isNotEmpty) params.add('language=$_legalLang');
+    if (_legalCategory != null && _legalCategory!.isNotEmpty)
+      params.add('category=$_legalCategory');
+    if (_legalLang != null && _legalLang!.isNotEmpty)
+      params.add('language=$_legalLang');
     final path = params.isEmpty ? '/legal' : '/legal?${params.join('&')}';
     try {
       final data = await Api.get(path);
       if (mounted) setState(() => _legal = data is List ? data : []);
     } catch (e) {
-      if (mounted) setState(() => _loadError = 'Failed to load: $e');
+      if (mounted) {
+        setState(
+          () => _loadError = Api.userMessage(
+            e,
+            fallback: 'Could not load this information right now.',
+          ),
+        );
+      }
     }
   }
 
@@ -192,7 +251,11 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Please sign in to react: $e')),
+          SnackBar(
+            content: Text(
+              Api.userMessage(e, fallback: 'Please sign in to react.'),
+            ),
+          ),
         );
       }
     }
@@ -256,7 +319,11 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to post comment: $e')),
+          SnackBar(
+            content: Text(
+              Api.userMessage(e, fallback: 'Could not post your comment.'),
+            ),
+          ),
         );
       }
     }
@@ -287,26 +354,34 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(loc.newsAndInformation, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                      Text('News, road closures, wanted & missing persons, and lost items',
-                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                      Text(
+                        loc.newsAndInformation,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        'News, road closures, wanted & missing persons, and lost items',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                     ],
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Scan Fayda ID',
-                  onPressed: () async {
-                    if (!await ensureAuthed(context, reason: 'Sign in to verify your Fayda National ID.')) return;
-                    if (!context.mounted) return;
-                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const IdVerificationScreen()));
-                  },
-                  icon: const Icon(Icons.qr_code_scanner),
-                ),
-                IconButton(
                   tooltip: 'Refresh',
-                  onPressed: _loading ? null : _loadNews,
+                  onPressed: _loading
+                      ? null
+                      : () => _loadNews(clearContentNotifications: true),
                   icon: _loading
-                      ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                       : const Icon(Icons.refresh),
                 ),
               ],
@@ -316,40 +391,57 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Card(
-                color: Colors.red.shade50,
+                color: Colors.blueGrey.shade50,
                 child: Padding(
                   padding: const EdgeInsets.all(12),
-                  child: Row(children: [
-                    const Icon(Icons.error_outline, color: Colors.red),
-                    const SizedBox(width: 8),
-                    Expanded(child: Text(_loadError!, style: const TextStyle(color: Colors.red))),
-                  ]),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, color: Colors.blueGrey),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _loadError!,
+                          style: const TextStyle(color: Colors.blueGrey),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          TabBar(
-            controller: _tabs,
-            isScrollable: true,
-            tabs: [
-              Tab(text: loc.announcementsTab),
-              Tab(text: loc.missingTab),
-              Tab(text: loc.wantedPersons),
-              const Tab(text: 'Lost & found'),
-              Tab(text: loc.legalTab),
-              Tab(text: loc.sightingsTab),
-            ],
+          AnimatedSize(
+            duration: const Duration(milliseconds: 240),
+            curve: Curves.easeInOut,
+            alignment: Alignment.topCenter,
+            child: _showFilterBar
+                ? TabBar(
+                    controller: _tabs,
+                    isScrollable: true,
+                    tabs: [
+                      Tab(text: loc.announcementsTab),
+                      Tab(text: loc.missingTab),
+                      Tab(text: loc.wantedPersons),
+                      const Tab(text: 'Lost & found'),
+                      Tab(text: loc.legalTab),
+                      Tab(text: loc.sightingsTab),
+                    ],
+                  )
+                : const SizedBox(width: double.infinity),
           ),
           Expanded(
-            child: TabBarView(
-              controller: _tabs,
-              children: [
-                _newsTab(),
-                _missingTab(),
-                _wantedTab(),
-                _itemsTab(),
-                _legalTab(),
-                _sightingsTab(),
-              ],
+            child: NotificationListener<ScrollNotification>(
+              onNotification: _handleFilterBarScroll,
+              child: TabBarView(
+                controller: _tabs,
+                children: [
+                  _newsTab(),
+                  _missingTab(),
+                  _wantedTab(),
+                  _itemsTab(),
+                  _legalTab(),
+                  _sightingsTab(),
+                ],
+              ),
             ),
           ),
         ],
@@ -371,69 +463,105 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
         : _items.where((a) => a['category'] == _newsFilter).toList();
     return Column(
       children: [
-        SizedBox(
-          height: 52,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            children: _newsFilters
-                .map((f) => Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(f.label),
-                        selected: _newsFilter == f.value,
-                        onSelected: (_) => setState(() => _newsFilter = f.value),
-                      ),
-                    ))
-                .toList(),
-          ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topCenter,
+          child: _showFilterBar
+              ? SizedBox(
+                  height: 52,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    children: _newsFilters
+                        .map(
+                          (f) => Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ChoiceChip(
+                              label: Text(f.label),
+                              selected: _newsFilter == f.value,
+                              onSelected: (_) =>
+                                  setState(() => _newsFilter = f.value),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                )
+              : const SizedBox(width: double.infinity),
         ),
         Expanded(
           child: _loading && _items.isEmpty
               ? const Center(child: CircularProgressIndicator())
               : items.isEmpty
-                  ? _empty(AppLocalizations.of(context).nothingHereYet)
-                  : RefreshIndicator(
-                      onRefresh: _loadNews,
-                      color: const Color(0xFF0F172A),
-                      child: ListView.separated(
-                        padding: const EdgeInsets.only(top: 8, bottom: 24),
-                        itemCount: items.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
-                        itemBuilder: (_, i) => _buildNewsCard(
-                          context,
-                          Map<String, dynamic>.from(items[i] as Map),
+              ? RefreshIndicator(
+                  onRefresh: () => _loadNews(clearContentNotifications: true),
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      SizedBox(
+                        height: 320,
+                        child: _empty(
+                          AppLocalizations.of(context).nothingHereYet,
                         ),
                       ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: () => _loadNews(clearContentNotifications: true),
+                  color: const Color(0xFF0F172A),
+                  child: ListView.separated(
+                    padding: const EdgeInsets.only(top: 8, bottom: 24),
+                    itemCount: items.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (_, i) => _buildNewsCard(
+                      context,
+                      Map<String, dynamic>.from(items[i] as Map),
                     ),
+                  ),
+                ),
         ),
       ],
     );
   }
 
   Future<void> _openMissingReport() async {
-    if (!await ensureAuthed(context, reason: 'Sign in to report a missing person.')) return;
+    if (!await ensureAuthed(
+      context,
+      reason: 'Sign in to report a missing person.',
+    ))
+      return;
     if (!mounted) return;
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => MissingReportScreen(onDone: _loadNews)));
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => MissingReportScreen(onDone: _loadNews)),
+    );
   }
 
   Future<void> _openSighting(dynamic person, {String? wantedId}) async {
-    if (!await ensureAuthed(context, reason: 'Sign in to report a sighting.')) return;
+    if (!await ensureAuthed(context, reason: 'Sign in to report a sighting.'))
+      return;
     if (!mounted) return;
-    await Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => SightingReportScreen(
-        missingPersonId: person['id']?.toString(),
-        wantedPersonId: wantedId,
-        onDone: _loadNews,
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SightingReportScreen(
+          missingPersonId: person['id']?.toString(),
+          wantedPersonId: wantedId,
+          onDone: _loadNews,
+        ),
       ),
-    ));
+    );
   }
 
   Widget _missingTab() {
     final loc = AppLocalizations.of(context);
     return RefreshIndicator(
-      onRefresh: _loadNews,
+      onRefresh: () => _loadNews(clearContentNotifications: true),
       child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 16),
         itemCount: _missing.isEmpty ? 2 : _missing.length + 1,
         itemBuilder: (_, i) {
@@ -465,23 +593,32 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
 
   Widget _wantedTab() {
     final loc = AppLocalizations.of(context);
-    if (_wanted.isEmpty) return _empty(loc.nothingHereYet);
     return RefreshIndicator(
-      onRefresh: _loadNews,
+      onRefresh: () => _loadNews(clearContentNotifications: true),
       child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 16),
-        itemCount: _wanted.length,
-        itemBuilder: (_, i) => _personCard(
-          _wanted[i],
-          'wanted',
-          active: _wanted[i]['status'] == 'wanted',
-          subtitle: '#${_wanted[i]['danger_level'] ?? 'low'} risk · ${_wanted[i]['crime_description'] ?? ''}',
-        ),
+        itemCount: _wanted.isEmpty ? 1 : _wanted.length,
+        itemBuilder: (_, i) {
+          if (_wanted.isEmpty) return _empty(loc.nothingHereYet);
+          return _personCard(
+            _wanted[i],
+            'wanted',
+            active: _wanted[i]['status'] == 'wanted',
+            subtitle:
+                '#${_wanted[i]['danger_level'] ?? 'low'} risk · ${_wanted[i]['crime_description'] ?? ''}',
+          );
+        },
       ),
     );
   }
 
-  Widget _personCard(dynamic person, String kind, {required bool active, required String subtitle}) {
+  Widget _personCard(
+    dynamic person,
+    String kind, {
+    required bool active,
+    required String subtitle,
+  }) {
     final loc = AppLocalizations.of(context);
     final wanted = kind == 'wanted';
     final name = (person['name'] ?? 'Unknown').toString();
@@ -491,9 +628,34 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: wanted ? Colors.red.shade50 : Colors.orange.shade50,
-          foregroundImage: (photo != null && photo.isNotEmpty) ? NetworkImage(photo) : null,
-          child: Text(name.isNotEmpty ? name.substring(0, 1).toUpperCase() : '?',
-              style: TextStyle(color: wanted ? Colors.red.shade700 : Colors.orange.shade800, fontWeight: FontWeight.bold)),
+          child: photo != null && photo.isNotEmpty
+              ? ClipOval(
+                  child: OfflinePersonImage(
+                    url: photo,
+                    width: 40,
+                    height: 40,
+                    errorBuilder: (_, __, ___) => Text(
+                      name.isNotEmpty
+                          ? name.substring(0, 1).toUpperCase()
+                          : '?',
+                      style: TextStyle(
+                        color: wanted
+                            ? Colors.red.shade700
+                            : Colors.orange.shade800,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                )
+              : Text(
+                  name.isNotEmpty ? name.substring(0, 1).toUpperCase() : '?',
+                  style: TextStyle(
+                    color: wanted
+                        ? Colors.red.shade700
+                        : Colors.orange.shade800,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
         ),
         title: Row(
           children: [
@@ -503,7 +665,9 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: (person['danger_level'] == 'high' || person['danger_level'] == 'critical')
+                  color:
+                      (person['danger_level'] == 'high' ||
+                          person['danger_level'] == 'critical')
                       ? Colors.red.shade50
                       : Colors.amber.shade50,
                   borderRadius: BorderRadius.circular(6),
@@ -513,7 +677,9 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                   style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.bold,
-                    color: (person['danger_level'] == 'high' || person['danger_level'] == 'critical')
+                    color:
+                        (person['danger_level'] == 'high' ||
+                            person['danger_level'] == 'critical')
                         ? Colors.red
                         : Colors.amber.shade900,
                   ),
@@ -524,20 +690,27 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
         ),
         subtitle: Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
         trailing: IconButton(
-          icon: Icon(active ? Icons.visibility : Icons.check_circle_outline,
-              color: active ? scheme.primary : Colors.green),
+          icon: Icon(
+            active ? Icons.visibility : Icons.check_circle_outline,
+            color: active ? scheme.primary : Colors.green,
+          ),
           tooltip: active ? loc.reportSighting : 'Resolved',
           onPressed: active
-              ? () => _openSighting(person, wantedId: wanted ? person['id']?.toString() : null)
+              ? () => _openSighting(
+                  person,
+                  wantedId: wanted ? person['id']?.toString() : null,
+                )
               : null,
         ),
-        onTap: () => Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => PersonDetailScreen(
-            person: Map<String, dynamic>.from(person as Map),
-            kind: kind,
-            onChanged: _loadNews,
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => PersonDetailScreen(
+              person: Map<String, dynamic>.from(person as Map),
+              kind: kind,
+              onChanged: _loadNews,
+            ),
           ),
-        )),
+        ),
       ),
     );
   }
@@ -548,7 +721,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
       return _empty('No lost or recovered items reported yet.');
     }
     return RefreshIndicator(
-      onRefresh: _loadNews,
+      onRefresh: () => _loadNews(clearContentNotifications: true),
       child: ListView.builder(
         padding: const EdgeInsets.only(bottom: 16),
         itemCount: items.length,
@@ -564,16 +737,30 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: _categoryColor(category).withValues(alpha: 0.12),
-          child: Icon(_categoryIcon(category), color: _categoryColor(category), size: 20),
+          child: Icon(
+            _categoryIcon(category),
+            color: _categoryColor(category),
+            size: 20,
+          ),
         ),
         title: Text((a['title'] ?? '').toString()),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text((a['body'] ?? '').toString(), maxLines: 3, overflow: TextOverflow.ellipsis),
+            Text(
+              (a['body'] ?? '').toString(),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
             const SizedBox(height: 4),
-            Text(_categoryLabel(category).toUpperCase(),
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _categoryColor(category))),
+            Text(
+              _categoryLabel(category).toUpperCase(),
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: _categoryColor(category),
+              ),
+            ),
           ],
         ),
         isThreeLine: true,
@@ -582,49 +769,58 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
           tooltip: loc.share,
           onPressed: () async {
             final r = await Share.share(
-                '${a['title']}\n\n${a['body']}\n\nShared via ZEGA-ALERT\n#ZEGAALERT #EthiopianFederalPolice');
-            await Api.recordShare('announcement', a['id']?.toString(), platform: Api.platformFromRaw(r.raw));
+              '${a['title']}\n\n${a['body']}\n\nShared via ZEGA-ALERT\n#ZEGAALERT #EthiopianFederalPolice',
+            );
+            await Api.recordShare(
+              'announcement',
+              a['id']?.toString(),
+              platform: Api.platformFromRaw(r.raw),
+            );
           },
         ),
-        onTap: () => Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => AnnouncementDetailScreen(item: Map<String, dynamic>.from(a as Map)),
-        )),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => AnnouncementDetailScreen(
+              item: Map<String, dynamic>.from(a as Map),
+            ),
+          ),
+        ),
       ),
     );
   }
 
   String _categoryLabel(String category) => switch (category) {
-        'warning' => 'Alert',
-        'road_closure' => 'Road closure',
-        'missing_item' => 'Lost & found',
-        'wanted' => 'Wanted',
-        'missing' => 'Missing person',
-        'legal' => 'Legal',
-        'event' => 'Event',
-        _ => 'News',
-      };
+    'warning' => 'Alert',
+    'road_closure' => 'Road closure',
+    'missing_item' => 'Lost & found',
+    'wanted' => 'Wanted',
+    'missing' => 'Missing person',
+    'legal' => 'Legal',
+    'event' => 'Event',
+    _ => 'News',
+  };
 
   Color _categoryColor(String category) => switch (category) {
-        'warning' => Colors.amber.shade800,
-        'road_closure' => Colors.deepOrange,
-        'missing_item' => Colors.teal,
-        'wanted' => Colors.red,
-        'missing' => Colors.orange,
-        'legal' => Colors.indigo,
-        'event' => Colors.purple,
-        _ => Colors.blue,
-      };
+    'warning' => Colors.amber.shade800,
+    'road_closure' => Colors.deepOrange,
+    'missing_item' => Colors.teal,
+    'wanted' => Colors.red,
+    'missing' => Colors.orange,
+    'legal' => Colors.indigo,
+    'event' => Colors.purple,
+    _ => Colors.blue,
+  };
 
   IconData _categoryIcon(String category) => switch (category) {
-        'warning' => Icons.warning_amber,
-        'road_closure' => Icons.traffic,
-        'missing_item' => Icons.inventory_2_outlined,
-        'wanted' => Icons.gavel,
-        'missing' => Icons.person_search,
-        'legal' => Icons.gavel,
-        'event' => Icons.event,
-        _ => Icons.article,
-      };
+    'warning' => Icons.warning_amber,
+    'road_closure' => Icons.traffic,
+    'missing_item' => Icons.inventory_2_outlined,
+    'wanted' => Icons.gavel,
+    'missing' => Icons.person_search,
+    'legal' => Icons.gavel,
+    'event' => Icons.event,
+    _ => Icons.article,
+  };
 
   Widget _legalTab() {
     return Column(
@@ -636,10 +832,27 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
               Expanded(
                 child: DropdownButtonFormField<String>(
                   initialValue: _legalCategory,
-                  decoration: const InputDecoration(labelText: 'Category', border: OutlineInputBorder(), isDense: true),
-                  items: [null, 'rights', 'duties', 'penalties', 'procedures', 'other']
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c ?? 'All')))
-                      .toList(),
+                  decoration: const InputDecoration(
+                    labelText: 'Category',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  items:
+                      [
+                            null,
+                            'rights',
+                            'duties',
+                            'penalties',
+                            'procedures',
+                            'other',
+                          ]
+                          .map(
+                            (c) => DropdownMenuItem(
+                              value: c,
+                              child: Text(c ?? 'All'),
+                            ),
+                          )
+                          .toList(),
                   onChanged: (v) {
                     setState(() => _legalCategory = v);
                     _loadLegal();
@@ -650,9 +863,16 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
               Expanded(
                 child: DropdownButtonFormField<String>(
                   initialValue: _legalLang,
-                  decoration: const InputDecoration(labelText: 'Language', border: OutlineInputBorder(), isDense: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Language',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
                   items: [null, 'en', 'am', 'om', 'ti']
-                      .map((l) => DropdownMenuItem(value: l, child: Text(l ?? 'All')))
+                      .map(
+                        (l) =>
+                            DropdownMenuItem(value: l, child: Text(l ?? 'All')),
+                      )
                       .toList(),
                   onChanged: (v) {
                     setState(() => _legalLang = v);
@@ -679,14 +899,22 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                           title: Text(l['title'] ?? ''),
                           subtitle: Text('${l['category']} · ${l['language']}'),
                           trailing: (l['review_status'] == 'under_review')
-                              ? const Chip(label: Text('Under Review', style: TextStyle(fontSize: 11)))
+                              ? const Chip(
+                                  label: Text(
+                                    'Under Review',
+                                    style: TextStyle(fontSize: 11),
+                                  ),
+                                )
                               : null,
                           children: [
                             Padding(
                               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                               child: Align(
                                 alignment: Alignment.centerLeft,
-                                child: Text(l['body'] ?? '', style: const TextStyle(height: 1.4)),
+                                child: Text(
+                                  l['body'] ?? '',
+                                  style: const TextStyle(height: 1.4),
+                                ),
                               ),
                             ),
                           ],
@@ -704,14 +932,17 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
     final loc = AppLocalizations.of(context);
     if (_sightings.isEmpty) return _empty(loc.nothingHereYet);
     return RefreshIndicator(
-      onRefresh: _loadNews,
+      onRefresh: () => _loadNews(clearContentNotifications: true),
       child: ListView.builder(
         itemCount: _sightings.length + 1,
         itemBuilder: (_, i) {
           if (i == 0) {
             return Padding(
               padding: const EdgeInsets.all(12),
-              child: Text(loc.citizenSightingsInfo, style: const TextStyle(color: Colors.grey)),
+              child: Text(
+                loc.citizenSightingsInfo,
+                style: const TextStyle(color: Colors.grey),
+              ),
             );
           }
           final s = _sightings[i - 1];
@@ -734,9 +965,17 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.inbox_outlined, size: 42, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.inbox_outlined,
+              size: 42,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 8),
-            Text(text, textAlign: TextAlign.center, style: const TextStyle(color: Colors.grey)),
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.grey),
+            ),
           ],
         ),
       ),
@@ -753,8 +992,10 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
     final body = item['body'] as String? ?? '';
     final sourceLanguage = (item['language'] as String?) ?? 'en';
     final imageUrl = Api.assetUrl(item['image_url']?.toString());
-    final sourceLabel = item['source_label'] as String? ?? 'ZEGA-ALERT Media Desk';
-    final badgeLabel = item['badge_label'] as String? ??
+    final sourceLabel =
+        item['source_label'] as String? ?? 'ZEGA-ALERT Media Desk';
+    final badgeLabel =
+        item['badge_label'] as String? ??
         (isRoadClosure
             ? 'TRAFFIC ALERT'
             : (category == 'warning' ? 'ADVISORY' : 'PRESS RELEASE'));
@@ -793,12 +1034,14 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
               children: [
                 GestureDetector(
                   onTap: () {
-                    Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => FullscreenImageViewer(
-                        images: [imageUrl],
-                        title: title,
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => FullscreenImageViewer(
+                          images: [imageUrl],
+                          title: title,
+                        ),
                       ),
-                    ));
+                    );
                   },
                   child: AspectRatio(
                     aspectRatio: 1.85,
@@ -813,8 +1056,10 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                   top: 12,
                   left: 12,
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF0F172A).withOpacity(0.85),
                       borderRadius: BorderRadius.circular(6),
@@ -871,9 +1116,8 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                   ),
 
                 // Title
-                TranslatableText(
-                  text: title,
-                  sourceLanguage: sourceLanguage,
+                Text(
+                  title,
                   style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
@@ -901,24 +1145,34 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                   Row(
                     children: [
                       if (startTime != null) ...[
-                        const Icon(Icons.access_time,
-                            size: 14, color: Color(0xFF64748B)),
+                        const Icon(
+                          Icons.access_time,
+                          size: 14,
+                          color: Color(0xFF64748B),
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           startTime,
                           style: const TextStyle(
-                              fontSize: 12, color: Color(0xFF64748B)),
+                            fontSize: 12,
+                            color: Color(0xFF64748B),
+                          ),
                         ),
                         const SizedBox(width: 14),
                       ],
                       if (detourInfo != null) ...[
-                        const Icon(Icons.map_outlined,
-                            size: 14, color: Color(0xFF64748B)),
+                        const Icon(
+                          Icons.map_outlined,
+                          size: 14,
+                          color: Color(0xFF64748B),
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           detourInfo,
                           style: const TextStyle(
-                              fontSize: 12, color: Color(0xFF64748B)),
+                            fontSize: 12,
+                            color: Color(0xFF64748B),
+                          ),
                         ),
                       ],
                     ],
@@ -949,14 +1203,18 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                            color: const Color(0xFF00338D).withOpacity(0.2)),
+                          color: const Color(0xFF00338D).withOpacity(0.2),
+                        ),
                       ),
                       child: ClipOval(
                         child: Image.asset(
                           'assets/images/logo.png',
                           fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => const Icon(Icons.shield,
-                              size: 14, color: Color(0xFF00338D)),
+                          errorBuilder: (_, __, ___) => const Icon(
+                            Icons.shield,
+                            size: 14,
+                            color: Color(0xFF00338D),
+                          ),
                         ),
                       ),
                     ),
@@ -965,7 +1223,9 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                       child: Text(
                         '$sourceLabel • Just now',
                         style: TextStyle(
-                            fontSize: 12, color: Colors.grey.shade600),
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -977,7 +1237,9 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                       borderRadius: BorderRadius.circular(16),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 4),
+                          horizontal: 6,
+                          vertical: 4,
+                        ),
                         child: Row(
                           children: [
                             Icon(
@@ -1014,7 +1276,9 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                       borderRadius: BorderRadius.circular(16),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 4),
+                          horizontal: 6,
+                          vertical: 4,
+                        ),
                         child: Row(
                           children: [
                             Icon(
@@ -1051,7 +1315,9 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                       borderRadius: BorderRadius.circular(16),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 4),
+                          horizontal: 6,
+                          vertical: 4,
+                        ),
                         child: Row(
                           children: [
                             Icon(
@@ -1086,16 +1352,25 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                     InkWell(
                       onTap: () async {
                         final r = await Share.share(
-                            '$title\n\n$body\n\nShared via ZEGA-ALERT');
-                        await Api.recordShare('announcement', id,
-                            platform: Api.platformFromRaw(r.raw));
+                          '$title\n\n$body\n\nShared via ZEGA-ALERT',
+                        );
+                        await Api.recordShare(
+                          'announcement',
+                          id,
+                          platform: Api.platformFromRaw(r.raw),
+                        );
                       },
                       borderRadius: BorderRadius.circular(16),
                       child: const Padding(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                        child: Icon(Icons.share_outlined,
-                            size: 18, color: Color(0xFF475569)),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 4,
+                        ),
+                        child: Icon(
+                          Icons.share_outlined,
+                          size: 18,
+                          color: Color(0xFF475569),
+                        ),
                       ),
                     ),
                   ],
@@ -1166,16 +1441,19 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                         child: Text(
                           author.isNotEmpty ? author[0].toUpperCase() : '?',
                           style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold),
+                            fontSize: 12,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
@@ -1187,13 +1465,17 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                               Text(
                                 author,
                                 style: const TextStyle(
-                                    fontSize: 12, fontWeight: FontWeight.bold),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 text,
                                 style: TextStyle(
-                                    fontSize: 13, color: Colors.grey.shade800),
+                                  fontSize: 13,
+                                  color: Colors.grey.shade800,
+                                ),
                               ),
                             ],
                           ),
@@ -1219,10 +1501,14 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                     controller: controller,
                     decoration: InputDecoration(
                       hintText: 'Write a comment...',
-                      hintStyle:
-                          TextStyle(fontSize: 13, color: Colors.grey.shade400),
+                      hintStyle: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade400,
+                      ),
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 8),
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
                       filled: true,
                       fillColor: const Color(0xFFF1F5F9),
                       border: OutlineInputBorder(
@@ -1238,8 +1524,11 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                 const SizedBox(width: 4),
                 IconButton(
                   onPressed: () => _postComment(id),
-                  icon: const Icon(Icons.send_rounded,
-                      color: Color(0xFF1E40AF), size: 20),
+                  icon: const Icon(
+                    Icons.send_rounded,
+                    color: Color(0xFF1E40AF),
+                    size: 20,
+                  ),
                 ),
               ],
             ),

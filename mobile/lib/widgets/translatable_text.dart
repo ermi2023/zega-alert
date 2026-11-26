@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../services/api.dart';
@@ -61,6 +62,8 @@ class _TranslatableTextState extends State<TranslatableText> {
 
   /// App's current language code (en/am/om/ti/so).
   String get _appLanguage => ZegaAlertApp.of(context)?.languageCode ?? 'en';
+  String get _sourceLanguage =>
+      widget.sourceLanguage.trim().toLowerCase().split(RegExp('[-_]')).first;
 
   /// Whether to show the per-card target dropdown (app is English).
   bool get _showDropdown => _appLanguage == 'en';
@@ -76,26 +79,49 @@ class _TranslatableTextState extends State<TranslatableText> {
 
   /// Resolve the target language to translate to.
   /// - App is English -> user-selected from dropdown.
-  /// - App is a local language -> translate to English.
-  String get _effectiveTarget => _showDropdown ? _selectedTarget : 'en';
+  /// - App is a local language -> translate to the app language.
+  String get _effectiveTarget => _showDropdown ? _selectedTarget : _appLanguage;
 
-  String _cacheKey(String target) => '$target::${widget.text}';
+  String _cacheKey(String target) =>
+      '$target::$_sourceLanguage::${widget.text}';
 
-  String get _persistentCacheKey =>
-      'translation::$_effectiveTarget::${widget.text}';
+  String _persistentCacheKey(String target) =>
+      'translation::$target::$_sourceLanguage::${widget.text}';
 
   @override
   void initState() {
     super.initState();
+    if (_selectedTarget == _sourceLanguage) {
+      _selectedTarget = _defaultTarget;
+    }
     _loadPersistentCache();
   }
+
+  @override
+  void didUpdateWidget(covariant TranslatableText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.text == widget.text &&
+        oldWidget.sourceLanguage == widget.sourceLanguage) {
+      return;
+    }
+    _translated = null;
+    _translatedTo = null;
+    _error = null;
+    if (_selectedTarget == _sourceLanguage) {
+      _selectedTarget = _defaultTarget;
+    }
+    _loadPersistentCache();
+  }
+
+  String get _defaultTarget =>
+      _targets.firstWhere((target) => target.code != _sourceLanguage).code;
 
   Future<void> _loadPersistentCache() async {
     final target = _effectiveTarget;
     final key = _cacheKey(target);
     if (_cache.containsKey(key)) return;
     final value = await DatabaseService.getCachedValue(
-      'translation::$target::${widget.text}',
+      _persistentCacheKey(target),
     );
     if (!mounted || value is! String || value.isEmpty) return;
     _cache[key] = value;
@@ -142,11 +168,11 @@ class _TranslatableTextState extends State<TranslatableText> {
       final result = await Api.translate(
         widget.text,
         target,
-        sourceLanguage: widget.sourceLanguage,
+        sourceLanguage: _sourceLanguage,
       );
       final translated = (result['text'] as String?) ?? widget.text;
       _cache[key] = translated;
-      await DatabaseService.cacheValue(_persistentCacheKey, translated);
+      await DatabaseService.cacheValue(_persistentCacheKey(target), translated);
       if (mounted) {
         setState(() {
           _translated = translated;
@@ -157,7 +183,7 @@ class _TranslatableTextState extends State<TranslatableText> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _error = Api.userMessage(e);
           _loading = false;
         });
       }
@@ -199,7 +225,7 @@ class _TranslatableTextState extends State<TranslatableText> {
     }
 
     // Don't render the control if source === target (nothing to translate).
-    if (widget.sourceLanguage == _effectiveTarget) {
+    if (_sourceLanguage == _effectiveTarget) {
       return textWidget;
     }
 
@@ -225,11 +251,13 @@ class _TranslatableTextState extends State<TranslatableText> {
                     color: theme.colorScheme.primary,
                   ),
                   items: _targets
-                      .where((t) => t.code != widget.sourceLanguage)
-                      .map((t) => DropdownMenuItem(
-                            value: t.code,
-                            child: Text(t.label),
-                          ))
+                      .where((t) => t.code != _sourceLanguage)
+                      .map(
+                        (t) => DropdownMenuItem(
+                          value: t.code,
+                          child: Text(t.label),
+                        ),
+                      )
                       .toList(),
                   onChanged: _onTargetChanged,
                 ),
@@ -259,8 +287,9 @@ class _TranslatableTextState extends State<TranslatableText> {
                         height: 10,
                         child: CircularProgressIndicator(
                           strokeWidth: 1.5,
-                          valueColor:
-                              AlwaysStoppedAnimation(theme.colorScheme.primary),
+                          valueColor: AlwaysStoppedAnimation(
+                            theme.colorScheme.primary,
+                          ),
                         ),
                       )
                     else
@@ -273,8 +302,14 @@ class _TranslatableTextState extends State<TranslatableText> {
                       ),
                     if (_error != null) ...[
                       const SizedBox(width: 4),
-                      Icon(Icons.error_outline,
-                          size: 12, color: theme.colorScheme.error),
+                      Tooltip(
+                        message: _error!,
+                        child: Icon(
+                          Icons.error_outline,
+                          size: 12,
+                          color: theme.colorScheme.error,
+                        ),
+                      ),
                     ],
                   ],
                 ),

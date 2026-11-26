@@ -3,10 +3,30 @@ import { ok, fail } from '../utils/response.js';
 import { isUuid } from '../utils/uuid.js';
 import { resolveAddress } from '../services/geocode.service.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
+import { findNearestPoliceStation, getRouteRecipients, notifyNearestStationOrCentral } from '../services/police-station.service.js';
 
 const REPORT_COLS = `r.id, r.reporter_id, r.category, r.severity, r.status, r.title, r.description,
   r.latitude, r.longitude, r.address_text, r.region, r.sub_city, r.woreda, r.is_anonymous,
-  r.evidence, r.assigned_to, r.priority_score, r.incident_at, r.reported_at, r.updated_at, r.resolved_at,
+  r.evidence, r.assigned_to, r.station_id, ps.name AS station_name, ps.address_text AS station_address,
+  CASE WHEN ps.is_active = true AND EXISTS (
+    SELECT 1 FROM police_station_users psu
+    JOIN users officer ON officer.id = psu.user_id
+    WHERE psu.station_id = r.station_id AND officer.role = 'police' AND officer.is_active = true
+  ) THEN 'nearest_station' ELSE 'central_dispatch' END AS dispatch_route,
+  CASE WHEN ps.is_active = true AND EXISTS (
+    SELECT 1 FROM police_station_users psu
+    JOIN users officer ON officer.id = psu.user_id
+    WHERE psu.station_id = r.station_id AND officer.role = 'police' AND officer.is_active = true
+  ) THEN COALESCE((
+    SELECT array_agg(psu.user_id)
+    FROM police_station_users psu
+    JOIN users officer ON officer.id = psu.user_id
+    WHERE psu.station_id = r.station_id AND officer.role = 'police' AND officer.is_active = true
+  ), ARRAY[]::uuid[]) ELSE COALESCE((
+    SELECT array_agg(dispatcher.id) FROM users dispatcher
+    WHERE dispatcher.role = 'dispatcher' AND dispatcher.is_active = true
+  ), ARRAY[]::uuid[]) END AS route_recipient_ids,
+  r.priority_score, r.incident_at, r.reported_at, r.updated_at, r.resolved_at,
   u.full_name AS reporter_name`;
 
 // address_text is PII and stored AES-256-GCM encrypted at rest.
@@ -32,16 +52,19 @@ export const createReport = async (req, res) => {
   if (!category || !title) return fail(res, 'category and title are required');
   const isDraft = status === 'draft';
   const resolvedAddress = await resolveAddress({ latitude, longitude, address_text });
+  const station = isDraft
+    ? null
+    : await findNearestPoliceStation({ latitude, longitude });
   const { rows } = await query(
     `INSERT INTO reports (reporter_id, category, severity, status, title, description, latitude, longitude,
-       address_text, region, sub_city, woreda, is_anonymous, evidence, incident_at, priority_score)
-     VALUES ($1,$2,$3,$4::report_status,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+       address_text, region, sub_city, woreda, is_anonymous, evidence, incident_at, priority_score, station_id)
+     VALUES ($1,$2,$3,$4::report_status,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
      RETURNING *`,
     [req.user.id, category, severity || 'medium', isDraft ? 'draft' : 'pending', title, description || null,
-      latitude || null, longitude || null, encrypt(resolvedAddress), region || null,
+      latitude ?? null, longitude ?? null, resolvedAddress ? encrypt(resolvedAddress) : null, region || null,
       sub_city || null, woreda || null, is_anonymous || false,
       evidence ? JSON.stringify(evidence) : '[]', incident_at || null,
-      priorityScore(severity, category)],
+      priorityScore(severity, category), station?.id ?? null],
   );
   await query(
     `INSERT INTO audit_log (user_id, action, entity, entity_id, detail) VALUES ($1,'create_report','reports',$2,$3)`,
@@ -55,13 +78,41 @@ export const createReport = async (req, res) => {
   // Sync uploaded evidence into media_attachments table (Figure 24 / Doc 4.8.1)
   await syncEvidence(rows[0].id, evidence);
 
-  ok(res, decryptRow(rows[0]), isDraft ? 'Draft saved' : 'Report submitted', 201);
+  const report = {
+    ...decryptRow(rows[0]),
+    station_name: station?.name ?? null,
+    station_address: station?.address_text ?? null,
+  };
+  if (!isDraft) {
+    const recipients = await notifyNearestStationOrCentral('report:new', report);
+    report.dispatch_route = recipients.route;
+    report.dispatch_recipient_count = recipients.userIds.length;
+  }
+  ok(res, report, isDraft ? 'Draft saved' : 'Report submitted', 201);
 };
 
 export const listReports = async (req, res) => {
   const { status, region, sub_city, category, q, page = 1, limit = 20 } = req.query;
   const where = [];
   const params = [];
+  if (req.user.role === 'police') {
+    params.push(req.user.id);
+    where.push(`EXISTS (
+      SELECT 1 FROM police_station_users psu
+      JOIN police_stations station ON station.id = psu.station_id AND station.is_active = true
+      JOIN users officer ON officer.id = psu.user_id
+      WHERE psu.station_id = r.station_id AND psu.user_id = $${params.length}
+        AND officer.role = 'police' AND officer.is_active = true
+    )`);
+  } else if (req.user.role === 'dispatcher') {
+    where.push(`(r.station_id IS NULL OR NOT EXISTS (
+      SELECT 1 FROM police_station_users psu
+      JOIN police_stations station ON station.id = psu.station_id AND station.is_active = true
+      JOIN users officer ON officer.id = psu.user_id
+      WHERE psu.station_id = r.station_id
+        AND officer.role = 'police' AND officer.is_active = true
+    ))`);
+  }
   if (status) { params.push(status); where.push(`r.status = $${params.length}`); }
   if (region) { params.push(region); where.push(`r.region = $${params.length}`); }
   if (sub_city) { params.push(sub_city); where.push(`r.sub_city = $${params.length}`); }
@@ -72,6 +123,7 @@ export const listReports = async (req, res) => {
   const { rows } = await query(
     `SELECT ${REPORT_COLS} FROM reports r
      LEFT JOIN users u ON u.id = r.reporter_id
+     LEFT JOIN police_stations ps ON ps.id = r.station_id
      ${whereSql}
      ORDER BY r.priority_score DESC, r.reported_at DESC
      LIMIT $${params.length - 1} OFFSET $${params.length}`,
@@ -83,8 +135,14 @@ export const listReports = async (req, res) => {
 
 export const getReport = async (req, res) => {
   if (!isUuid(req.params.id)) return fail(res, 'Invalid report id', 400);
+  if (!await hasReportAccess(req.user, req.params.id)) {
+    return fail(res, 'This report is routed to another station', 403);
+  }
   const { rows } = await query(
-    `SELECT ${REPORT_COLS} FROM reports r LEFT JOIN users u ON u.id = r.reporter_id WHERE r.id = $1`,
+    `SELECT ${REPORT_COLS} FROM reports r
+     LEFT JOIN users u ON u.id = r.reporter_id
+     LEFT JOIN police_stations ps ON ps.id = r.station_id
+     WHERE r.id = $1`,
     [req.params.id],
   );
   if (!rows[0]) return fail(res, 'Report not found', 404);
@@ -100,7 +158,17 @@ export const getReport = async (req, res) => {
 
 export const updateReportStatus = async (req, res) => {
   if (!isUuid(req.params.id)) return fail(res, 'Invalid report id', 400);
+  if (!await hasReportAccess(req.user, req.params.id)) {
+    return fail(res, 'This report is routed to another station', 403);
+  }
   const { status, assigned_to, response_notes, notes } = req.body;
+  if (assigned_to) {
+    const { rows: reports } = await query('SELECT station_id FROM reports WHERE id = $1', [req.params.id]);
+    const { userIds } = await getRouteRecipients(reports[0]?.station_id);
+    if (!userIds.includes(assigned_to)) {
+      return fail(res, 'Assign this report only to its nearest station or central dispatch', 403);
+    }
+  }
   const valid = ['draft', 'submitted', 'pending', 'under_review', 'assigned', 'in_progress', 'verified', 'rejected', 'resolved', 'closed'];
   if (!valid.includes(status)) return fail(res, `status must be one of ${valid.join(', ')}`);
   const investigationNotes = response_notes ?? notes ?? null;
@@ -151,6 +219,12 @@ export const updateOwnReport = async (req, res) => {
     })
     : decrypt(existing.address_text);
   const mergedEvidence = Array.isArray(evidence) ? evidence : existing.evidence;
+  const station = nextStatus === 'draft'
+    ? null
+    : await findNearestPoliceStation({
+      latitude: latitude ?? existing.latitude,
+      longitude: longitude ?? existing.longitude,
+    });
 
   const { rows } = await query(
     `UPDATE reports SET
@@ -169,13 +243,15 @@ export const updateOwnReport = async (req, res) => {
        evidence = $13,
        incident_at = COALESCE($14, incident_at),
        priority_score = CASE WHEN $2::text IS NOT NULL THEN $15 ELSE priority_score END,
+       station_id = $16,
        updated_at = now()
-     WHERE id = $16 RETURNING *`,
+     WHERE id = $17 RETURNING *`,
     [category || null, severity || null, nextStatus, title || null, description || null,
       latitude ?? null, longitude ?? null, encrypt(resolvedAddress), region || null,
       sub_city || null, woreda || null, is_anonymous ?? null,
       JSON.stringify(mergedEvidence || []), incident_at || null,
-      priorityScore(severity || existing.severity, category || existing.category), req.params.id],
+      priorityScore(severity || existing.severity, category || existing.category),
+      station?.id ?? null, req.params.id],
   );
   await query(
     `INSERT INTO status_history (report_id, status, notes, changed_by) VALUES ($1,$2,$3,$4)`,
@@ -187,7 +263,17 @@ export const updateOwnReport = async (req, res) => {
     [req.user.id, req.params.id, JSON.stringify({ status: nextStatus })],
   );
   if (Array.isArray(evidence)) await syncEvidence(req.params.id, evidence);
-  ok(res, decryptRow(rows[0]), nextStatus === 'draft' ? 'Draft saved' : 'Report submitted');
+  const report = {
+    ...decryptRow(rows[0]),
+    station_name: station?.name ?? null,
+    station_address: station?.address_text ?? null,
+  };
+  if (nextStatus !== 'draft') {
+    const recipients = await notifyNearestStationOrCentral('report:new', report);
+    report.dispatch_route = recipients.route;
+    report.dispatch_recipient_count = recipients.userIds.length;
+  }
+  ok(res, report, nextStatus === 'draft' ? 'Draft saved' : 'Report submitted');
 };
 
 export const addReportEvidence = async (req, res) => {
@@ -196,6 +282,9 @@ export const addReportEvidence = async (req, res) => {
   const existing = existingRows[0];
   if (!existing) return fail(res, 'Report not found', 404);
   const isStaff = req.user.role !== 'citizen';
+  if (isStaff && !await hasReportAccess(req.user, req.params.id)) {
+    return fail(res, 'This report is routed to another station', 403);
+  }
   if (!isStaff && existing.reporter_id !== req.user.id) return fail(res, 'Not your report', 403);
   if (['resolved', 'closed', 'rejected'].includes(existing.status)) {
     return fail(res, 'Evidence can no longer be added to this report', 400);
@@ -220,6 +309,9 @@ export const addReportEvidence = async (req, res) => {
 
 export const getReportHistory = async (req, res) => {
   if (!isUuid(req.params.id)) return fail(res, 'Invalid report id', 400);
+  if (!await hasReportAccess(req.user, req.params.id)) {
+    return fail(res, 'This report is routed to another station', 403);
+  }
   const { rows } = await query(
     `SELECT h.*, u.full_name AS changed_by_name FROM status_history h
      LEFT JOIN users u ON u.id = h.changed_by WHERE h.report_id = $1 ORDER BY h.created_at ASC`,
@@ -230,11 +322,23 @@ export const getReportHistory = async (req, res) => {
 
 export const myReports = async (req, res) => {
   const { rows } = await query(
-    `SELECT ${REPORT_COLS} FROM reports r LEFT JOIN users u ON u.id = r.reporter_id WHERE r.reporter_id = $1 ORDER BY r.reported_at DESC`,
+    `SELECT ${REPORT_COLS} FROM reports r
+     LEFT JOIN users u ON u.id = r.reporter_id
+     LEFT JOIN police_stations ps ON ps.id = r.station_id
+     WHERE r.reporter_id = $1 ORDER BY r.reported_at DESC`,
     [req.user.id],
   );
   ok(res, rows.map(decryptRow));
 };
+
+async function hasReportAccess(user, reportId) {
+  if (['system_admin', 'regional_admin'].includes(user.role)) return true;
+  const { rows } = await query('SELECT reporter_id, station_id FROM reports WHERE id = $1', [reportId]);
+  if (!rows[0]) return false;
+  if (user.role === 'citizen') return rows[0].reporter_id === user.id;
+  const { userIds } = await getRouteRecipients(rows[0].station_id);
+  return userIds.includes(user.id);
+}
 
 const priorityScore = (severity, category) => {
   const sev = { critical: 100, high: 70, medium: 40, low: 10 }[severity] || 40;

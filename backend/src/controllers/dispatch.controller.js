@@ -3,6 +3,7 @@ import { ok, fail } from '../utils/response.js';
 import { io } from '../socket/socket.js';
 import { haversine } from '../services/dispatch.service.js';
 import { getRecentPositions } from './position.controller.js';
+import { getRouteRecipients } from '../services/police-station.service.js';
 
 const ASSUMED_SPEED_MPS = 11.1;
 
@@ -14,8 +15,22 @@ export const assignUnits = async (req, res) => {
     return fail(res, 'officer_ids array is required');
   }
 
-  const { rows: sos } = await query('SELECT id, status, latitude, longitude FROM sos_alerts WHERE id = $1', [sosId]);
+  const { rows: sos } = await query(
+    'SELECT id, status, latitude, longitude, station_id FROM sos_alerts WHERE id = $1',
+    [sosId],
+  );
   if (!sos[0]) return fail(res, 'SOS not found', 404);
+  const recipients = await getRouteRecipients(sos[0].station_id);
+  if (
+    req.user.role === 'dispatcher' &&
+    !recipients.userIds.includes(req.user.id)
+  ) {
+    return fail(res, 'This SOS is routed to another station', 403);
+  }
+  const allowedIds = new Set(recipients.userIds);
+  if (officer_ids.some((officerId) => !allowedIds.has(officerId))) {
+    return fail(res, 'Assign this SOS only to the nearest station or central dispatch', 403);
+  }
 
   const positions = getRecentPositions();
   const assignments = [];
@@ -73,10 +88,19 @@ export const removeUnit = async (req, res) => {
   const { sosId, assignmentId } = req.params;
 
   const { rows: assignment } = await query(
-    'SELECT assigned_to FROM dispatch_assignments WHERE id = $1 AND sos_id = $2',
+    `SELECT da.assigned_to, s.station_id
+     FROM dispatch_assignments da JOIN sos_alerts s ON s.id = da.sos_id
+     WHERE da.id = $1 AND da.sos_id = $2`,
     [assignmentId, sosId],
   );
   if (!assignment[0]) return fail(res, 'Assignment not found', 404);
+  const recipients = await getRouteRecipients(assignment[0].station_id);
+  if (
+    !recipients.userIds.includes(assignment[0].assigned_to) ||
+    (req.user.role === 'dispatcher' && !recipients.userIds.includes(req.user.id))
+  ) {
+    return fail(res, 'This assignment is no longer routed to the nearest station or central dispatch', 403);
+  }
 
   await query('DELETE FROM dispatch_assignments WHERE id = $1', [assignmentId]);
 
@@ -88,14 +112,23 @@ export const removeUnit = async (req, res) => {
 
 export const listAssignedUnits = async (req, res) => {
   const { sosId } = req.params;
+  const { rows: sos } = await query('SELECT station_id FROM sos_alerts WHERE id = $1', [sosId]);
+  if (!sos[0]) return fail(res, 'SOS not found', 404);
+  const recipients = await getRouteRecipients(sos[0].station_id);
+  if (
+    req.user.role === 'dispatcher' &&
+    !recipients.userIds.includes(req.user.id)
+  ) {
+    return fail(res, 'This SOS is routed to another station', 403);
+  }
   const { rows } = await query(
     `SELECT da.*, u.full_name AS officer_name, u.role AS officer_role,
             u.region, u.sub_city
      FROM dispatch_assignments da
      LEFT JOIN users u ON u.id = da.assigned_to
-     WHERE da.sos_id = $1
+     WHERE da.sos_id = $1 AND da.assigned_to = ANY($2::uuid[])
      ORDER BY da.created_at ASC`,
-    [sosId],
+    [sosId, recipients.userIds],
   );
   ok(res, rows);
 };
@@ -106,6 +139,21 @@ export const updateUnitStatus = async (req, res) => {
 
   const valid = ['assigned', 'en_route', 'on_scene', 'completed'];
   if (!valid.includes(status)) return fail(res, `status must be one of ${valid.join(', ')}`);
+
+  const { rows: existing } = await query(
+    `SELECT da.assigned_to, s.station_id
+     FROM dispatch_assignments da JOIN sos_alerts s ON s.id = da.sos_id
+     WHERE da.id = $1 AND da.sos_id = $2`,
+    [assignmentId, sosId],
+  );
+  if (!existing[0]) return fail(res, 'Assignment not found', 404);
+  const recipients = await getRouteRecipients(existing[0].station_id);
+  if (
+    !recipients.userIds.includes(existing[0].assigned_to) ||
+    (req.user.role === 'dispatcher' && !recipients.userIds.includes(req.user.id))
+  ) {
+    return fail(res, 'This assignment is not available to your dispatch route', 403);
+  }
 
   const { rows } = await query(
     `UPDATE dispatch_assignments

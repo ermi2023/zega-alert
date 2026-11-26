@@ -153,6 +153,20 @@ class AppLocalizationsAm extends AppLocalizations {
   String get safetyZones => 'የደህንነት ቀጠናዎች (ጂኦፌንስ)';
 
   @override
+  String get safetyZonesTab => 'ዞኖች';
+
+  @override
+  String get safetyZonesHomeDescription =>
+      'የደህንነት ዞን ለውጦችና በዞን ውስጥ የተከሰቱ ድንገተኛ ክስተቶች በማሳወቂያ ሳጥንዎ ውስጥ ይታያሉ፤ የመሣሪያ ማሳወቂያዎች ከተነቁ የግፊት ማሳወቂያ ይላካል። ካርታውንና ወሰኑን ለማየት ከታች አካባቢ ይምረጡ። የአካባቢ ባለሥልጣናትን መመሪያ ይከተሉ፤ ዞኑ ደህንነትን አያረጋግጥም።';
+
+  @override
+  String get noSafetyZonesAvailable =>
+      'ለክልልዎ በአሁኑ ጊዜ ምንም ይፋዊ የደህንነት ዞኖች አልተመዘገቡም።';
+
+  @override
+  String get safetyZonesLoadFailed => 'የደህንነት ዞን መረጃ መጫን አልተቻለም። እንደገና ይሞክሩ።';
+
+  @override
   String get addSafetyZone => 'የደህንነት ቦታ አክል';
 
   @override
@@ -579,4 +593,304 @@ class AppLocalizationsAm extends AppLocalizations {
   String sosUpdated(Object status) {
     return 'SOSዎ አሁን $status ነው';
   }
+
+  @override
+  String get searchMissingWantedPeople => 'የጠፉ ወይም የሚፈለጉ ሰዎችን ይፈልጉ';
+
+  @override
+  String get clearSearch => 'ፍለጋን አጽዳ';
+
+  @override
+  String get closeSearch => 'ፍለጋን ዝጋ';
+
+  @override
+  String get searchPeople => 'ሰዎችን ፈልግ';
+
+  @override
+  String get notifications => 'ማሳወቂያዎች';
+
+  @override
+  String get markAllRead => 'ሁሉንም እንደተነበቡ ምልክት አድርግ';
+
+  @override
+  String get markRead => 'እንደተነበበ ምልክት አድርግ';
+
+  @override
+  String get noNotificationsYet => 'እስካሁን ማሳወቂያ የለም።';
+
+  @override
+  String get retry => 'እንደገና ሞክር';
+
+  @override
+  String get safetyZoneNoLongerActive =>
+      'ይህ አካባቢ ከእንግዲህ ንቁ አይደለም። የአሁኑን መረጃ በደህንነት ዞኖች ይመልከቱ።';
+
+  @override
+  String get couldNotOpenSafetyZone => 'የደህንነት ዞኑን ካርታ መክፈት አልተቻለም።';
+
+  @override
+  String get helpAndAccessibility => 'እገዛ እና ተደራሽነት';
+
+  @override
+  String get policeRescueContacts => 'የፖሊስ እና የአደጋ ጊዜ እገዛ ስልኮች';
+
+  @override
+  String get personalInformation => 'የግል መረጃ';
+
+  @override
+  String get emailAddress => 'የኢሜይል አድራሻ';
+
+  @override
+  String get safetyZoneEntryAlerts => 'ወደ ደህንነት ዞን ሲገቡ ማሳወቂያ';
+
+  @override
+  String get safetyZoneEntryAlertsDescription =>
+      'ሲነቃ ዘጋ አለርት በጀርባ ሆኖ አካባቢዎን ይመረምራል፤ ወደ ንቁ የተመዘገበ ደህንነት ዞን ሲገቡ ያሳውቅዎታል። በAndroid ላይ ይገኛል።';
+
+  @override
+  String get safetyZoneLocationPrivacy =>
+      'ለዚህ ማሳወቂያ የሚጠቀምበት ትክክለኛ አካባቢ በዚህ ስልክ ላይ ይቆያል እና አይላክም። ክትትል ሲካሄድ Android ቀጣይ ማሳወቂያ ያሳያል፤ ባትሪ ሊጨምር ይችላል። SOS እና ሪፖርት በተለይ አካባቢን ሊጠቀሙ ይችላሉ። የተቀመጠው ክልል/ንዑስ ከተማ እንደ በእጅ የሚመረጥ አማራጭ ይቆያል።';
+
+  @override
+  String get allowBackgroundLocation => 'የጀርባ አካባቢ ፈቃድ ይስጡ';
+
+  @override
+  String get allowBackgroundLocationDescription =>
+      'ዘጋ አለርት ተዘግቶ ሳለ የደህንነት ዞን መግባትን ለመመርመር Android ሁልጊዜ የአካባቢ ፈቃድ ይፈልጋል። በመተግበሪያ ፈቃዶች ውስጥ “ሁልጊዜ ፍቀድ” ይምረጡ።';
+
+  @override
+  String get openAppSettings => 'የመተግበሪያ ቅንብሮችን ክፈት';
+
+  @override
+  String get notNow => 'አሁን አይደለም';
+
+  @override
+  String get safetyZoneAlertsOn => 'የደህንነት ዞን መግቢያ ማሳወቂያዎች በርተዋል።';
+
+  @override
+  String get safetyZoneAlertsOff => 'የደህንነት ዞን አካባቢ ማሳወቂያዎች ጠፍተዋል።';
+
+  @override
+  String get safetyZoneAlertsOnNoZones =>
+      'የአካባቢ ማሳወቂያዎች በርተዋል። እስካሁን የታተመ ደህንነት ዞን የለም።';
+
+  @override
+  String get security => 'ደህንነት';
+
+  @override
+  String get preferences => 'ምርጫዎች';
+
+  @override
+  String get offlineData => 'ከመስመር ውጪ መረጃ';
+
+  @override
+  String get savePersonPhotos => 'የሚፈለጉ እና የጠፉ ሰዎች ፎቶዎችን አስቀምጥ';
+
+  @override
+  String get savePersonPhotosDescription =>
+      'የሚመለከቷቸው ፎቶዎች ከመስመር ውጪ ለመጠቀም በዚህ ስልክ ይቀመጣሉ። በነባሪ ጠፍቷል።';
+
+  @override
+  String get clearSavedPhotos => 'የተቀመጡ የሰዎች ፎቶዎችን አጽዳ';
+
+  @override
+  String get clearSavedPhotosConfirmation => 'የተቀመጡ የሰዎች ፎቶዎች ይጽዱ?';
+
+  @override
+  String get clearSavedPhotosDescription =>
+      'ይህ በዚህ ስልክ የተቀመጡ የሚፈለጉ እና የጠፉ ሰዎች ፎቶዎችን ያስወግዳል። የፎቶ ማስቀመጫ ከበራ እንደገና ሊቀመጡ ይችላሉ።';
+
+  @override
+  String photosCountAndStorage(Object count, Object size) {
+    return '$count ፎቶዎች · $size ተጠቅሟል';
+  }
+
+  @override
+  String get officialSafetyAreasDescription =>
+      'በአካባቢ ባለሥልጣናት የታተሙ ይፋዊ የደህንነት ቦታዎችን ይመልከቱ። አዲስ ወይም የተቀየሩ ቦታዎችና በዞን ውስጥ የተከሰቱ አደጋዎች በማሳወቂያዎች ይታያሉ፤ የግፊት ማሳወቂያ ለመቀበል የስልክ ማሳወቂያዎች መንቃት አለባቸው። ይህ መረጃ ደህንነትን አያረጋግጥም።';
+
+  @override
+  String get noOfficialSafetyAreas => 'ለዚህ ክልል እስካሁን ይፋዊ የደህንነት ቦታዎች የሉም።';
+
+  @override
+  String officialSafetyArea(Object name, Object type) {
+    return 'ይፋዊ የደህንነት ቦታ፦ $name። ዓይነት፦ $type።';
+  }
+
+  @override
+  String get mappedBoundary => 'በካርታ ላይ የተመለከተ ወሰን';
+
+  @override
+  String get currentPassword => 'የአሁኑ የይለፍ ቃል';
+
+  @override
+  String get newPassword => 'አዲስ የይለፍ ቃል';
+
+  @override
+  String get confirmNewPassword => 'አዲሱን የይለፍ ቃል ያረጋግጡ';
+
+  @override
+  String get currentPasswordRequired => 'እባክዎ የአሁኑን የይለፍ ቃል ያስገቡ።';
+
+  @override
+  String get passwordMinimumLength => 'ቢያንስ 8 ቁምፊዎችን ይጠቀሙ።';
+
+  @override
+  String get passwordsDoNotMatch => 'የይለፍ ቃሎቹ አይዛመዱም።';
+
+  @override
+  String get updatePassword => 'የይለፍ ቃልን አዘምን';
+
+  @override
+  String get welcomeBack => 'እንኳን ተመለሱ';
+
+  @override
+  String get welcomeSafetyMessage => 'ማህበረሰባችንን ደህንነቱን ለመጠበቅ ስለረዱ እናመሰግናለን።';
+
+  @override
+  String get phoneNumberOrEmail => 'ስልክ ቁጥር ወይም ኢሜይል';
+
+  @override
+  String get enterPassword => 'የይለፍ ቃልዎን ያስገቡ';
+
+  @override
+  String get logIn => 'ግባ';
+
+  @override
+  String get forgotPassword => 'የይለፍ ቃልዎን ረሱ?';
+
+  @override
+  String get signInBiometrics => 'በባዮሜትሪክስ ይግቡ';
+
+  @override
+  String get continueAsGuest => 'እንደ እንግዳ ቀጥል';
+
+  @override
+  String get signUp => 'ይመዝገቡ';
+
+  @override
+  String get validEmailRequired => 'ትክክለኛ የኢሜይል አድራሻ ያስገቡ።';
+
+  @override
+  String get validPhoneOrEmailRequired => 'ትክክለኛ ስልክ ቁጥር ወይም ኢሜይል ያስገቡ።';
+
+  @override
+  String get invalidCredentials =>
+      'የስልክ/ኢሜይል ወይም የይለፍ ቃል ትክክል አይደለም። እንደገና ይሞክሩ።';
+
+  @override
+  String get accountNotFound => 'በዚህ ስልክ/ኢሜይል የተመዘገበ መለያ አልተገኘም።';
+
+  @override
+  String get signInFailed => 'መግባት አልተቻለም። እንደገና ይሞክሩ።';
+
+  @override
+  String get police => 'ፖሊስ';
+
+  @override
+  String get ambulanceRescue => 'አምቡላንስ / አድን';
+
+  @override
+  String regionSelectedSemantics(Object region) {
+    return 'የክልል ምርጫ። አሁን የተመረጠው $region ነው።';
+  }
+
+  @override
+  String subCitySelectedSemantics(Object subCity) {
+    return 'የንዑስ ከተማ ምርጫ። አሁን የተመረጠው $subCity ነው።';
+  }
+
+  @override
+  String languageSelectedSemantics(Object language) {
+    return 'የቋንቋ ምርጫ። አሁን የተመረጠው $language ነው።';
+  }
+
+  @override
+  String get citizenProfile => 'የዜጋ መገለጫ';
+
+  @override
+  String get verifiedAccount => 'የተረጋገጠ መለያ';
+
+  @override
+  String get unverifiedAccount => 'ያልተረጋገጠ መለያ';
+
+  @override
+  String get editProfile => 'መገለጫን አርትዕ';
+
+  @override
+  String get notAvailable => 'አይገኝም';
+
+  @override
+  String get memberSince => 'አባል የሆኑበት ጊዜ';
+
+  @override
+  String get verificationStatus => 'የማረጋገጫ ሁኔታ';
+
+  @override
+  String get guestBrowsing => 'እንደ እንግዳ እየተጠቀሙ ነው';
+
+  @override
+  String get guestFeaturesInfo =>
+      'ሪፖርት ለማቅረብ፣ SOS ለመላክ፣ ለመኮንኖች መልዕክት ለመላክ እና መታወቂያዎን ለማረጋገጥ ይግቡ።';
+
+  @override
+  String get signInCreateAccount => 'ይግቡ / መለያ ይፍጠሩ';
+
+  @override
+  String get fanIdentityTitle => 'የFAN መለያ ማረጋገጫ';
+
+  @override
+  String get fanIdentityDescription =>
+      'የመጀመሪያውን መታወቂያ QR ይቃኙ ወይም የ16 አሃዝ FAN ያስገቡ፤ የአስተዳዳሪውን የማሳያ መዝገብ ለመፈተሽ።';
+
+  @override
+  String get settingsSaved => 'መገለጫ እና ቅንብሮች ተቀምጠዋል።';
+
+  @override
+  String get settingsSaveFailed => 'መገለጫዎን ማስቀመጥ አልተቻለም።';
+
+  @override
+  String get notificationLoadFailed => 'ማሳወቂያዎችን አሁን መጫን አልተቻለም።';
+
+  @override
+  String get backgroundLocationPermissionRequired =>
+      'በመተግበሪያ ፈቃዶች ውስጥ “ሁልጊዜ ፍቀድ” ይምረጡ፣ ከዚያ የደህንነት ዞን ማሳወቂያን እንደገና ያብሩ።';
+
+  @override
+  String get backgroundLocationAndroidOnly =>
+      'የጀርባ የደህንነት ዞን ማሳወቂያዎች በAndroid ላይ ብቻ ይገኛሉ።';
+
+  @override
+  String get turnOnDeviceLocation => 'የደህንነት ዞን ማሳወቂያን ለማብራት የስልኩን አካባቢ ያብሩ።';
+
+  @override
+  String get alwaysLocationPermission =>
+      'በመተግበሪያ ፈቃዶች ውስጥ ZEGA Alert አካባቢን ሁልጊዜ እንዲጠቀም ይፍቀዱ፣ ከዚያ የደህንነት ዞን ማሳወቂያን እንደገና ያብሩ።';
+
+  @override
+  String get safetyNotificationsUnavailable =>
+      'የደህንነት ዞን ማሳወቂያዎች በዚህ መሣሪያ ላይ አይገኙም።';
+
+  @override
+  String get allowSafetyNotifications =>
+      'የደህንነት ዞን መግቢያ ማሳወቂያ ለመቀበል የZEGA Alert ማሳወቂያዎችን ይፍቀዱ።';
+
+  @override
+  String get couldNotEnableSafetyZoneAlerts =>
+      'የደህንነት ዞን ማሳወቂያዎችን ማብራት አልተቻለም። ግንኙነት፣ የአካባቢ ፈቃድ እና የማሳወቂያ ቅንብሮችን ይፈትሹ።';
+
+  @override
+  String get couldNotStartLocationMonitoring =>
+      'የደህንነት ዞን አካባቢ ክትትልን ማስጀመር አልተቻለም።';
+
+  @override
+  String get couldNotRestartLocationMonitoring =>
+      'የደህንነት ዞን አካባቢ ክትትልን እንደገና ማስጀመር አልተቻለም።';
+
+  @override
+  String get locationMonitoringStopped =>
+      'የአካባቢ ክትትል ቆሟል። የስልኩን አካባቢ እና ፈቃዶች ይፈትሹ።';
+
+  @override
+  String get couldNotCheckZoneBoundaries => 'የአሁኑን የደህንነት ዞን ወሰኖች መፈተሽ አልተቻለም።';
 }

@@ -26,11 +26,11 @@
 
 ### Batch 3 (3 features) ✅
 7. **WebRTC Video Consultation** — `flutter_webrtc: ^0.12.1` added to pubspec. Backend: `webrtc.routes.js` + `webrtc.controller.js` (in-memory signaling, Socket.io events for offer/answer/ICE/end). Mobile: `webrtc_service.dart` (peer connection, local/remote streams, ICE handling), `video_call_screen.dart` (full-screen video UI), incoming call handler in `main.dart` with Accept/Decline dialog.
-8. **Fayda National ID Verification** — Backend: `verification.routes.js` + `verification.controller.js` (submit endpoint stores to audit_log, auto-verifies in dev, returns masked ID). Mobile: `id_verification_screen.dart` (camera capture, ID number input, status display), entry added to `settings_screen.dart`.
+8. **FAN Identity Verification** — System Admins manage mock name, phone, and 16-digit FAN records in a dedicated dashboard. Citizens can enter the FAN or scan an original ID QR from Settings; only a matching active FAN verifies, and the app displays the saved mock record instead of QR contents. Identity verification is tracked separately from phone verification.
 9. **SMS Fallback (Africa's Talking)** — Backend: `sms.service.js` (sendSms, sendOtpSms, sendSosAlertSms, sendNotificationSms with dev-mode log fallback). Integrated into OTP flow (`otp.js`), SOS alerts (`sos.controller.js`), and notification fallback (`notification.service.js`). `env.js` updated with `atUsername` + `atApiKey`.
 
 ### Batch 4 (3 features) ✅
-10. **Geofence Incident Push Notifications** — Backend: `geofence-notify.service.js` (`notifyGeofenceCitizens` — finds citizens in affected geofence zones via haversine, sends FCM push notifications). Integrated into SOS creation flow (`sos.controller.js`).
+10. **Geofence Incident Push Notifications** — Staff publish official safety areas. SOS matching uses the same circle or polygon boundary shown on the map; matching incidents trigger FCM warnings for citizens registered in that region/sub-city. Integrated into SOS creation flow (`sos.controller.js`).
 11. **Officer Position Tracking** — Backend: `position.routes.js` + `position.controller.js` (POST `/report`, GET `/officers` with in-memory store + DB audit + Socket.io broadcast). Mobile: `officer_position_service.dart` (periodic GPS reporting every 30s for police/dispatcher roles). Admin-Web: Sos.jsx updated with toggleable officer position grid panel.
 12. **Multi-unit Dispatch Coordination** — Backend: `dispatch.routes.js` + `dispatch.controller.js` (assign/remove/status endpoints with duplicate prevention, auto-status updates, real-time notifications). Admin-Web: Sos.jsx updated with collapsible units panel, color-coded status badges, assign/remove UI, per-unit status updates.
 

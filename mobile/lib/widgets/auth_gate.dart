@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api.dart';
-import '../screens/auth_screen.dart';
+import '../screens/login_screen.dart';
 
 /// Shows [child] to signed-in users; otherwise a friendly prompt inviting
 /// guests to create a free account. Guests can always browse public screens.
@@ -48,7 +48,7 @@ class AuthGate extends StatelessWidget {
 /// Push the auth screen (used to upgrade a guest to a signed-in user).
 Future<void> openAuth(BuildContext context) async {
   await Navigator.of(context).push(
-    MaterialPageRoute(builder: (_) => const AuthScreen()),
+    MaterialPageRoute(builder: (_) => const LoginScreen()),
   );
 }
 

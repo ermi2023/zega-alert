@@ -1,6 +1,11 @@
 import { query } from '../config/db.js';
 import { ok, fail } from '../utils/response.js';
 import { io } from '../socket/socket.js';
+import { dispatchSos } from '../services/dispatch.service.js';
+import {
+  findNearestPoliceStation,
+  notifyNearestStationOrCentral,
+} from '../services/police-station.service.js';
 
 const officerPositions = new Map();
 
@@ -45,7 +50,7 @@ export const reportSosLocation = async (req, res) => {
     return fail(res, 'sosId, latitude and longitude are required');
   }
   const { rows } = await query(
-    'SELECT id, user_id, status FROM sos_alerts WHERE id = $1',
+    'SELECT id, user_id, status, station_id FROM sos_alerts WHERE id = $1',
     [sosId],
   );
   if (!rows[0]) return fail(res, 'SOS not found', 404);
@@ -53,7 +58,57 @@ export const reportSosLocation = async (req, res) => {
   if (['resolved', 'cancelled'].includes(rows[0].status)) {
     return fail(res, 'SOS is no longer active', 409);
   }
-  await query('UPDATE sos_alerts SET latitude = $1, longitude = $2 WHERE id = $3', [latitude, longitude, sosId]);
+  let alert = rows[0];
+  if (!alert.station_id) {
+    const station = await findNearestPoliceStation({ latitude, longitude });
+    if (station) {
+      const { rows: updated } = await query(
+        `UPDATE sos_alerts SET latitude = $1, longitude = $2, station_id = $3
+         WHERE id = $4 AND station_id IS NULL RETURNING id, user_id, status, station_id`,
+        [latitude, longitude, station.id, sosId],
+      );
+      if (updated[0]) {
+        alert = updated[0];
+        const dispatch = await dispatchSos({
+          ...alert,
+          latitude,
+          longitude,
+        });
+        const recipients = await notifyNearestStationOrCentral('sos:new', {
+          ...alert,
+          latitude,
+          longitude,
+          station_name: station.name,
+          station_address: station.address_text,
+        }, dispatch);
+        io.to(`user:${alert.user_id}`).emit('sos:status', {
+          sosId,
+          status: dispatch.assignments.length ? 'dispatched' : 'triggered',
+          response_notes: recipients.userIds.length === 0
+            ? 'No station officers or central dispatch recipients are currently available'
+            : recipients.route === 'nearest_station'
+              ? `SOS routed to ${station.name}`
+              : 'SOS remains with central dispatch because no station officers are assigned',
+        });
+      } else {
+        const { rows: latest } = await query(
+          'SELECT id, user_id, status, station_id FROM sos_alerts WHERE id = $1',
+          [sosId],
+        );
+        alert = latest[0] || alert;
+      }
+    } else {
+      await query(
+        'UPDATE sos_alerts SET latitude = $1, longitude = $2 WHERE id = $3',
+        [latitude, longitude, sosId],
+      );
+    }
+  } else {
+    await query(
+      'UPDATE sos_alerts SET latitude = $1, longitude = $2 WHERE id = $3',
+      [latitude, longitude, sosId],
+    );
+  }
   const payload = {
     sosId,
     userId: req.user.id,
@@ -62,7 +117,10 @@ export const reportSosLocation = async (req, res) => {
     timestamp: Date.now(),
   };
   io.to(`sos:${sosId}`).emit('sos:location', payload);
-  io.to('staff').emit('sos:location', payload);
+  await notifyNearestStationOrCentral('sos:location', {
+    ...payload,
+    station_id: alert.station_id,
+  });
   ok(res, payload, 'Location updated');
 };
 

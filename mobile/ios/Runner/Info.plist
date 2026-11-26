@@ -73,9 +73,9 @@
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>ZEGA-ALERT streams your live location to dispatchers while an SOS is active.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>ZEGA-ALERT uses the camera to capture photos and sign-language video evidence.</string>
+	<string>ZEGA-ALERT uses the camera for live SOS video, photos, and sign-language video evidence.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>ZEGA-ALERT uses the microphone for audio evidence and video calls.</string>
+	<string>ZEGA-ALERT uses the microphone for live SOS audio, audio evidence, and video calls.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>ZEGA-ALERT saves captured media to your photo library.</string>
 </dict>

@@ -32,35 +32,82 @@ git push origin main
 | Key | Value |
 | --- | --- |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | The **entire** contents of `backend/zega-alert-firebase-adminsdk-*.json` as one line |
-| `FAYDA_API_URL` / `FAYDA_API_KEY` | Your Fayda/NIDP credentials (leave blank for dev auto-approve) |
 | `AT_USERNAME` / `AT_API_KEY` / `AT_SENDER_ID` | Africa's Talking credentials |
+| `OTP_SCREEN_FALLBACK` | Set to `true` only for a controlled demo to show an undelivered OTP in the app; keep `false` for public production |
 | `VITE_API_URL` (admin site) | `https://zega-alert-api.onrender.com` |
+
+### Push notification setup
+
+For Android push alerts while the app is in the background or closed:
+
+1. In Firebase Console, enable Firebase Cloud Messaging for project `zega-alert`
+   and register the Android package `com.example.zega_alert_mobile`.
+2. Keep the matching `google-services.json` at
+   `mobile/android/app/google-services.json` when building the app. It is
+   intentionally git-ignored; do not commit it.
+3. In the backend hosting environment, set `FIREBASE_SERVICE_ACCOUNT_JSON` to
+   the full Firebase Admin service-account JSON as one line. Keep it private
+   and use the same Firebase project as the Android app.
+4. Install the rebuilt app and allow its notification permission. The app
+   registers its FCM device token after sign-in. If the backend credential is
+   missing or invalid, the server logs that push delivery is disabled.
 
 > Maps use OpenStreetMap tiles via Leaflet — **no API key or billing**, so
 > there is nothing to add for the live map.
 
+Citizen registration sends phone OTPs by SMS. In development, when SMS is not
+delivered, the code is shown in the app instead of being logged. For a
+controlled hosted demo only, set `OTP_SCREEN_FALLBACK=true`; turn it off when
+SMS delivery is configured. Do not enable this fallback for a public
+production service because showing the code in the same app does not prove
+ownership of the phone number. Email OTP delivery is not configured.
+
 `JWT_SECRET`, `ENCRYPTION_KEY`, `DATABASE_URL`, `CORS_ORIGINS`, and
 `FIREBASE_STORAGE_BUCKET` are set automatically by the blueprint.
+
+Identity verification currently uses mock FAN records managed by a
+System Admin under **Admin → FAN Identity Verification**. Add the mock name,
+phone number, and 16-digit FAN. Citizens access
+verification in **Settings → Security** and can enter the FAN or scan the QR
+code on their original ID. Only a matching active FAN verifies them; the app
+shows the saved mock record, not personal data from the scanned QR.
 
 > **Free DB caveat:** Render's free Postgres expires after ~30 days. For a
 > permanent free database use [Neon](https://neon.tech) (or Supabase), then set
 > the API's `DATABASE_URL` to the Neon connection string and remove the
 > `fromDatabase` block for that variable.
 
-## 3. Point the mobile app at the public URL
+## 3. Build the mobile app for Android
 
 Either
 - open the app, tap **Server** on the login screen and paste
   `https://zega-alert-api.onrender.com`, **or**
-- build the APK with the URL baked in:
+- build a multi-architecture release with the URL baked in.
+
+For Google Play, build one Android App Bundle containing all supported
+architectures. Google Play then delivers only the native libraries needed by
+each device:
 
 ```powershell
 $env:ANDROID_HOME="C:\Users\hp g7\Android\Sdk"; $env:ANDROID_SDK_ROOT=$env:ANDROID_HOME
-& "C:\flutter\bin\flutter.bat" build apk --release --dart-define=ZEGA_API_BASE=https://zega-alert-api.onrender.com
+Set-Location mobile
+& "C:\flutter\bin\flutter.bat" build appbundle --release --target-platform=android-arm,android-arm64,android-x64 --dart-define=ZEGA_API_BASE=https://zega-alert-api.onrender.com
 ```
 
-The app prefers the in-app saved value over the `--dart-define` value, so users
-can always override it at runtime.
+For direct installation or sharing one APK file, build a universal APK:
+
+```powershell
+& "C:\flutter\bin\flutter.bat" build apk --release --target-platform=android-arm,android-arm64,android-x64 --dart-define=ZEGA_API_BASE=https://zega-alert-api.onrender.com
+```
+
+This creates one `build/app/outputs/flutter-apk/app-release.apk` containing
+`armeabi-v7a` (32-bit ARM), `arm64-v8a` (64-bit ARM), and `x86_64` libraries.
+Install or share this same file for all supported devices; Android uses the
+matching native libraries. Since it includes every architecture, this APK is
+larger than an architecture-specific APK. For smaller per-device downloads,
+use the App Bundle with Google Play, which selects the needed libraries for
+each device. The app prefers an in-app saved server URL over the build-time
+URL, so users can override it.
 
 > Free Render web services sleep after ~15 min idle; the first request after a
 > sleep can take ~30-60s. The mobile app's request timeout should accommodate

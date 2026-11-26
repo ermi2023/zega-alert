@@ -200,14 +200,25 @@ FROM conversations c, users u WHERE c.title = 'Police support chat' AND u.phone 
 -- POLICE STATIONS (nearest-station lookup for People of Determination)
 -- Already idempotent — guarded by name via NOT EXISTS.
 -- ------------------------------------------------------------------
-INSERT INTO police_stations (name, phone, region, sub_city, latitude, longitude)
-SELECT v.name, v.phone, v.region, v.sub_city, v.latitude, v.longitude
+INSERT INTO police_stations (name, address_text, phone, region, sub_city, latitude, longitude)
+SELECT v.name, v.address_text, v.phone, v.region, v.sub_city, v.latitude, v.longitude
 FROM (VALUES
-  ('Debark Central Police Station', '0911000004', 'Amhara', 'Debark', 13.1408, 37.8977),
-  ('Addis Ababa Central Police Station', '0911000002', 'Addis Ababa', 'Arada', 9.0355, 38.7490),
-  ('Dire Dawa Police Station', '0911000003', 'Dire Dawa', 'Addis Ketema', 9.5931, 41.8661),
-  ('Hawassa City Police Station', '0911000005', 'Sidama', 'Hawassa', 7.0620, 38.4763)
-) AS v(name, phone, region, sub_city, latitude, longitude)
+  ('Debark Central Police Station', 'Debark, Amhara', '0911000004', 'Amhara', 'Debark', 13.1408, 37.8977),
+  ('Addis Ababa Central Police Station', 'Arada, Addis Ababa', '0911000002', 'Addis Ababa', 'Arada', 9.0355, 38.7490),
+  ('Dire Dawa Police Station', 'Addis Ketema, Dire Dawa', '0911000003', 'Dire Dawa', 'Addis Ketema', 9.5931, 41.8661),
+  ('Hawassa City Police Station', 'Hawassa, Sidama', '0911000005', 'Sidama', 'Hawassa', 7.0620, 38.4763)
+) AS v(name, address_text, phone, region, sub_city, latitude, longitude)
 WHERE NOT EXISTS (SELECT 1 FROM police_stations s WHERE s.name = v.name);
+
+UPDATE police_stations
+SET address_text = concat_ws(', ', NULLIF(BTRIM(sub_city), ''), NULLIF(BTRIM(region), ''))
+WHERE BTRIM(address_text) = ''
+  AND (NULLIF(BTRIM(sub_city), '') IS NOT NULL OR NULLIF(BTRIM(region), '') IS NOT NULL);
+
+INSERT INTO police_station_users (station_id, user_id)
+SELECT s.id, u.id
+FROM police_stations s
+JOIN users u ON u.phone = s.phone AND u.role = 'police'
+ON CONFLICT DO NOTHING;
 
 SELECT 'Seed data inserted successfully. Login password for all users: password123' AS result;

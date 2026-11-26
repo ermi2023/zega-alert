@@ -1,40 +1,41 @@
 import 'dart:async';
+
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
+
 import '../l10n/app_localizations.dart';
 import '../services/api.dart';
 import '../services/database_service.dart';
+import '../services/notification_state.dart';
 import '../services/socket_service.dart';
 import '../widgets/auth_gate.dart';
 import '../widgets/fullscreen_image_viewer.dart';
-import '../widgets/pod_actions.dart';
-import '../widgets/sos_dialog.dart';
+import '../widgets/offline_person_image.dart';
 import '../widgets/translatable_text.dart';
-import 'announcement_detail_screen.dart';
 import 'missing_report_screen.dart';
-import 'person_detail_screen.dart';
-import 'report_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.searchQuery = ''});
+
+  final String searchQuery;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<dynamic> _announcements = [];
   List<dynamic> _missing = [];
   List<dynamic> _wanted = [];
   String? _loadError;
   bool _loading = true;
   bool _offline = false;
+  bool _showFilterBar = false;
   String _selectedFilter = 'All'; // 'All', 'Missing', 'Wanted'
 
   // Expanded descriptions
   final Set<String> _expandedCards = {};
-  
+
   // Likes state: entityKey -> count
   final Map<String, int> _likeCounts = {};
   final Set<String> _likedEntities = {};
@@ -71,17 +72,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return _commentControllers[key]!;
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool clearPersonNotifications = false}) async {
     setState(() {
       _loading = true;
       _loadError = null;
       _offline = false;
     });
     try {
-      final ann = await Api.get('/announcements');
       final missing = await Api.get('/persons/missing');
       final wanted = await Api.get('/persons/wanted');
-      await DatabaseService.cacheList('announcements', ann);
       await DatabaseService.cacheList('missing_persons', missing);
       await DatabaseService.cacheList('wanted_persons', wanted);
 
@@ -98,34 +97,50 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       setState(() {
-        _announcements = ann is List ? ann : [];
         _missing = missing is List ? missing : [];
         _wanted = wanted is List ? wanted : [];
       });
+      if (clearPersonNotifications && Api.isLoggedIn) {
+        try {
+          await Api.post('/notifications/read-content-updates', {
+            'scope': 'persons',
+          });
+          NotificationState.notifyChanged();
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  Api.userMessage(
+                    e,
+                    fallback: 'Could not clear notifications right now.',
+                  ),
+                ),
+              ),
+            );
+          }
+        }
+      }
     } catch (e) {
-      final ann = await DatabaseService.getCachedList('announcements');
       final missing = await DatabaseService.getCachedList('missing_persons');
       final wanted = await DatabaseService.getCachedList('wanted_persons');
-      if (ann.isNotEmpty || missing.isNotEmpty || wanted.isNotEmpty) {
+      if (missing.isNotEmpty || wanted.isNotEmpty) {
         setState(() {
-          _announcements = ann;
           _missing = missing;
           _wanted = wanted;
           _offline = true;
         });
       } else {
-        setState(() => _loadError = 'Failed to load data: $e');
+        setState(
+          () => _loadError = Api.userMessage(
+            e,
+            fallback: 'Could not load data right now.',
+          ),
+        );
       }
     } finally {
       setState(() => _loading = false);
     }
-  }
-
-  Future<void> _callHotline(String number) async {
-    final uri = Uri.parse('tel:$number');
-    try {
-      if (await canLaunchUrl(uri)) await launchUrl(uri);
-    } catch (_) {}
   }
 
   Future<void> _toggleLike(String entityType, String entityId) async {
@@ -171,7 +186,11 @@ class _HomeScreenState extends State<HomeScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Please sign in to like posts: $e')),
+          SnackBar(
+            content: Text(
+              Api.userMessage(e, fallback: 'Please sign in to like posts.'),
+            ),
+          ),
         );
       }
     }
@@ -216,7 +235,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final text = controller.text.trim();
     if (text.isEmpty) return;
 
-    if (!await ensureAuthed(context, reason: 'Sign in to write a comment.')) return;
+    if (!await ensureAuthed(context, reason: 'Sign in to write a comment.'))
+      return;
     if (!mounted) return;
 
     controller.clear();
@@ -227,16 +247,33 @@ class _HomeScreenState extends State<HomeScreen> {
           final list = _commentsData[key] ?? [];
           list.add(res['comment']);
           _commentsData[key] = list;
-          _commentCounts[key] = (res['comment_count'] as num?)?.toInt() ?? list.length;
+          _commentCounts[key] =
+              (res['comment_count'] as num?)?.toInt() ?? list.length;
         });
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to post comment: $e')),
+          SnackBar(
+            content: Text(
+              Api.userMessage(e, fallback: 'Could not post your comment.'),
+            ),
+          ),
         );
       }
     }
+  }
+
+  bool _matchesSearch(Map<String, dynamic> person) {
+    final query = widget.searchQuery.trim().toLowerCase();
+    if (query.isEmpty) return true;
+    return [
+      person['name'],
+      person['case_code'],
+      person['last_seen_address'],
+      person['description'],
+      person['crime_description'],
+    ].any((value) => value?.toString().toLowerCase().contains(query) ?? false);
   }
 
   List<Map<String, dynamic>> _filteredList() {
@@ -244,20 +281,55 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (_selectedFilter == 'All' || _selectedFilter == 'Wanted') {
       for (final w in _wanted) {
-        if (w['status'] == 'wanted' || w['status'] == null) {
+        if ((w['status'] == 'wanted' || w['status'] == null) &&
+            _matchesSearch(Map<String, dynamic>.from(w as Map))) {
           list.add({'item': w, 'kind': 'wanted'});
         }
       }
     }
     if (_selectedFilter == 'All' || _selectedFilter == 'Missing') {
       for (final m in _missing) {
-        if (m['status'] == 'missing' || m['status'] == null) {
+        if ((m['status'] == 'missing' || m['status'] == null) &&
+            _matchesSearch(Map<String, dynamic>.from(m as Map))) {
           list.add({'item': m, 'kind': 'missing'});
         }
       }
     }
 
+    list.sort((a, b) {
+      final aPublishedAt = _publicationDate(a['item']);
+      final bPublishedAt = _publicationDate(b['item']);
+      if (aPublishedAt == null) return bPublishedAt == null ? 0 : 1;
+      if (bPublishedAt == null) return -1;
+      return bPublishedAt.compareTo(aPublishedAt);
+    });
+
     return list;
+  }
+
+  DateTime? _publicationDate(dynamic person) {
+    final date = person['approved_at'] ?? person['created_at'];
+    return DateTime.tryParse(date?.toString() ?? '');
+  }
+
+  bool _handleFilterBarScroll(ScrollNotification notification) {
+    if (notification.metrics.axis != Axis.vertical) return false;
+    var shouldShow = _showFilterBar;
+    if (notification is UserScrollNotification) {
+      if (notification.direction == ScrollDirection.reverse) {
+        shouldShow = true;
+      } else if (notification.direction == ScrollDirection.forward) {
+        shouldShow = false;
+      }
+    } else if (notification is ScrollEndNotification &&
+        notification.metrics.pixels <=
+            notification.metrics.minScrollExtent + 1) {
+      shouldShow = false;
+    }
+    if (_showFilterBar != shouldShow) {
+      setState(() => _showFilterBar = shouldShow);
+    }
+    return false;
   }
 
   List<String> _extractImages(Map<String, dynamic> person) {
@@ -271,7 +343,9 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
     final primaryPhoto = Api.assetUrl(person['photo_url']?.toString());
-    if (primaryPhoto != null && primaryPhoto.isNotEmpty && !list.contains(primaryPhoto)) {
+    if (primaryPhoto != null &&
+        primaryPhoto.isNotEmpty &&
+        !list.contains(primaryPhoto)) {
       list.insert(0, primaryPhoto);
     }
     return list;
@@ -283,213 +357,116 @@ class _HomeScreenState extends State<HomeScreen> {
     final items = _filteredList();
     final sectionWidgets = _buildHomeSectionWidgets(loc);
 
-    return RefreshIndicator(
-      onRefresh: _load,
-      color: const Color(0xFF1E3A8A),
-      child: Column(
-        children: [
-          _buildFilterTabs(loc),
-          if (_offline)
-            Container(
-              color: Colors.amber.shade100,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  Icon(Icons.wifi_off, size: 16, color: Colors.amber.shade900),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'You are offline. Showing cached records.',
-                      style: TextStyle(fontSize: 12, color: Colors.amber.shade900),
+    return NotificationListener<ScrollNotification>(
+      onNotification: _handleFilterBarScroll,
+      child: RefreshIndicator(
+        onRefresh: () => _load(clearPersonNotifications: true),
+        color: const Color(0xFF1E3A8A),
+        child: Column(
+          children: [
+            AnimatedSize(
+              duration: const Duration(milliseconds: 240),
+              curve: Curves.easeInOut,
+              alignment: Alignment.topCenter,
+              child: _showFilterBar
+                  ? _buildFilterTabs(loc)
+                  : const SizedBox(width: double.infinity),
+            ),
+            if (_offline)
+              Container(
+                color: Colors.amber.shade100,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.wifi_off,
+                      size: 16,
+                      color: Colors.amber.shade900,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'You are offline. Showing cached records.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.amber.shade900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.only(top: 8, bottom: 24),
+                itemCount: sectionWidgets.length + items.length + 1,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  if (index < sectionWidgets.length) {
+                    return sectionWidgets[index];
+                  }
+                  final itemIndex = index - sectionWidgets.length;
+                  if (itemIndex < items.length) {
+                    final itemData = items[itemIndex];
+                    return _buildPersonCard(
+                      context,
+                      itemData['item'] as Map<String, dynamic>,
+                      isWanted: itemData['kind'] == 'wanted',
+                    );
+                  }
+                  if (_loading) {
+                    return const Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+                  if (_loadError != null) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: Colors.blueGrey,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(_loadError!, textAlign: TextAlign.center),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            onPressed: _load,
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Text(
+                        'No records found',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
-          Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.only(top: 8, bottom: 24),
-              itemCount: sectionWidgets.length + items.length + 1,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                if (index < sectionWidgets.length) return sectionWidgets[index];
-                final itemIndex = index - sectionWidgets.length;
-                if (itemIndex < items.length) {
-                  final itemData = items[itemIndex];
-                  return _buildPersonCard(
-                    context,
-                    itemData['item'] as Map<String, dynamic>,
-                    isWanted: itemData['kind'] == 'wanted',
-                  );
-                }
-                if (_loading) {
-                  return const Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-                if (_loadError != null) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                        const SizedBox(height: 12),
-                        Text(_loadError!, textAlign: TextAlign.center),
-                        const SizedBox(height: 12),
-                        ElevatedButton(onPressed: _load, child: const Text('Retry')),
-                      ],
-                    ),
-                  );
-                }
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  child: Center(
-                    child: Text(
-                      'No records found',
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   List<Widget> _buildHomeSectionWidgets(AppLocalizations loc) {
     return [
-      Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(loc.appTitle, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            Text(loc.appSubtitle, style: const TextStyle(color: Colors.grey)),
-          ],
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Semantics(
-          button: true,
-          label: 'SOS Emergency button. Double tap to send emergency alert with your GPS location.',
-          child: SizedBox(
-            height: 96,
-            child: FilledButton(
-              onPressed: () => triggerEmergencySos(context),
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.red.shade600,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.sos, size: 32, color: Colors.white),
-                  const SizedBox(height: 4),
-                  Text(loc.sosEmergency, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _callHotline('991'),
-                icon: const Icon(Icons.phone, color: Color(0xFF1E40AF), size: 18),
-                label: const Text('Police 991', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _callHotline('907'),
-                icon: const Icon(Icons.emergency, color: Color(0xFFDC2626), size: 18),
-                label: const Text('Rescue 907', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16),
-        child: Card(
-          child: Padding(
-            padding: EdgeInsets.all(14),
-            child: PodActions(),
-          ),
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Card(
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
-              child: Icon(Icons.edit_note, color: Theme.of(context).colorScheme.primary),
-            ),
-            title: const Text('Report a crime', style: TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: const Text('Attach photos, video, audio, a web link or a file'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () async {
-              if (!await ensureAuthed(context, reason: 'Sign in to file a crime report.')) return;
-              if (!mounted) return;
-              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CrimeReportScreen()));
-            },
-          ),
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Text(loc.announcements, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-      ),
-      if (_announcements.isEmpty)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(loc.nothingHereYet, style: const TextStyle(color: Colors.grey)),
-        )
-      else
-        ..._announcements.take(3).map((a) => Semantics(
-          label: 'Announcement: ${a['title']}. ${a['body']}',
-          child: Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            child: ListTile(
-              leading: Icon(a['category'] == 'warning' ? Icons.warning_amber : Icons.campaign, color: a['category'] == 'warning' ? Colors.amber : Colors.green),
-              title: Text(a['title']),
-              subtitle: Text(a['body'], maxLines: 2, overflow: TextOverflow.ellipsis),
-              onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => AnnouncementDetailScreen(item: Map<String, dynamic>.from(a as Map)),
-              )),
-              trailing: Semantics(
-                button: true,
-                label: loc.shareAnnouncement(a['title']),
-                child: IconButton(
-                  icon: const Icon(Icons.share, size: 20),
-                  tooltip: loc.share,
-                  onPressed: () async {
-                    final r = await Share.share('${a['title']}\n\n${a['body']}\n\nShared via ZEGA-ALERT');
-                    await Api.recordShare('announcement', a['id']?.toString(), platform: Api.platformFromRaw(r.raw));
-                  },
-                ),
-              ),
-            ),
-          ),
-        )),
       Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
@@ -500,9 +477,17 @@ class _HomeScreenState extends State<HomeScreen> {
               label: loc.reportAMissingPerson,
               child: TextButton.icon(
                 onPressed: () async {
-                  if (!await ensureAuthed(context, reason: 'Sign in to report a missing person.')) return;
+                  if (!await ensureAuthed(
+                    context,
+                    reason: 'Sign in to report a missing person.',
+                  ))
+                    return;
                   if (!mounted) return;
-                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => MissingReportScreen(onDone: _load)));
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => MissingReportScreen(onDone: _load),
+                    ),
+                  );
                 },
                 icon: const Icon(Icons.person_add_alt_1, size: 16),
                 label: Text(loc.reportMissing),
@@ -514,62 +499,137 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
   }
 
-Widget _buildFilterTabs(AppLocalizations loc) {
-  final filters = ['All', 'Missing', 'Wanted'];
+  Widget _buildFilterTabs(AppLocalizations loc) {
+    final filters = ['All', 'Missing', 'Wanted'];
 
-  return Container(
-    color: Colors.white,
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-    child: Row(
-      children: filters.map((filter) {
-        final isSelected = _selectedFilter == filter;
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: filters.map((filter) {
+                  final isSelected = _selectedFilter == filter;
 
-        return Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: FilterChip(
-            selected: isSelected,
-            label: Text(
-              filter,
-              style: TextStyle(
-                color: isSelected ? Colors.white : const Color(0xFF334155),
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                fontSize: 13,
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      selected: isSelected,
+                      label: Text(
+                        filter,
+                        style: TextStyle(
+                          color: isSelected
+                              ? Colors.white
+                              : const Color(0xFF334155),
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.w500,
+                          fontSize: 13,
+                        ),
+                      ),
+                      backgroundColor: const Color(0xFFF1F5F9),
+                      selectedColor: const Color(0xFF0F172A),
+                      checkmarkColor: Colors.white,
+                      showCheckmark: false,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: BorderSide(
+                          color: isSelected
+                              ? const Color(0xFF0F172A)
+                              : Colors.transparent,
+                        ),
+                      ),
+                      onSelected: (_) {
+                        setState(() => _selectedFilter = filter);
+                      },
+                    ),
+                  );
+                }).toList(),
               ),
             ),
-            backgroundColor: const Color(0xFFF1F5F9),
-            selectedColor: const Color(0xFF0F172A),
-            checkmarkColor: Colors.white,
-            showCheckmark: false,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(
-                color: isSelected
-                    ? const Color(0xFF0F172A)
-                    : Colors.transparent,
-              ),
-            ),
-            onSelected: (_) {
-              setState(() => _selectedFilter = filter);
-            },
           ),
-        );
-      }).toList(),
-    ),
-  );
-}
+          IconButton(
+            tooltip: 'Refresh wanted and missing people',
+            onPressed: _loading
+                ? null
+                : () => _load(clearPersonNotifications: true),
+            icon: _loading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh),
+          ),
+        ],
+      ),
+    );
+  }
 
-  Widget _buildPersonCard(BuildContext context, Map<String, dynamic> person, {required bool isWanted}) {
+  Widget _buildPersonCard(
+    BuildContext context,
+    Map<String, dynamic> person, {
+    required bool isWanted,
+  }) {
     final id = person['id'] as String? ?? '';
     final entityType = isWanted ? 'wanted_person' : 'missing_person';
     final entityKey = '${entityType}_$id';
 
     final name = (person['name'] as String?)?.trim() ?? 'Unknown';
     final age = person['age'];
-    final location = (person['last_seen_address'] as String?) ??
-        (isWanted ? 'Last known location not specified' : 'Last seen location unknown');
+    final location =
+        (person['last_seen_address'] as String?) ??
+        (isWanted
+            ? 'Last known location not specified'
+            : 'Last seen location unknown');
     final isExpanded = _expandedCards.contains(id);
-    final fullDescription = (isWanted ? person['crime_description'] : person['description']) as String? ?? '';
+    final fullDescription =
+        (isWanted ? person['crime_description'] : person['description'])
+            as String? ??
+        '';
     final images = _extractImages(person);
+    final fullscreenDetails = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          isWanted ? 'Wanted person' : 'Missing person',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        if (age != null)
+          Text(
+            'Age: $age',
+            style: const TextStyle(color: Colors.white, fontSize: 14),
+          ),
+        if (person['gender']?.toString().isNotEmpty ?? false)
+          Text(
+            'Gender: ${person['gender']}',
+            style: const TextStyle(color: Colors.white, fontSize: 14),
+          ),
+        Text(
+          'Location: $location',
+          style: const TextStyle(color: Colors.white, fontSize: 14),
+        ),
+        if (person['case_code']?.toString().isNotEmpty ?? false)
+          Text(
+            'Case code: ${person['case_code']}',
+            style: const TextStyle(color: Colors.white, fontSize: 14),
+          ),
+        if (fullDescription.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          TranslatableText(
+            text: fullDescription,
+            style: const TextStyle(color: Colors.white, height: 1.4),
+          ),
+        ],
+      ],
+    );
 
     final isLiked = _likedEntities.contains(entityKey);
     final likeCount = _likeCounts[entityKey] ?? 0;
@@ -596,30 +656,42 @@ Widget _buildFilterTabs(AppLocalizations loc) {
               children: [
                 GestureDetector(
                   onTap: () {
-                    if (images.isNotEmpty) {
-                      Navigator.of(context).push(MaterialPageRoute(
+                    if (images.isEmpty) return;
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
                         builder: (_) => FullscreenImageViewer(
                           images: images,
                           initialIndex: 0,
                           title: name,
+                          details: fullscreenDetails,
+                          cachePersonPhotos: true,
                         ),
-                      ));
-                    }
+                      ),
+                    );
                   },
                   child: CircleAvatar(
                     radius: 22,
-                    backgroundColor: isWanted ? const Color(0xFFDC2626).withOpacity(0.15) : const Color(0xFF2563EB).withOpacity(0.15),
-                    backgroundImage: images.isNotEmpty ? NetworkImage(images.first) : null,
-                    child: images.isEmpty
-                        ? Text(
+                    backgroundColor: isWanted
+                        ? const Color(0xFFDC2626).withOpacity(0.15)
+                        : const Color(0xFF2563EB).withOpacity(0.15),
+                    child: images.isNotEmpty
+                        ? ClipOval(
+                            child: OfflinePersonImage(
+                              url: images.first,
+                              width: 44,
+                              height: 44,
+                            ),
+                          )
+                        : Text(
                             name.isNotEmpty ? name[0].toUpperCase() : '?',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
-                              color: isWanted ? const Color(0xFFDC2626) : const Color(0xFF2563EB),
+                              color: isWanted
+                                  ? const Color(0xFFDC2626)
+                                  : const Color(0xFF2563EB),
                             ),
-                          )
-                        : null,
+                          ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -627,43 +699,48 @@ Widget _buildFilterTabs(AppLocalizations loc) {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      GestureDetector(
-                        onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => PersonDetailScreen(
-                            person: Map<String, dynamic>.from(person),
-                            kind: isWanted ? 'wanted' : 'missing',
-                            onChanged: _load,
-                          ),
-                        )),
-                        child: Text(
-                          name,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF0F172A),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0F172A),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       Row(
                         children: [
                           if (age != null) ...[
-                            Icon(Icons.person_outline, size: 14, color: Colors.grey.shade600),
+                            Icon(
+                              Icons.person_outline,
+                              size: 14,
+                              color: Colors.grey.shade600,
+                            ),
                             const SizedBox(width: 3),
                             Text(
                               'Age $age',
-                              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
                             ),
                             const SizedBox(width: 8),
                           ],
-                          Icon(Icons.location_on_outlined, size: 14, color: Colors.grey.shade600),
+                          Icon(
+                            Icons.location_on_outlined,
+                            size: 14,
+                            color: Colors.grey.shade600,
+                          ),
                           const SizedBox(width: 3),
                           Expanded(
                             child: Text(
                               location,
-                              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -674,9 +751,14 @@ Widget _buildFilterTabs(AppLocalizations loc) {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: isWanted ? const Color(0xFFDC2626) : const Color(0xFFD97706),
+                    color: isWanted
+                        ? const Color(0xFFDC2626)
+                        : const Color(0xFFD97706),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -692,7 +774,6 @@ Widget _buildFilterTabs(AppLocalizations loc) {
             ),
           ),
 
-          // 2. EXPANDABLE DESCRIPTION (Above image, can expand and shrink in place)
           if (fullDescription.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -701,15 +782,25 @@ Widget _buildFilterTabs(AppLocalizations loc) {
                 children: [
                   AnimatedCrossFade(
                     duration: const Duration(milliseconds: 200),
-                    crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                    crossFadeState: isExpanded
+                        ? CrossFadeState.showSecond
+                        : CrossFadeState.showFirst,
                     firstChild: TranslatableText(
                       text: fullDescription,
                       maxLines: 2,
-                      style: TextStyle(fontSize: 14, color: Colors.grey.shade800, height: 1.4),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade800,
+                        height: 1.4,
+                      ),
                     ),
                     secondChild: TranslatableText(
                       text: fullDescription,
-                      style: TextStyle(fontSize: 14, color: Colors.grey.shade800, height: 1.4),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade800,
+                        height: 1.4,
+                      ),
                     ),
                   ),
                   if (fullDescription.length > 70)
@@ -740,11 +831,27 @@ Widget _buildFilterTabs(AppLocalizations loc) {
             ),
 
           const SizedBox(height: 6),
-
-          // 3. IMAGE / CAROUSEL WITH FRAME & TAP TO OPEN FULLSCREEN
-          _buildImageSection(context, entityKey, name, isWanted, images),
-
-          // 4. LIKES & COMMENTS SUMMARY BAR
+          _buildImageSection(
+            entityKey,
+            name,
+            isWanted,
+            images,
+            onTap: () {
+              if (images.isEmpty) return;
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => FullscreenImageViewer(
+                    images: images,
+                    initialIndex: 0,
+                    title: name,
+                    details: fullscreenDetails,
+                    cachePersonPhotos: true,
+                  ),
+                ),
+              );
+            },
+          ),
+          // Likes & comments summary
           if (likeCount > 0 || commentCount > 0)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
@@ -757,12 +864,20 @@ Widget _buildFilterTabs(AppLocalizations loc) {
                         color: Color(0xFF1E40AF),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.thumb_up, size: 10, color: Colors.white),
+                      child: const Icon(
+                        Icons.thumb_up,
+                        size: 10,
+                        color: Colors.white,
+                      ),
                     ),
                     const SizedBox(width: 5),
                     Text(
                       '$likeCount',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                   const Spacer(),
@@ -771,7 +886,11 @@ Widget _buildFilterTabs(AppLocalizations loc) {
                       onTap: () => _toggleComments(entityType, id),
                       child: Text(
                         '$commentCount ${commentCount == 1 ? "comment" : "comments"}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                 ],
@@ -793,14 +912,19 @@ Widget _buildFilterTabs(AppLocalizations loc) {
                     onTap: () => _toggleLike(entityType, id),
                     borderRadius: BorderRadius.circular(8),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 8,
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             isLiked ? Icons.thumb_up : Icons.thumb_up_outlined,
                             size: 17,
-                            color: isLiked ? const Color(0xFF1E40AF) : const Color(0xFF475569),
+                            color: isLiked
+                                ? const Color(0xFF1E40AF)
+                                : const Color(0xFF475569),
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -808,7 +932,9 @@ Widget _buildFilterTabs(AppLocalizations loc) {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: isLiked ? const Color(0xFF1E40AF) : const Color(0xFF475569),
+                              color: isLiked
+                                  ? const Color(0xFF1E40AF)
+                                  : const Color(0xFF475569),
                             ),
                           ),
                         ],
@@ -821,22 +947,33 @@ Widget _buildFilterTabs(AppLocalizations loc) {
                     onTap: () => _toggleComments(entityType, id),
                     borderRadius: BorderRadius.circular(8),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 8,
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            isCommentsExpanded ? Icons.chat_bubble : Icons.chat_bubble_outline,
+                            isCommentsExpanded
+                                ? Icons.chat_bubble
+                                : Icons.chat_bubble_outline,
                             size: 17,
-                            color: isCommentsExpanded ? const Color(0xFF1E40AF) : const Color(0xFF475569),
+                            color: isCommentsExpanded
+                                ? const Color(0xFF1E40AF)
+                                : const Color(0xFF475569),
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            commentCount > 0 ? 'Comment ($commentCount)' : 'Comment',
+                            commentCount > 0
+                                ? 'Comment ($commentCount)'
+                                : 'Comment',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: isCommentsExpanded ? const Color(0xFF1E40AF) : const Color(0xFF475569),
+                              color: isCommentsExpanded
+                                  ? const Color(0xFF1E40AF)
+                                  : const Color(0xFF475569),
                             ),
                           ),
                         ],
@@ -847,10 +984,16 @@ Widget _buildFilterTabs(AppLocalizations loc) {
                   // Share Button
                   InkWell(
                     onTap: () async {
-                      final r = await Share.share(isWanted
-                          ? 'WANTED PERSON: $name\nCrime: ${person['crime_description'] ?? "unknown"}\n\nShared via ZEGA-ALERT'
-                          : 'MISSING PERSON: $name\nLast seen: $location\n\nShared via ZEGA-ALERT');
-                      await Api.recordShare(entityType, id, platform: Api.platformFromRaw(r.raw));
+                      final r = await Share.share(
+                        isWanted
+                            ? 'WANTED PERSON: $name\nCrime: ${person['crime_description'] ?? "unknown"}\n\nShared via ZEGA-ALERT'
+                            : 'MISSING PERSON: $name\nLast seen: $location\n\nShared via ZEGA-ALERT',
+                      );
+                      await Api.recordShare(
+                        entityType,
+                        id,
+                        platform: Api.platformFromRaw(r.raw),
+                      );
                     },
                     borderRadius: BorderRadius.circular(8),
                     child: const Padding(
@@ -858,36 +1001,19 @@ Widget _buildFilterTabs(AppLocalizations loc) {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.share_outlined, size: 17, color: Color(0xFF475569)),
+                          Icon(
+                            Icons.share_outlined,
+                            size: 17,
+                            color: Color(0xFF475569),
+                          ),
                           SizedBox(width: 4),
                           Text(
                             'Share',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF475569)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  InkWell(
-                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => PersonDetailScreen(
-                        person: Map<String, dynamic>.from(person),
-                        kind: isWanted ? 'wanted' : 'missing',
-                        onChanged: _load,
-                      ),
-                    )),
-                    borderRadius: BorderRadius.circular(8),
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.info_outline, size: 17, color: Color(0xFF475569)),
-                          SizedBox(width: 4),
-                          Text(
-                            'Details',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF475569)),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF475569),
+                            ),
                           ),
                         ],
                       ),
@@ -897,31 +1023,48 @@ Widget _buildFilterTabs(AppLocalizations loc) {
                   // Direct Report / Sighting Button
                   InkWell(
                     onTap: () async {
-                      if (!await ensureAuthed(context, reason: 'Sign in to report a sighting.')) return;
+                      if (!await ensureAuthed(
+                        context,
+                        reason: 'Sign in to report a sighting.',
+                      ))
+                        return;
                       if (!context.mounted) return;
-                      Navigator.of(context).push(MaterialPageRoute(
-                        builder: (_) => SightingReportScreen(
-                          missingPersonId: isWanted ? null : id,
-                          wantedPersonId: isWanted ? id : null,
-                          title: 'Report Sighting: $name',
-                          onDone: _load,
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => SightingReportScreen(
+                            missingPersonId: isWanted ? null : id,
+                            wantedPersonId: isWanted ? id : null,
+                            title: 'Report Sighting: $name',
+                            onDone: _load,
+                          ),
                         ),
-                      ));
+                      );
                     },
                     borderRadius: BorderRadius.circular(8),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 8,
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.flag_outlined, size: 17, color: isWanted ? const Color(0xFFDC2626) : const Color(0xFFD97706)),
+                          Icon(
+                            Icons.flag_outlined,
+                            size: 17,
+                            color: isWanted
+                                ? const Color(0xFFDC2626)
+                                : const Color(0xFFD97706),
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             'Report',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: isWanted ? const Color(0xFFDC2626) : const Color(0xFFD97706),
+                              color: isWanted
+                                  ? const Color(0xFFDC2626)
+                                  : const Color(0xFFD97706),
                             ),
                           ),
                         ],
@@ -934,42 +1077,36 @@ Widget _buildFilterTabs(AppLocalizations loc) {
           ),
 
           // 6. EXPANDABLE INLINE COMMENT SECTION (Facebook Style)
-          if (isCommentsExpanded)
-            _buildCommentSection(entityType, id),
+          if (isCommentsExpanded) _buildCommentSection(entityType, id),
         ],
       ),
     );
   }
 
   Widget _buildImageSection(
-    BuildContext context,
     String entityKey,
     String name,
     bool isWanted,
-    List<String> images,
-  ) {
+    List<String> images, {
+    required VoidCallback onTap,
+  }) {
     if (images.isEmpty) {
-      return AspectRatio(
-        aspectRatio: 1.2,
-        child: _placeholderImage(name, isWanted),
+      return GestureDetector(
+        onTap: onTap,
+        child: AspectRatio(
+          aspectRatio: 1.2,
+          child: _placeholderImage(name, isWanted),
+        ),
       );
     }
 
     if (images.length == 1) {
       return GestureDetector(
-        onTap: () {
-          Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => FullscreenImageViewer(
-              images: images,
-              initialIndex: 0,
-              title: name,
-            ),
-          ));
-        },
+        onTap: onTap,
         child: AspectRatio(
           aspectRatio: 1.2,
-          child: Image.network(
-            images.first,
+          child: OfflinePersonImage(
+            url: images.first,
             fit: BoxFit.cover,
             errorBuilder: (_, __, ___) => _placeholderImage(name, isWanted),
           ),
@@ -993,19 +1130,12 @@ Widget _buildFilterTabs(AppLocalizations loc) {
                 },
                 itemBuilder: (context, idx) {
                   return GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                        builder: (_) => FullscreenImageViewer(
-                          images: images,
-                          initialIndex: idx,
-                          title: name,
-                        ),
-                      ));
-                    },
-                    child: Image.network(
-                      images[idx],
+                    onTap: onTap,
+                    child: OfflinePersonImage(
+                      url: images[idx],
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _placeholderImage(name, isWanted),
+                      errorBuilder: (_, __, ___) =>
+                          _placeholderImage(name, isWanted),
                     ),
                   );
                 },
@@ -1023,7 +1153,11 @@ Widget _buildFilterTabs(AppLocalizations loc) {
                 ),
                 child: Text(
                   '${currentIndex + 1}/${images.length}',
-                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -1060,9 +1194,7 @@ Widget _buildFilterTabs(AppLocalizations loc) {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
-        border: Border(
-          top: BorderSide(color: Colors.grey.shade200),
-        ),
+        border: Border(top: BorderSide(color: Colors.grey.shade200)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1093,7 +1225,8 @@ Widget _buildFilterTabs(AppLocalizations loc) {
                 final c = comments[idx];
                 final author = (c['user_name'] as String?) ?? 'Citizen';
                 final body = (c['body'] as String?) ?? '';
-                final isStaff = c['user_role'] != null && c['user_role'] != 'citizen';
+                final isStaff =
+                    c['user_role'] != null && c['user_role'] != 'citizen';
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 10),
@@ -1102,16 +1235,25 @@ Widget _buildFilterTabs(AppLocalizations loc) {
                     children: [
                       CircleAvatar(
                         radius: 16,
-                        backgroundColor: isStaff ? const Color(0xFF1E3A8A) : Colors.grey.shade400,
+                        backgroundColor: isStaff
+                            ? const Color(0xFF1E3A8A)
+                            : Colors.grey.shade400,
                         child: Text(
                           author.isNotEmpty ? author[0].toUpperCase() : '?',
-                          style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(14),
@@ -1133,14 +1275,22 @@ Widget _buildFilterTabs(AppLocalizations loc) {
                                   if (isStaff) ...[
                                     const SizedBox(width: 6),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 5,
+                                        vertical: 1,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: const Color(0xFF1E3A8A),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: Text(
-                                        (c['user_role'] as String).toUpperCase(),
-                                        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                        (c['user_role'] as String)
+                                            .toUpperCase(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -1149,7 +1299,10 @@ Widget _buildFilterTabs(AppLocalizations loc) {
                               const SizedBox(height: 3),
                               Text(
                                 body,
-                                style: TextStyle(fontSize: 13, color: Colors.grey.shade800),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey.shade800,
+                                ),
                               ),
                             ],
                           ),
@@ -1166,9 +1319,7 @@ Widget _buildFilterTabs(AppLocalizations loc) {
             padding: const EdgeInsets.fromLTRB(12, 8, 8, 12),
             decoration: BoxDecoration(
               color: Colors.white,
-              border: Border(
-                top: BorderSide(color: Colors.grey.shade200),
-              ),
+              border: Border(top: BorderSide(color: Colors.grey.shade200)),
             ),
             child: Row(
               children: [
@@ -1177,8 +1328,14 @@ Widget _buildFilterTabs(AppLocalizations loc) {
                     controller: controller,
                     decoration: InputDecoration(
                       hintText: 'Write a comment...',
-                      hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      hintStyle: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade400,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
                       filled: true,
                       fillColor: const Color(0xFFF1F5F9),
                       border: OutlineInputBorder(
@@ -1194,7 +1351,10 @@ Widget _buildFilterTabs(AppLocalizations loc) {
                 const SizedBox(width: 6),
                 IconButton(
                   onPressed: () => _postComment(entityType, entityId),
-                  icon: const Icon(Icons.send_rounded, color: Color(0xFF1E40AF)),
+                  icon: const Icon(
+                    Icons.send_rounded,
+                    color: Color(0xFF1E40AF),
+                  ),
                   splashRadius: 20,
                 ),
               ],
@@ -1214,16 +1374,26 @@ Widget _buildFilterTabs(AppLocalizations loc) {
           children: [
             CircleAvatar(
               radius: 44,
-              backgroundColor: isWanted ? Colors.red.shade900 : const Color(0xFF334155),
+              backgroundColor: isWanted
+                  ? Colors.red.shade900
+                  : const Color(0xFF334155),
               child: Text(
                 name.isNotEmpty ? name.substring(0, 1).toUpperCase() : '?',
-                style: const TextStyle(fontSize: 36, color: Colors.white, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 36,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             const SizedBox(height: 10),
             Text(
               name,
-              style: const TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w500),
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),

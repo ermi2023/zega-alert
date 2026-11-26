@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import jwt from 'jsonwebtoken';
 import { query } from '../config/db.js';
 import { env } from '../config/env.js';
 import { hashPassword, comparePassword } from '../utils/password.js';
@@ -25,7 +26,7 @@ const revokeJti = (jti) => {
 };
 
 const PUBLIC_USER = `id, full_name, phone, email, role, region, sub_city, woreda, photo_url,
-  preferred_language, accessibility_mode, is_verified, is_active, last_login_at, created_at`;
+  preferred_language, accessibility_mode, is_verified, is_identity_verified, is_active, last_login_at, created_at`;
 
 const issueTokens = (user, policy) =>
   signTokens(user, { accessExpiresIn: accessTokenExpiry(policy) });
@@ -87,15 +88,23 @@ export const register = async (req, res) => {
     } catch (e) {
       console.error('[REGISTER] OTP delivery failed:', e.message);
     }
-    // When the SMS gateway is unavailable (e.g. no/invalid Africa's Talking key)
-    // the user would otherwise be stuck at the OTP step, so trust the signup and
-    // mark the phone verified, and hand the code back for the app to use.
-    if (!smsDelivered) {
-      await query('UPDATE users SET is_verified = true WHERE phone = $1', [phone]);
-    }
-    if (env.nodeEnv !== 'production' && code) console.log(`[DEV OTP] ${code} -> ${phone}`);
-    ok(res, { ...rows[0], is_verified: rows[0].is_verified || !smsDelivered, devOtp: smsDelivered ? undefined : code },
-      smsDelivered ? 'Registered. Verify your phone with the OTP sent.' : 'Registered. You are signed in.', 201);
+    const screenFallback = Boolean(code) && !smsDelivered &&
+      (env.nodeEnv !== 'production' || env.otpScreenFallback);
+    const otpDelivery = smsDelivered
+      ? 'sms'
+      : screenFallback
+        ? 'screen_fallback'
+        : 'unavailable';
+    const message = smsDelivered
+      ? 'Account created. A 6-digit code was sent to your phone.'
+      : screenFallback
+        ? 'Account created. Enter the on-screen demo code to verify your phone.'
+        : 'Account created, but a phone verification code could not be sent. Please try again later.';
+    ok(res, {
+      ...rows[0],
+      otp_delivery: otpDelivery,
+      devOtp: screenFallback ? code : undefined,
+    }, message, 201);
   } catch (e) {
     console.error('[REGISTER]', e);
     if (!res.headersSent) return fail(res, 'Registration failed. Please try again.', 500);
@@ -107,15 +116,47 @@ export const requestOtp = async (req, res) => {
   if (!contact || !['login', 'register', 'reset_password', 'verify_phone'].includes(purpose)) {
     return fail(res, 'contact and valid purpose are required');
   }
-  const { code } = await createOtp({ contact, purpose });
-  if (env.nodeEnv !== 'production') console.log(`[DEV OTP] ${code} -> ${contact}`);
-  ok(res, null, 'OTP sent.');
+  try {
+    const { code, sms } = await createOtp({ contact, purpose });
+    const delivered = sms?.status === 'sent';
+    if (env.nodeEnv === 'production' && !delivered) {
+      await query(
+        `UPDATE otp_codes SET used_at = now()
+         WHERE contact = $1 AND purpose = $2 AND code = $3 AND used_at IS NULL`,
+        [contact, purpose, crypto.createHmac('sha256', env.jwtSecret).update(code).digest('hex')],
+      );
+      return fail(res, 'Verification delivery is unavailable. Please try again later.', 503);
+    }
+    const devOtp = !delivered ? code : undefined;
+    ok(res, devOtp ? { devOtp } : null, delivered ? 'OTP sent.' : 'Development OTP generated.');
+  } catch (e) {
+    if (e.statusCode === 429) return fail(res, e.message, 429);
+    console.error('[REQUEST_OTP]', e);
+    if (!res.headersSent) return fail(res, 'Could not send verification code. Please try again.', 500);
+  }
 };
 
 export const verifyOtpEndpoint = async (req, res) => {
   const { contact, code, purpose = 'verify_phone' } = req.body;
   const result = await verifyOtp({ contact, code, purpose });
   if (!result.ok) return fail(res, `OTP invalid/expired (${result.reason})`, 400);
+  if (purpose === 'reset_password') {
+    const { rows } = await query(
+      'SELECT id, token_version FROM users WHERE phone = $1',
+      [contact],
+    );
+    if (!rows[0]) return fail(res, 'No account found for this phone.', 404);
+    const resetToken = jwt.sign(
+      {
+        type: 'password_reset',
+        sub: rows[0].id,
+        ver: rows[0].token_version ?? 0,
+      },
+      env.jwtSecret,
+      { expiresIn: '10m' },
+    );
+    return ok(res, { resetToken }, 'Phone number verified.');
+  }
   if (purpose === 'verify_phone') {
     await query('UPDATE users SET is_verified = true WHERE phone = $1', [contact]);
   }
@@ -140,8 +181,7 @@ export const login = async (req, res) => {
 
   // 2FA OTP gate for admin roles
   if ((user.role === 'system_admin' || user.role === 'regional_admin') && env.admin2faEnabled) {
-    const { code } = await createOtp({ contact: user.phone, purpose: 'login' });
-    if (env.nodeEnv !== 'production') console.log(`[DEV 2FA OTP] ${code} -> ${user.phone}`);
+    await createOtp({ contact: user.phone, purpose: 'login' });
     const masked = user.phone.replace(/^(.{3})(.*)(.{2})$/, (_, a, b, c) => a + '*'.repeat(b.length) + c);
     return ok(res, { requires_otp: true, phone: masked }, 'OTP sent for 2FA verification');
   }
@@ -287,28 +327,60 @@ export const updateMe = async (req, res) => {
 
 export const resetPassword = async (req, res) => {
   try {
-    const { phone, code, new_password } = req.body;
-    if (!phone || !code || !new_password) return fail(res, 'phone, code and new_password are required');
+    const { reset_token, phone, code, new_password } = req.body;
+    if (!new_password) return fail(res, 'new_password is required');
     const policy = await getSecurityPolicy();
     const passwordError = validatePassword(new_password, policy);
     if (passwordError) return fail(res, passwordError, 400);
-    const result = await verifyOtp({ contact: phone, code, purpose: 'reset_password' });
-    if (!result.ok) return fail(res, `OTP invalid/expired (${result.reason})`, 400);
-    const { rows } = await query('SELECT id FROM users WHERE phone = $1', [phone]);
-    if (!rows[0]) return fail(res, 'No account found for this phone.', 404);
+
+    let user;
+    let expectedVersion;
+    if (reset_token) {
+      let payload;
+      try {
+        payload = jwt.verify(reset_token, env.jwtSecret);
+      } catch {
+        return fail(res, 'Password reset verification expired. Request a new code.', 401);
+      }
+      if (payload.type !== 'password_reset' || !payload.sub) {
+        return fail(res, 'Password reset verification is invalid.', 401);
+      }
+      expectedVersion = payload.ver ?? 0;
+      const { rows } = await query(
+        'SELECT id, token_version FROM users WHERE id = $1',
+        [payload.sub],
+      );
+      user = rows[0];
+      if (!user || (user.token_version ?? 0) !== expectedVersion) {
+        return fail(res, 'Password reset verification is no longer valid.', 401);
+      }
+    } else {
+      if (!phone || !code) return fail(res, 'phone, code and new_password are required');
+      const result = await verifyOtp({ contact: phone, code, purpose: 'reset_password' });
+      if (!result.ok) return fail(res, `OTP invalid/expired (${result.reason})`, 400);
+      const { rows } = await query('SELECT id, token_version FROM users WHERE phone = $1', [phone]);
+      user = rows[0];
+      if (!user) return fail(res, 'No account found for this phone.', 404);
+      expectedVersion = user.token_version ?? 0;
+    }
+
     const hash = await hashPassword(new_password);
-    await query(
-      `UPDATE users SET password_hash = $1, failed_login_attempts = 0, locked_until = NULL,
-         updated_at = now() WHERE phone = $2`,
-      [hash, phone],
+    const { rows: updated } = await query(
+      `UPDATE users
+       SET password_hash = $1, failed_login_attempts = 0, locked_until = NULL,
+           updated_at = now(), token_version = token_version + 1
+       WHERE id = $2 AND token_version = $3
+       RETURNING id`,
+      [hash, user.id, expectedVersion],
     );
+    if (!updated.length) return fail(res, 'Password reset verification is no longer valid.', 401);
     // Audit: password reset via OTP is security-sensitive (spec §8.3 + business rule §14.7).
     await writeAudit({
-      userId: rows[0].id,
+      userId: user.id,
       action: 'reset_password',
       entity: 'users',
-      entityId: rows[0].id,
-      detail: { method: 'otp', phone },
+      entityId: user.id,
+      detail: { method: reset_token ? 'reset_token' : 'otp' },
       req,
     });
     ok(res, null, 'Password reset successful. You can now sign in.');
@@ -321,6 +393,7 @@ export const resetPassword = async (req, res) => {
 export const changePassword = async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   if (!currentPassword || !newPassword) return fail(res, 'currentPassword and newPassword required');
+  if (String(newPassword).length < 8) return fail(res, 'Password must be at least 8 characters');
   const { rows } = await query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
   if (!rows[0].password_hash || !(await comparePassword(currentPassword, rows[0].password_hash))) {
     return fail(res, 'Current password is incorrect', 401);

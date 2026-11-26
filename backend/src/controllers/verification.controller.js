@@ -1,118 +1,154 @@
 import { query } from '../config/db.js';
 import { ok, fail } from '../utils/response.js';
-import { verifyFin, faydaEnabled, maskId } from '../services/fayda.service.js';
+import { decrypt } from '../utils/crypto.js';
+
+const maskFan = (fanNumber) => `${fanNumber.slice(0, 4)}****${fanNumber.slice(-4)}`;
+
+const presentMockRecord = (record) => ({
+  full_name: decrypt(record.full_name),
+  phone: decrypt(record.phone),
+  fan_number: record.fan_number,
+});
 
 const extractFin = (raw) => {
   if (!raw) return null;
   const text = String(raw);
+  const keyedMatch = text.match(
+    /(?:fin|fan_number|fan|id_number|idNumber|national_id|nationalId)\s*["']?\s*[:=]\s*["']?(\d{16})/i,
+  );
+  if (keyedMatch) return keyedMatch[1];
+
   try {
     const parsed = JSON.parse(text);
-    const candidate = parsed.fin || parsed.FIN || parsed.id_number || parsed.idNumber || parsed.nationalId;
-    if (candidate) return String(candidate);
-  } catch (_) {
-    // not JSON, fall through to regex
+    const candidate =
+      parsed.fin ||
+      parsed.FIN ||
+      parsed.fan_number ||
+      parsed.FAN ||
+      parsed.id_number ||
+      parsed.idNumber ||
+      parsed.national_id ||
+      parsed.nationalId;
+    if (typeof candidate === 'string' && /^\d{16}$/.test(candidate.trim())) {
+      return candidate.trim();
+    }
+  } catch {
+    // QR contents may be plain text rather than JSON.
   }
-  const match = text.match(/\b(\d{12})\b/);
+  const match = text.match(/\b(\d{16})\b/);
   return match ? match[1] : null;
 };
 
-// Manual ID submission (photo + number). Verifies against the Fayda National ID
-// service when configured; otherwise records the request for review.
-export const submitVerification = async (req, res) => {
-  const { id_number, id_image_url, full_name, date_of_birth } = req.body;
-  if (!id_number || !id_image_url) {
-    return fail(res, 'id_number and id_image_url are required');
+const verifyFanNumber = async (req, res, rawFanNumber) => {
+  const fanNumber = String(rawFanNumber ?? '').trim();
+  if (!/^\d{16}$/.test(fanNumber)) {
+    return fail(res, 'Enter a valid 16-digit FAN number.', 422);
   }
 
-  const result = await verifyFin(String(id_number), { fullName: full_name, dateOfBirth: date_of_birth });
-
-  await query(
-    `INSERT INTO audit_log (user_id, action, entity, detail)
-     VALUES ($1, 'submit_id_verification', 'users', $2)`,
-    [req.user.id, JSON.stringify({ id_number: maskId(id_number), id_image_url, full_name, fayda_status: result.status })],
+  const user = await query(
+    'SELECT is_identity_verified FROM users WHERE id = $1',
+    [req.user.id],
   );
-
-  if (result.status === 'error') {
-    return fail(res, result.error || 'Fayda verification failed', 502);
-  }
-
-  if (result.verified) {
-    await query(`UPDATE users SET is_verified = true, updated_at = now() WHERE id = $1`, [req.user.id]);
+  if (user.rows[0]?.is_identity_verified) {
+    const { rows } = await query(
+      `SELECT full_name, phone, fan_number
+       FROM fan_verification_records WHERE verified_user_id = $1`,
+      [req.user.id],
+    );
     return ok(res, {
       status: 'verified',
       verified: true,
-      message: faydaEnabled()
-        ? 'Fayda National ID verified.'
-        : 'ID verification submitted. Development mode: verification is automatic.',
-      id_number: maskId(id_number),
+      message: 'Your identity is already verified.',
+      mock_record: rows[0] ? presentMockRecord(rows[0]) : null,
     });
   }
 
-  ok(res, {
-    status: 'rejected',
-    verified: false,
-    message: 'Fayda National ID could not be verified.',
-    id_number: maskId(id_number),
-  });
-};
-
-// Scan a Fayda National ID QR code and verify the account.
-// `qr_data` may be raw QR text or a JSON payload containing the FIN.
-export const verifyByQr = async (req, res) => {
-  const { qr_data, full_name } = req.body;
-  if (!qr_data) return fail(res, 'qr_data is required');
-
-  const fin = extractFin(qr_data);
-  if (!fin) {
-    return fail(res, 'Could not read a valid Fayda FIN from the QR code', 422);
-  }
-
-  const result = await verifyFin(fin, { fullName: full_name });
+  const { rows } = await query(
+    `WITH claimed AS (
+       UPDATE fan_verification_records
+       SET verified_user_id = $2, verified_at = now(), updated_at = now()
+       WHERE fan_number = $1
+         AND is_active = TRUE
+         AND (verified_user_id IS NULL OR verified_user_id = $2)
+         AND EXISTS (
+           SELECT 1 FROM users
+           WHERE id = $2 AND is_identity_verified = FALSE
+         )
+       RETURNING id, full_name, phone, fan_number
+     )
+     UPDATE users AS u
+     SET is_identity_verified = TRUE, updated_at = now()
+     FROM claimed
+     WHERE u.id = $2
+     RETURNING u.id, claimed.full_name, claimed.phone, claimed.fan_number`,
+    [fanNumber, req.user.id],
+  );
 
   await query(
     `INSERT INTO audit_log (user_id, action, entity, detail)
-     VALUES ($1, 'verify_fayda_qr', 'users', $2)`,
-    [req.user.id, JSON.stringify({ fin_masked: maskId(fin), full_name: full_name || null, fayda_status: result.status })],
+     VALUES ($1, 'verify_identity_by_fan', 'users', $2)`,
+    [
+      req.user.id,
+      JSON.stringify({
+        fan_number: maskFan(fanNumber),
+        matched: rows.length > 0,
+      }),
+    ],
   );
 
-  if (result.status === 'error') {
-    return fail(res, result.error || 'Fayda verification failed', 502);
-  }
-
-  if (!result.verified) {
+  if (!rows.length) {
     return ok(res, {
-      status: 'rejected',
+      status: 'not_verified',
       verified: false,
-      fin_masked: maskId(fin),
-      message: 'Fayda National ID could not be verified.',
+      message: 'This FAN number is not in the active verification records. Check it or contact an administrator.',
+      mock_record: null,
     });
   }
 
-  await query(
-    `UPDATE users SET is_verified = true, updated_at = now() WHERE id = $1`,
-    [req.user.id],
-  );
-
-  ok(res, {
+  return ok(res, {
     status: 'verified',
     verified: true,
-    fin_masked: maskId(fin),
-    message: faydaEnabled()
-      ? 'Fayda National ID verified via QR scan.'
-      : 'Fayda National ID verified via QR scan (development mode).',
+    fan_number: maskFan(fanNumber),
+    message: 'Your identity has been verified.',
+    mock_record: presentMockRecord(rows[0]),
   });
+};
+
+export const submitVerification = (req, res) =>
+  verifyFanNumber(req, res, req.body?.fan_number ?? req.body?.id_number);
+
+export const verifyByFan = (req, res) =>
+  verifyFanNumber(req, res, req.body?.fan_number);
+
+export const verifyByQr = async (req, res) => {
+  const fin = extractFin(req.body?.qr_data);
+  if (!fin) return fail(res, 'Could not read a valid 16-digit FAN from the QR code.', 422);
+  return verifyFanNumber(req, res, fin);
 };
 
 export const getVerificationStatus = async (req, res) => {
   const { rows } = await query(
-    `SELECT id, is_verified FROM users WHERE id = $1`,
+    `SELECT u.is_identity_verified,
+            f.full_name AS record_full_name,
+            f.phone AS record_phone,
+            f.fan_number AS record_fan_number
+     FROM users u
+     LEFT JOIN fan_verification_records f ON f.verified_user_id = u.id
+     WHERE u.id = $1`,
     [req.user.id],
   );
   if (!rows[0]) return fail(res, 'User not found', 404);
 
-  ok(res, {
-    verified: rows[0].is_verified,
-    status: rows[0].is_verified ? 'verified' : 'not_verified',
-    fayda_configured: faydaEnabled(),
+  return ok(res, {
+    verified: rows[0].is_identity_verified,
+    status: rows[0].is_identity_verified ? 'verified' : 'not_verified',
+    verification_source: 'admin_fan_records',
+    mock_record: rows[0].record_fan_number
+      ? presentMockRecord({
+          full_name: rows[0].record_full_name,
+          phone: rows[0].record_phone,
+          fan_number: rows[0].record_fan_number,
+        })
+      : null,
   });
 };

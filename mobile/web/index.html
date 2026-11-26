@@ -19,6 +19,30 @@
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="A new Flutter project.">
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      background: #142B4A;
+    }
+
+    #app-loading {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: #142B4A;
+      z-index: 9999;
+    }
+
+    #app-loading img {
+      width: 128px;
+      height: 128px;
+      object-fit: contain;
+      border-radius: 50%;
+    }
+  </style>
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -33,6 +57,15 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <div id="app-loading" role="status" aria-label="Loading ZEGA-ALERT">
+    <img src="assets/assets/images/logo.png" alt="Ethiopian Federal Police">
+  </div>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      const loader = document.getElementById('app-loading');
+      if (loader) loader.remove();
+    });
+  </script>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader

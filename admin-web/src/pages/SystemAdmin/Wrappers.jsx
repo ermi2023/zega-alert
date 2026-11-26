@@ -12,6 +12,7 @@ import AuditPage from '../Audit';
 import LegalPage from '../Legal';
 import SecurityPolicyPage from '../SecurityPolicy';
 import NotificationsPage from '../Notifications';
+import FanRecords from './FanRecords';
 
 const Banner = ({ title, subtitle }) => (
   <div className="panel" style={{ marginBottom: 16, padding: '12px 16px', borderLeft: '3px solid #183C59' }}>
@@ -26,6 +27,18 @@ export function AdminUsersPage() {
     <>
       <Banner title="User Management" subtitle="Create, edit, suspend and delete user accounts across the platform" />
       <UsersPage />
+    </>
+  );
+}
+
+export function AdminFanRecordsPage() {
+  return (
+    <>
+      <Banner
+        title="FAN Identity Verification"
+        subtitle="Manage the mock ID records used to verify citizen FAN numbers"
+      />
+      <FanRecords />
     </>
   );
 }

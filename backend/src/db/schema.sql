@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS users (
   preferred_language VARCHAR(10) DEFAULT 'en',
   accessibility_mode BOOLEAN DEFAULT FALSE,
   is_verified        BOOLEAN DEFAULT FALSE,
+  is_identity_verified BOOLEAN NOT NULL DEFAULT FALSE,
   is_active          BOOLEAN DEFAULT TRUE,
   token_version      INTEGER NOT NULL DEFAULT 0,
   failed_login_attempts INTEGER NOT NULL DEFAULT 0,
@@ -93,13 +94,29 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at         TIMESTAMPTZ DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS fan_verification_records (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  full_name        TEXT,
+  phone            TEXT,
+  fan_number       VARCHAR(16) NOT NULL UNIQUE CHECK (fan_number ~ '^[0-9]{16}$'),
+  is_active        BOOLEAN NOT NULL DEFAULT TRUE,
+  created_by       UUID REFERENCES users(id) ON DELETE SET NULL,
+  verified_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  verified_at      TIMESTAMPTZ,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_fan_verification_records_active
+  ON fan_verification_records(fan_number) WHERE is_active = TRUE;
+
 -- ------------------------------------------------------------------
 -- OTP CODES (phone/email verification)
 -- ------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS otp_codes (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   contact      VARCHAR(150) NOT NULL,
-  code         VARCHAR(6) NOT NULL,
+  code         VARCHAR(64) NOT NULL,
   purpose      otp_purpose NOT NULL DEFAULT 'login',
   expires_at   TIMESTAMPTZ NOT NULL,
   used_at      TIMESTAMPTZ,
@@ -344,17 +361,32 @@ CREATE INDEX IF NOT EXISTS idx_legal_history_legal ON legal_review_history(legal
 -- POLICE STATIONS (nearest-station lookup for People of Determination)
 -- ------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS police_stations (
-  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name       VARCHAR(150) NOT NULL,
-  phone      VARCHAR(20),
-  region     VARCHAR(100),
-  sub_city   VARCHAR(100),
-  latitude   DOUBLE PRECISION,
-  longitude  DOUBLE PRECISION,
-  is_active  BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMPTZ DEFAULT now()
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name         VARCHAR(150) NOT NULL,
+  address_text VARCHAR(300) NOT NULL DEFAULT '',
+  phone        VARCHAR(20),
+  region       VARCHAR(100),
+  sub_city     VARCHAR(100),
+  latitude     DOUBLE PRECISION,
+  longitude    DOUBLE PRECISION,
+  is_active    BOOLEAN DEFAULT TRUE,
+  created_at   TIMESTAMPTZ DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_stations_region ON police_stations(region, sub_city);
+CREATE TABLE IF NOT EXISTS police_station_users (
+  station_id UUID NOT NULL REFERENCES police_stations(id) ON DELETE CASCADE,
+  user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  PRIMARY KEY (station_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_police_station_users_user ON police_station_users(user_id);
+
+ALTER TABLE reports
+  ADD COLUMN IF NOT EXISTS station_id UUID REFERENCES police_stations(id) ON DELETE SET NULL;
+ALTER TABLE sos_alerts
+  ADD COLUMN IF NOT EXISTS station_id UUID REFERENCES police_stations(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_reports_station ON reports(station_id);
+CREATE INDEX IF NOT EXISTS idx_sos_station ON sos_alerts(station_id);
 
 -- ------------------------------------------------------------------
 -- DIRECT CALL REQUESTS (People of Determination - UC-4)
@@ -392,6 +424,9 @@ CREATE TABLE IF NOT EXISTS sign_language_messages (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_sign_lang_user ON sign_language_messages(user_id);
+ALTER TABLE sign_language_messages
+  ADD COLUMN IF NOT EXISTS station_id UUID REFERENCES police_stations(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_sign_language_station ON sign_language_messages(station_id);
 
 -- ------------------------------------------------------------------
 -- SOCIAL SHARE ANALYTICS (UC-11)
@@ -445,6 +480,10 @@ CREATE TABLE IF NOT EXISTS conversation_participants (
   last_read_at    TIMESTAMPTZ,
   PRIMARY KEY (conversation_id, user_id)
 );
+
+ALTER TABLE conversations
+  ADD COLUMN IF NOT EXISTS police_station_id UUID REFERENCES police_stations(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_conversations_station ON conversations(police_station_id);
 
 CREATE TABLE IF NOT EXISTS messages (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),

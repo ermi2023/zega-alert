@@ -5,14 +5,16 @@ import { pool } from '../src/config/db.js';
 
 let ctx;
 let citizenToken;
+let otherCitizenToken;
 let adminToken;
 const createdIds = [];
 
 before(async () => {
   ctx = await startServer();
   citizenToken = (await login(ctx.baseUrl, DEMO.citizen)).token;
+  otherCitizenToken = (await login(ctx.baseUrl, DEMO.citizen2)).token;
   adminToken = (await login(ctx.baseUrl, DEMO.admin)).token;
-  assert.ok(citizenToken && adminToken, 'demo accounts must be seeded');
+  assert.ok(citizenToken && otherCitizenToken && adminToken, 'demo accounts must be seeded');
 });
 
 after(async () => {
@@ -53,6 +55,12 @@ test('report status can be read with a valid id', async () => {
   const res = await api(ctx.baseUrl, `/api/reports/${id}`, { token: citizenToken });
   assert.equal(res.status, 200);
   assert.equal(res.body.data.id, id);
+});
+
+test('citizen cannot read another citizen report', async () => {
+  const id = createdIds[0];
+  const res = await api(ctx.baseUrl, `/api/reports/${id}`, { token: otherCitizenToken });
+  assert.equal(res.status, 403);
 });
 
 test('citizen is not allowed to change report status (RBAC)', async () => {

@@ -24,12 +24,13 @@ class LocationService {
 
   /// Try the GPS first, then the network fallback. Returns null if both fail.
   static Future<Position?> best({Duration gpsTimeout = const Duration(seconds: 10)}) async {
-    final gps = await _gps(gpsTimeout);
-    if (gps != null) return gps;
+    final position = await gps(timeout: gpsTimeout);
+    if (position != null) return position;
     return (await networkLocation())?.toPosition();
   }
 
-  static Future<Position?> _gps(Duration timeout) async {
+  /// Return a device GPS fix only. Use this when selecting a nearby station.
+  static Future<Position?> gps({Duration timeout = const Duration(seconds: 10)}) async {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) return null;
       var permission = await Geolocator.checkPermission();
@@ -68,6 +69,39 @@ class LocationService {
         country: loc['country'] as String?,
         timezone: loc['timezone'] as String?,
       );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Reverse geocode coordinates to structured address / region / locality.
+  static Future<Map<String, dynamic>?> reverseGeocode(double latitude, double longitude) async {
+    try {
+      final url = 'https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=$latitude&longitude=$longitude&localityLanguage=en';
+      final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 5));
+      if (res.statusCode != 200) return null;
+      final data = jsonDecode(res.body);
+      if (data is! Map) return null;
+
+      final locality = data['locality']?.toString();
+      final city = data['city']?.toString();
+      final region = data['principalSubdivision']?.toString();
+      final country = data['countryName']?.toString();
+
+      final parts = <String>[];
+      for (final p in [locality, city, region, country]) {
+        if (p != null && p.trim().isNotEmpty && !parts.any((existing) => existing.toLowerCase() == p.trim().toLowerCase())) {
+          parts.add(p.trim());
+        }
+      }
+
+      return {
+        'address': parts.join(', '),
+        'locality': locality,
+        'city': city,
+        'region': region,
+        'country': country,
+      };
     } catch (_) {
       return null;
     }

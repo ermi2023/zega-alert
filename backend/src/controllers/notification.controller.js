@@ -35,6 +35,25 @@ export const markAllRead = async (req, res) => {
   ok(res, null, 'All notifications marked as read');
 };
 
+export const markContentUpdatesRead = async (req, res) => {
+  const { scope = 'all' } = req.body || {};
+  const notificationTypes = {
+    all: ['announcement', 'missing_person', 'wanted_person'],
+    news: ['announcement'],
+    persons: ['missing_person', 'wanted_person'],
+  }[scope];
+  if (!notificationTypes) return fail(res, 'Invalid content notification scope', 400);
+
+  const { rows } = await query(
+    `UPDATE notifications SET is_read = true
+     WHERE user_id = $1 AND is_read = false
+       AND metadata->>'type' = ANY($2)
+     RETURNING id`,
+    [req.user.id, notificationTypes],
+  );
+  ok(res, { count: rows.length }, 'Content update notifications cleared');
+};
+
 export const sendNotification = async (req, res) => {
   const { user_ids, title, body, delivery_type = 'push', metadata = {} } = req.body;
   if (!title || !body) return fail(res, 'title and body required');
@@ -82,8 +101,19 @@ export const sendNotification = async (req, res) => {
 
 export const getUnreadCount = async (req, res) => {
   const { rows } = await query(
-    `SELECT COUNT(*)::int AS count FROM notifications WHERE user_id = $1 AND is_read = false`,
+    `SELECT
+       COUNT(*)::int AS count,
+       COUNT(*) FILTER (WHERE metadata->>'type' = 'announcement')::int AS news_updates,
+       COUNT(*) FILTER (
+         WHERE metadata->>'type' IN ('missing_person', 'wanted_person')
+       )::int AS person_updates
+     FROM notifications
+     WHERE user_id = $1 AND is_read = false`,
     [req.user.id],
   );
-  ok(res, { count: rows[0]?.count || 0 });
+  ok(res, {
+    count: rows[0]?.count || 0,
+    newsUpdates: rows[0]?.news_updates || 0,
+    personUpdates: rows[0]?.person_updates || 0,
+  });
 };

@@ -12,12 +12,13 @@
 - Citizen crime reports (anonymous option, GPS location, evidence)
 - SOS emergency dispatch with GPS + auto-assignment to nearest police/dispatchers
 - Missing / wanted persons with citizen sightings
-- Geofenced safety zones (schools, hospitals, police stations, events)
+- Official, staff-managed safety areas (schools, hospitals, police stations, events)
 - Announcements (news, warnings, legal, events)
 - Real-time chat between citizens and staff (Socket.io)
 - Legal/rights content with multi-language support (Amharic/English)
 - PoD accessibility mode
 - JWT auth + OTP phone verification, role-based access control, full audit log
+- Admin-managed mock FAN identity verification for demonstration
 
 ## Project layout
 
@@ -107,10 +108,30 @@ The API base URL is `http://10.0.2.2:5000` (Android emulator → host). Change i
 | Legal        | `/api/legal`                                         |
 | Geofences    | `/api/geofences`                                     |
 | Admin        | `/api/admin/stats`, `/users`, `/audit`, `/dispatches`|
+| Verification | `/api/verification/status`, `/fan`                 |
+
+## Safety zones (geofences)
+
+A safety zone is a mapped area officially published by authorized staff. Publishing, changing, pausing, or removing a zone adds a notice to the inbox of active citizens in its region/sub-city/Woreda; an SOS inside an active zone also creates an incident notice for citizens in the matching area. Push alerts are sent when Firebase Messaging is configured and device notifications are enabled. The app does not track citizens continuously, and a zone does not guarantee that an area is safe.
+
+- **Citizens:** Open the bottom **Zones** tab and tap an area to view its map and boundary. Open the notification bell to read safety-zone notices.
+- **Authorized staff:** Open **Geofences** in the admin portal to publish, pause, or update an area.
+- **Boundary logic:** A zone is either a circle (center point plus radius of at least 50 m) or a drawn boundary with at least three points. If a drawn boundary is saved, it alone defines the zone; the map and SOS checks use that same boundary. Paused areas are not used for SOS context or warnings.
+
+## FAN identity verification
+
+This demonstration uses mock data instead of connecting to the national Fayda
+service. A System Admin adds the mock name, phone number, and 16-digit FAN in
+the separate **Admin → FAN Identity Verification** dashboard. From
+**Settings → Security → FAN identity verification**, a citizen can enter the
+FAN or scan the QR code on the original ID. The server checks only the FAN
+against an active record and returns the saved mock name and phone; it never
+displays the other data from the QR code. A non-matching FAN remains
+unverified. Phone/OTP verification is separate.
 
 ## Tech notes
 
 - Passwords hashed with bcryptjs; auth via short-lived JWT access tokens + refresh token.
-- OTP codes are printed to the backend console in dev mode (no SMS provider wired yet).
+- If SMS is unavailable in development, registration displays a temporary OTP in the app; codes are not printed to the backend console. Production requires SMS delivery, except for a controlled demo using `OTP_SCREEN_FALLBACK=true`.
 - SOS auto-dispatch matches police/dispatcher users by region and creates `dispatch_assignments`.
-- Push notifications (FCM) are stubbed in `services/notification.service.js`.
+- Push notifications use FCM in `services/notification.service.js`. Without Firebase credentials, development mode logs simulated pushes; notification inbox entries are still stored in the database.

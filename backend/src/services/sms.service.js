@@ -9,14 +9,16 @@ const AT_API_URL = AT_USERNAME === 'sandbox'
 
 /**
  * Send SMS via Africa's Talking API
- * In dev mode (no API key), logs the message instead of sending
+ * In development (no API key), reports that SMS was not sent.
  */
 export async function sendSms(to, message) {
   const recipients = Array.isArray(to) ? to : [to];
 
   if (!AT_API_KEY) {
-    console.log(`[SMS DEV] To: ${recipients.join(', ')} | Message: ${message}`);
-    return { status: 'dev_mode', recipients, messageId: `dev-${Date.now()}` };
+    if (env.nodeEnv !== 'production') {
+      return { status: 'dev_mode', recipients, messageId: `dev-${Date.now()}` };
+    }
+    return { status: 'not_configured' };
   }
 
   try {

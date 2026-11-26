@@ -91,6 +91,8 @@ export default function Layout({ children }) {
   const systemAdminNav = [
     { to: '/admin',                label: t('systemAdmin.nav.dashboard',     { defaultValue: 'Dashboard' }),                icon: 'dashboard' },
     { to: '/admin/users',          label: t('systemAdmin.nav.users',          { defaultValue: 'User Management' }),           icon: 'users' },
+    { to: '/admin/fan-records',    label: t('systemAdmin.nav.fanRecords',     { defaultValue: 'FAN Identity Verification' }),  icon: 'shield' },
+    { to: '/pod',                  label: t('nav.pod', { defaultValue: 'Police stations' }),                                  icon: 'pod' },
     { to: '/admin/security',       label: t('systemAdmin.nav.security',       { defaultValue: 'Security Policies' }),        icon: 'security' },
     { to: '/admin/audit',          label: t('systemAdmin.nav.audit',         { defaultValue: 'Audit Logs' }),                icon: 'audit' },
     { to: '/admin/legal',          label: t('systemAdmin.nav.legal',          { defaultValue: 'Legal Content' }),             icon: 'legal' },

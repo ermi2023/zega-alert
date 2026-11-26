@@ -4,6 +4,26 @@ import { hashPassword } from '../utils/password.js';
 import { writeAudit } from '../utils/audit.js';
 import { io } from '../socket/socket.js';
 import { getSecurityPolicy, validatePassword } from '../services/security-policy.service.js';
+import { decrypt, encrypt } from '../utils/crypto.js';
+
+const presentFanRecord = (record) => ({
+  ...record,
+  full_name: decrypt(record.full_name),
+  phone: decrypt(record.phone),
+});
+
+const isFanRecordSchemaError = (error) =>
+  ['42P01', '42703', '42704', '22001', '23514'].includes(error?.code);
+
+const failIfFanRecordSchemaIsNotReady = (res, error) => {
+  if (!isFanRecordSchemaError(error)) return false;
+  fail(
+    res,
+    'FAN record storage is not updated yet. An administrator must apply the latest database migration before records can be saved.',
+    503,
+  );
+  return true;
+};
 
 /**
  * GET /api/admin/stats
@@ -142,11 +162,93 @@ export const listUsers = async (req, res) => {
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
   params.push(parseInt(limit, 10), (parseInt(page, 10) - 1) * parseInt(limit, 10));
   const { rows } = await query(
-    `SELECT id, full_name, phone, email, role, region, sub_city, woreda, is_verified, is_active, last_login_at, created_at
+    `SELECT id, full_name, phone, email, role, region, sub_city, woreda, is_verified, is_identity_verified, is_active, last_login_at, created_at
      FROM users ${whereSql} ORDER BY created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params,
   );
   ok(res, rows);
+};
+
+export const listFanRecords = async (_req, res) => {
+  try {
+    const { rows } = await query(
+      `SELECT id, full_name, phone, fan_number, is_active, verified_user_id, verified_at, created_at
+       FROM fan_verification_records ORDER BY created_at DESC`,
+    );
+    ok(res, rows.map(presentFanRecord));
+  } catch (error) {
+    if (failIfFanRecordSchemaIsNotReady(res, error)) return;
+    throw error;
+  }
+};
+
+export const createFanRecord = async (req, res) => {
+  const body = req.body ?? {};
+  const fullName = String(body.full_name ?? '').trim();
+  const phone = String(body.phone ?? '').trim();
+  const fanNumber = String(body.fan_number ?? '').trim();
+  if (!fullName || fullName.length > 150) {
+    return fail(res, 'Enter a name of 1 to 150 characters.');
+  }
+  if (!phone || phone.length > 32) {
+    return fail(res, 'Enter a phone number of 1 to 32 characters.');
+  }
+  if (!/^\d{16}$/.test(fanNumber)) {
+    return fail(res, 'Enter a valid 16-digit FAN number.');
+  }
+
+  try {
+    const { rows } = await query(
+      `INSERT INTO fan_verification_records (full_name, phone, fan_number, created_by)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, full_name, phone, fan_number, is_active, verified_user_id, verified_at, created_at`,
+      [encrypt(fullName), encrypt(phone), fanNumber, req.user.id],
+    );
+    await writeAudit({
+      userId: req.user.id,
+      action: 'create_fan_verification_record',
+      entity: 'fan_verification_records',
+      entityId: rows[0].id,
+      detail: { fan_number: `${fanNumber.slice(0, 4)}****${fanNumber.slice(-4)}` },
+      req,
+    });
+    return ok(res, presentFanRecord(rows[0]), 'Mock ID record added', 201);
+  } catch (error) {
+    if (error.code === '23505') {
+      return fail(res, 'That FAN number is already in the verification records.', 409);
+    }
+    if (failIfFanRecordSchemaIsNotReady(res, error)) return;
+    throw error;
+  }
+};
+
+export const updateFanRecord = async (req, res) => {
+  const body = req.body ?? {};
+  if (typeof body.is_active !== 'boolean') {
+    return fail(res, 'is_active must be true or false.');
+  }
+  let rows;
+  try {
+    ({ rows } = await query(
+      `UPDATE fan_verification_records SET is_active = $1, updated_at = now()
+       WHERE id = $2
+       RETURNING id, full_name, phone, fan_number, is_active, verified_user_id, verified_at, created_at`,
+      [body.is_active, req.params.id],
+    ));
+  } catch (error) {
+    if (failIfFanRecordSchemaIsNotReady(res, error)) return;
+    throw error;
+  }
+  if (!rows[0]) return fail(res, 'FAN record not found.', 404);
+  await writeAudit({
+    userId: req.user.id,
+    action: body.is_active ? 'activate_fan_verification_record' : 'deactivate_fan_verification_record',
+    entity: 'fan_verification_records',
+    entityId: rows[0].id,
+    detail: { fan_number: `${rows[0].fan_number.slice(0, 4)}****${rows[0].fan_number.slice(-4)}` },
+    req,
+  });
+  return ok(res, presentFanRecord(rows[0]), 'FAN record updated');
 };
 
 export const createUser = async (req, res) => {

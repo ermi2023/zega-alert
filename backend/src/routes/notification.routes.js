@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import {
-  listNotifications, markRead, markAllRead, sendNotification, getUnreadCount,
+  listNotifications, markRead, markAllRead, markContentUpdatesRead, sendNotification, getUnreadCount,
 } from '../controllers/notification.controller.js';
 
 const router = Router();
@@ -12,6 +12,7 @@ router.get('/', listNotifications);
 router.get('/unread-count', getUnreadCount);
 router.patch('/read-all', markAllRead);
 router.post('/read-all', markAllRead);
+router.post('/read-content-updates', markContentUpdatesRead);
 router.patch('/:id/read', markRead);
 router.post('/:id/read', markRead);
 router.post('/', requireRole('police', 'dispatcher', 'regional_admin', 'system_admin'), sendNotification);

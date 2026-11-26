@@ -99,34 +99,38 @@ ALTER TYPE report_status ADD VALUE IF NOT EXISTS 'submitted';
 ALTER TYPE report_status ADD VALUE IF NOT EXISTS 'assigned';
 ALTER TYPE report_status ADD VALUE IF NOT EXISTS 'in_progress';
 
--- 9. Report incident time (UC-1) and citizen draft workflow
+-- 9. Store keyed OTP digests instead of recoverable six-digit codes.
+ALTER TABLE otp_codes ALTER COLUMN code TYPE VARCHAR(64);
+UPDATE otp_codes SET code = '' WHERE length(code) = 6;
+
+-- 10. Report incident time (UC-1) and citizen draft workflow
 ALTER TABLE reports ADD COLUMN IF NOT EXISTS incident_at TIMESTAMPTZ;
 CREATE INDEX IF NOT EXISTS idx_reports_incident_at ON reports(incident_at);
 
--- 10. Rich chat attachments + read receipts
+-- 11. Rich chat attachments + read receipts
 ALTER TYPE message_type ADD VALUE IF NOT EXISTS 'video';
 ALTER TYPE message_type ADD VALUE IF NOT EXISTS 'file';
 ALTER TYPE message_type ADD VALUE IF NOT EXISTS 'attachment';
 ALTER TABLE messages ADD COLUMN IF NOT EXISTS attachment_type VARCHAR(20);
 ALTER TABLE conversation_participants ADD COLUMN IF NOT EXISTS last_read_at TIMESTAMPTZ;
 
--- 11. Geofence labels (UC-22)
+-- 12. Geofence labels (UC-22)
 ALTER TABLE geofences ADD COLUMN IF NOT EXISTS label VARCHAR(150);
 ALTER TABLE geofences ADD COLUMN IF NOT EXISTS polygon JSONB DEFAULT '[]'::jsonb;
 
--- 12. Callback alternative times, reminders and in-app sessions
+-- 13. Callback alternative times, reminders and in-app sessions
 ALTER TABLE callback_requests ADD COLUMN IF NOT EXISTS proposed_slot TIMESTAMPTZ;
 ALTER TABLE callback_requests ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMPTZ;
 ALTER TABLE callback_requests ADD COLUMN IF NOT EXISTS session_id UUID;
 ALTER TABLE callback_requests ADD COLUMN IF NOT EXISTS session_started_at TIMESTAMPTZ;
 
--- 13. Legal translations
+-- 14. Legal translations
 ALTER TABLE legal_content ADD COLUMN IF NOT EXISTS translations JSONB DEFAULT '{}'::jsonb;
 
--- 14. Road-closure announcement locations
+-- 15. Road-closure announcement locations
 ALTER TABLE announcements ADD COLUMN IF NOT EXISTS latitude NUMERIC(10,7);
 ALTER TABLE announcements ADD COLUMN IF NOT EXISTS longitude NUMERIC(10,7);
 
--- 15. Enforceable login lockout state
+-- 16. Enforceable login lockout state
 ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_login_attempts INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until TIMESTAMPTZ;

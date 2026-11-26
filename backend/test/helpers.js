@@ -57,5 +57,5 @@ export const DEMO = {
   dispatcher: '0911000003',
   police: '0911000004',
   citizen: '0911000005',
-  citizen2: '0911999999',
+  citizen2: '0911000006',
 };

@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
+
 import '../services/api.dart';
 import '../services/webrtc_service.dart';
+import '../services/sos_live_stream_service.dart';
 
 typedef JsonMap = Map<String, dynamic>;
 
@@ -35,7 +37,9 @@ class SocketService {
           .build(),
     );
     _socket!.onConnect((_) => debugPrint('[socket] connected'));
-    _socket!.onConnectError((err) => debugPrint('[socket] connect error: $err'));
+    _socket!.onConnectError(
+      (err) => debugPrint('[socket] connect error: $err'),
+    );
     _socket!.on('sos:status', (data) {
       if (data is Map) onSosStatus?.call(JsonMap.from(data));
     });
@@ -44,10 +48,14 @@ class SocketService {
       if (data is Map) onCallbackNew?.call(JsonMap.from(data));
     });
     _socket!.on('webrtc:incoming-call', (data) => onIncomingCall?.call(data));
-    _socket!.on('webrtc:call-ended', (_) => WebRTCService.active?.endCall());
+    _socket!.on('webrtc:call-ended', (data) {
+      if (data is Map) {
+        WebRTCService.handleCallEnded((data['roomId'] ?? '').toString());
+      }
+    });
     _socket!.on('webrtc:call-answered', (data) {
       if (data is Map && data['answer'] is Map) {
-        WebRTCService.active?.handleAnswer(
+        WebRTCService.routeAnswer(
           (data['roomId'] ?? '').toString(),
           Map<String, dynamic>.from(data['answer'] as Map),
         );
@@ -55,10 +63,25 @@ class SocketService {
     });
     _socket!.on('webrtc:ice-candidate', (data) {
       if (data is Map && data['candidate'] is Map) {
-        WebRTCService.active?.handleIceCandidate(
+        WebRTCService.routeIceCandidate(
           (data['roomId'] ?? '').toString(),
           Map<String, dynamic>.from(data['candidate'] as Map),
         );
+      }
+    });
+    _socket!.on('sos:live-answer', (data) {
+      if (data is Map) {
+        SosLiveStreamService.active?.handleAnswer(JsonMap.from(data));
+      }
+    });
+    _socket!.on('sos:live-ice', (data) {
+      if (data is Map) {
+        SosLiveStreamService.active?.handleIceCandidate(JsonMap.from(data));
+      }
+    });
+    _socket!.on('sos:live-ended', (data) {
+      if (data is Map) {
+        SosLiveStreamService.active?.handleEnded(JsonMap.from(data));
       }
     });
   }

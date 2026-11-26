@@ -24,8 +24,8 @@ export async function sendFcmPush(token, title, body, data = {}) {
   if (!token) return { ok: false, reason: 'no_token' };
 
   if (!firebaseEnabled()) {
-    console.log(`[FCM DEV] Push to ${token.slice(0, 12)}… — ${title}: ${body}`);
-    return { ok: true, dev: true };
+    console.warn('[FCM DISABLED] Configure FIREBASE_SERVICE_ACCOUNT_JSON to send push notifications');
+    return { ok: false, reason: 'firebase_not_configured' };
   }
 
   const stringData = Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v)]));
@@ -66,6 +66,39 @@ export async function pushToUsers(userIds, title, body, data = {}) {
     rows.map((u) => sendFcmPush(u.device_token, title, body, data)),
   );
   return results.map((r) => (r.status === 'fulfilled' ? r.value : { ok: false, error: r.reason?.message }));
+}
+
+export async function notifyPublishedContent({ type, id, label }) {
+  const contentLabel = {
+    announcement: 'item',
+    missing_person: 'missing person',
+    wanted_person: 'wanted person',
+  }[type] || 'item';
+  const title = 'New data published';
+  const body = `1 new ${contentLabel} published: ${label}`;
+  const metadata = { type, contentId: id, newCount: 1 };
+
+  try {
+    const { rows } = await query(
+      `INSERT INTO notifications (user_id, title, body, delivery_type, metadata)
+       SELECT id, $1, $2, 'push', $3::jsonb
+       FROM users WHERE is_active = true
+       RETURNING user_id`,
+      [title, body, JSON.stringify(metadata)],
+    );
+    const deliveries = await pushToUsers(
+      rows.map((row) => row.user_id),
+      title,
+      body,
+      metadata,
+    );
+    const failedDeliveries = deliveries.filter((delivery) => !delivery.ok).length;
+    if (failedDeliveries > 0) {
+      console.error(`[PUBLICATION NOTIFICATION] ${failedDeliveries} push delivery(s) failed`);
+    }
+  } catch (error) {
+    console.error('[PUBLICATION NOTIFICATION ERROR]', error);
+  }
 }
 
 export async function notifyUserWithFallback(userId, title, body) {

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate, requireRole } from '../middleware/auth.js';
-import { stats, listUsers, createUser, updateUser, deleteUser, listAudit, listDispatches } from '../controllers/admin.controller.js';
+import { stats, listUsers, createUser, updateUser, deleteUser, listAudit, listDispatches, listFanRecords, createFanRecord, updateFanRecord } from '../controllers/admin.controller.js';
 
 const router = Router();
 router.use(authenticate, requireRole('regional_admin', 'system_admin'));
@@ -10,6 +10,9 @@ router.get('/users', listUsers);
 router.post('/users', requireRole('system_admin'), createUser);
 router.patch('/users/:id', requireRole('system_admin'), updateUser);
 router.delete('/users/:id', requireRole('system_admin'), deleteUser);
+router.get('/fan-records', requireRole('system_admin'), listFanRecords);
+router.post('/fan-records', requireRole('system_admin'), createFanRecord);
+router.patch('/fan-records/:id', requireRole('system_admin'), updateFanRecord);
 router.get('/audit', listAudit);
 router.get('/dispatches', listDispatches);
 

@@ -17,7 +17,7 @@ ALTER TABLE missing_persons ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFA
 ALTER TABLE wanted_persons ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
 CREATE INDEX IF NOT EXISTS idx_missing_approved ON missing_persons(is_approved);
 
--- Geofence sensitivity / pause / owner + max-10 per citizen (doc 4.3.4)
+-- Geofence status and creator fields (sensitivity is retained for legacy rows).
 ALTER TABLE geofences ADD COLUMN IF NOT EXISTS sensitivity VARCHAR(20) DEFAULT 'medium';
 ALTER TABLE geofences ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
 ALTER TABLE geofences ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES users(id) ON DELETE SET NULL;

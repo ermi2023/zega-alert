@@ -10,7 +10,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'ZEGA-ALERT';
+  String get appTitle => 'Zega-alert';
 
   @override
   String get appSubtitle => 'Your safety companion';
@@ -154,6 +154,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get safetyZones => 'Safety zones (geofences)';
 
   @override
+  String get safetyZonesTab => 'Zones';
+
+  @override
+  String get safetyZonesHomeDescription =>
+      'Safety-zone updates and emergency incidents inside a zone are added to your notification inbox and sent as push alerts when notifications are enabled. Select an area below to see its map and boundary. Follow local instructions; a zone does not guarantee safety.';
+
+  @override
+  String get noSafetyZonesAvailable =>
+      'No official safety zones are currently published for your region.';
+
+  @override
+  String get safetyZonesLoadFailed =>
+      'Safety-zone information could not be loaded. Try again.';
+
+  @override
   String get addSafetyZone => 'Add safety zone';
 
   @override
@@ -201,7 +216,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createAccount => 'Create account';
 
   @override
-  String get emergencyAndCrime => 'ZEGA-ALERT · Emergency & crime reporting';
+  String get emergencyAndCrime => 'Zega-alert · Emergency & crime reporting';
 
   @override
   String get phone => 'Phone';
@@ -587,4 +602,311 @@ class AppLocalizationsEn extends AppLocalizations {
   String sosUpdated(Object status) {
     return 'Your SOS is now $status';
   }
+
+  @override
+  String get searchMissingWantedPeople => 'Search missing or wanted people';
+
+  @override
+  String get clearSearch => 'Clear search';
+
+  @override
+  String get closeSearch => 'Close search';
+
+  @override
+  String get searchPeople => 'Search people';
+
+  @override
+  String get notifications => 'Notifications';
+
+  @override
+  String get markAllRead => 'Mark all read';
+
+  @override
+  String get markRead => 'Mark read';
+
+  @override
+  String get noNotificationsYet => 'No notifications yet.';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String get safetyZoneNoLongerActive =>
+      'This area is no longer active. Check Safety Zones for current information.';
+
+  @override
+  String get couldNotOpenSafetyZone => 'Could not open this safety-zone map.';
+
+  @override
+  String get helpAndAccessibility => 'Help & accessibility';
+
+  @override
+  String get policeRescueContacts => 'Police and rescue contacts';
+
+  @override
+  String get personalInformation => 'Personal information';
+
+  @override
+  String get emailAddress => 'Email address';
+
+  @override
+  String get safetyZoneEntryAlerts => 'Safety Zone entry alerts';
+
+  @override
+  String get safetyZoneEntryAlertsDescription =>
+      'When enabled, ZEGA Alert checks your location in the background and alerts you when you enter an active published Safety Zone. Available on Android.';
+
+  @override
+  String get safetyZoneLocationPrivacy =>
+      'Precise location for these alerts stays on this device and is not uploaded. Android shows an ongoing notification while monitoring; this can use more battery. SOS and report actions may use location separately. Your saved Region/Sub-city fields remain the manual fallback and still control area-based information.';
+
+  @override
+  String get allowBackgroundLocation => 'Allow background location';
+
+  @override
+  String get allowBackgroundLocationDescription =>
+      'To check for Safety Zone entry while ZEGA Alert is closed, Android must allow location access all the time. In app permissions, choose “Allow all the time”.';
+
+  @override
+  String get openAppSettings => 'Open app settings';
+
+  @override
+  String get notNow => 'Not now';
+
+  @override
+  String get safetyZoneAlertsOn => 'Safety Zone entry alerts are on.';
+
+  @override
+  String get safetyZoneAlertsOff => 'Safety Zone location alerts are off.';
+
+  @override
+  String get safetyZoneAlertsOnNoZones =>
+      'Location alerts are on. No published Safety Zones are available yet.';
+
+  @override
+  String get security => 'Security';
+
+  @override
+  String get preferences => 'Preferences';
+
+  @override
+  String get offlineData => 'Offline data';
+
+  @override
+  String get savePersonPhotos => 'Save wanted and missing-person photos';
+
+  @override
+  String get savePersonPhotosDescription =>
+      'Photos you view are stored on this device for offline access. This is off by default.';
+
+  @override
+  String get clearSavedPhotos => 'Clear saved person photos';
+
+  @override
+  String get clearSavedPhotosConfirmation => 'Clear saved person photos?';
+
+  @override
+  String get clearSavedPhotosDescription =>
+      'This removes wanted and missing-person photos saved on this device. They can be saved again while photo storage is enabled.';
+
+  @override
+  String photosCountAndStorage(Object count, Object size) {
+    return '$count photos · $size used';
+  }
+
+  @override
+  String get officialSafetyAreasDescription =>
+      'View official safety areas published by local authorities. New or changed areas and emergency incidents inside a zone appear in Notifications; push alerts require device notifications to be enabled. This information does not guarantee safety.';
+
+  @override
+  String get noOfficialSafetyAreas =>
+      'No official safety areas are available for this region yet.';
+
+  @override
+  String officialSafetyArea(Object name, Object type) {
+    return 'Official safety area: $name. Type: $type.';
+  }
+
+  @override
+  String get mappedBoundary => 'Mapped boundary';
+
+  @override
+  String get currentPassword => 'Current password';
+
+  @override
+  String get newPassword => 'New password';
+
+  @override
+  String get confirmNewPassword => 'Confirm new password';
+
+  @override
+  String get currentPasswordRequired => 'Enter your current password.';
+
+  @override
+  String get passwordMinimumLength => 'Use at least 8 characters.';
+
+  @override
+  String get passwordsDoNotMatch => 'Passwords do not match.';
+
+  @override
+  String get updatePassword => 'Update password';
+
+  @override
+  String get welcomeBack => 'Welcome back';
+
+  @override
+  String get welcomeSafetyMessage =>
+      'Thank you for helping keep our community safe.';
+
+  @override
+  String get phoneNumberOrEmail => 'Phone number or email';
+
+  @override
+  String get enterPassword => 'Enter your password';
+
+  @override
+  String get logIn => 'Log in';
+
+  @override
+  String get forgotPassword => 'Forgot your password?';
+
+  @override
+  String get signInBiometrics => 'Sign in with biometrics';
+
+  @override
+  String get continueAsGuest => 'Continue as guest';
+
+  @override
+  String get signUp => 'Sign up';
+
+  @override
+  String get validEmailRequired => 'Enter a valid email address.';
+
+  @override
+  String get validPhoneOrEmailRequired =>
+      'Enter a valid phone number or email.';
+
+  @override
+  String get invalidCredentials =>
+      'Invalid phone/email or password. Please try again.';
+
+  @override
+  String get accountNotFound => 'No account found with this phone/email.';
+
+  @override
+  String get signInFailed =>
+      'Sign in could not be completed. Please try again.';
+
+  @override
+  String get police => 'Police';
+
+  @override
+  String get ambulanceRescue => 'Ambulance / rescue';
+
+  @override
+  String regionSelectedSemantics(Object region) {
+    return 'Region dropdown. Currently set to $region.';
+  }
+
+  @override
+  String subCitySelectedSemantics(Object subCity) {
+    return 'Sub-city dropdown. Currently set to $subCity.';
+  }
+
+  @override
+  String languageSelectedSemantics(Object language) {
+    return 'Preferred language dropdown. Currently set to $language.';
+  }
+
+  @override
+  String get citizenProfile => 'Citizen profile';
+
+  @override
+  String get verifiedAccount => 'Verified account';
+
+  @override
+  String get unverifiedAccount => 'Unverified account';
+
+  @override
+  String get editProfile => 'Edit profile';
+
+  @override
+  String get notAvailable => 'Not available';
+
+  @override
+  String get memberSince => 'Member since';
+
+  @override
+  String get verificationStatus => 'Verification status';
+
+  @override
+  String get guestBrowsing => 'Browsing as guest';
+
+  @override
+  String get guestFeaturesInfo =>
+      'Sign in to file reports, send SOS, message officers and verify your ID.';
+
+  @override
+  String get signInCreateAccount => 'Sign in / Create account';
+
+  @override
+  String get fanIdentityTitle => 'FAN identity verification';
+
+  @override
+  String get fanIdentityDescription =>
+      'Scan your original ID QR or enter its 16-digit FAN to check the administrator’s mock record.';
+
+  @override
+  String get settingsSaved => 'Profile and settings saved.';
+
+  @override
+  String get settingsSaveFailed => 'Could not save your profile.';
+
+  @override
+  String get notificationLoadFailed =>
+      'Could not load notifications right now.';
+
+  @override
+  String get backgroundLocationPermissionRequired =>
+      'Choose “Allow all the time” in app permissions, then turn on Safety Zone alerts again.';
+
+  @override
+  String get backgroundLocationAndroidOnly =>
+      'Background Safety Zone alerts are currently available on Android.';
+
+  @override
+  String get turnOnDeviceLocation =>
+      'Turn on device Location to enable Safety Zone alerts.';
+
+  @override
+  String get alwaysLocationPermission =>
+      'Allow ZEGA Alert to access location all the time in app permissions, then turn Safety Zone alerts on again.';
+
+  @override
+  String get safetyNotificationsUnavailable =>
+      'Safety Zone notifications are not available on this device.';
+
+  @override
+  String get allowSafetyNotifications =>
+      'Allow notifications for ZEGA Alert to receive Safety Zone entry alerts.';
+
+  @override
+  String get couldNotEnableSafetyZoneAlerts =>
+      'Could not enable Safety Zone alerts. Check your connection, location permission, and notification settings.';
+
+  @override
+  String get couldNotStartLocationMonitoring =>
+      'Could not start Safety Zone location monitoring.';
+
+  @override
+  String get couldNotRestartLocationMonitoring =>
+      'Could not restart Safety Zone location monitoring.';
+
+  @override
+  String get locationMonitoringStopped =>
+      'Location monitoring stopped. Check device Location and permissions.';
+
+  @override
+  String get couldNotCheckZoneBoundaries =>
+      'Could not check the current Safety Zone boundaries.';
 }

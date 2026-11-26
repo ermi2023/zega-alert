@@ -31,6 +31,8 @@ export const env = {
   atUsername: process.env.AT_USERNAME || 'sandbox',
   atApiKey: process.env.AT_API_KEY || '',
   atSenderId: process.env.AT_SENDER_ID || '',
+  // OTP exposure in production is demo-only and must be explicitly enabled.
+  otpScreenFallback: process.env.OTP_SCREEN_FALLBACK === 'true',
   // 32-byte key (hex or base64) for AES-256-GCM encryption at rest.
   encryptionKey: process.env.ENCRYPTION_KEY || '',
   // Automatic translation engine (doc 4.3.3 / SD-8). LibreTranslate-compatible.
@@ -44,7 +46,7 @@ export const env = {
     process.env.GOOGLE_CLOUD_TRANSLATION_API_KEY ||
     process.env.TRANSLATE_API_KEY ||
     '',
-  // Fayda National ID verification (spec §4.4). Blank = dev auto-approve.
+  // Optional live Fayda provider; identity checks currently use admin FAN records.
   faydaApiUrl: process.env.FAYDA_API_URL || '',
   faydaApiKey: process.env.FAYDA_API_KEY || '',
   faydaApiEnabled: Boolean(process.env.FAYDA_API_URL),

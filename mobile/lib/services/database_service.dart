@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
@@ -19,7 +20,7 @@ class DatabaseService {
     final path = join(dbPath, 'zega_alert.db');
     return openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE cache (
@@ -57,9 +58,11 @@ class DatabaseService {
           )
         ''');
         await _createOutbox(db);
+        await _createPersonImageCache(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) await _createOutbox(db);
+        if (oldVersion < 3) await _createPersonImageCache(db);
       },
     );
   }
@@ -79,18 +82,34 @@ class DatabaseService {
     ''');
   }
 
-  static Future<void> enqueue(String method, String path, Map<String, dynamic>? body) async {
+  static Future<void> _createPersonImageCache(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS person_image_cache (
+        image_url TEXT PRIMARY KEY,
+        local_path TEXT NOT NULL,
+        updated_at INTEGER NOT NULL
+      )
+    ''');
+  }
+
+  static Future<void> enqueue(
+    String method,
+    String path,
+    Map<String, dynamic>? body,
+  ) async {
     if (kIsWeb) {
       final prefs = await SharedPreferences.getInstance();
       final list = prefs.getStringList('web_outbox') ?? [];
-      list.add(jsonEncode({
-        'id': DateTime.now().millisecondsSinceEpoch,
-        'method': method,
-        'path': path,
-        'body': body == null ? null : jsonEncode(body),
-        'attempts': 0,
-        'created_at': DateTime.now().millisecondsSinceEpoch,
-      }));
+      list.add(
+        jsonEncode({
+          'id': DateTime.now().millisecondsSinceEpoch,
+          'method': method,
+          'path': path,
+          'body': body == null ? null : jsonEncode(body),
+          'attempts': 0,
+          'created_at': DateTime.now().millisecondsSinceEpoch,
+        }),
+      );
       await prefs.setStringList('web_outbox', list);
       return;
     }
@@ -108,7 +127,9 @@ class DatabaseService {
     if (kIsWeb) {
       final prefs = await SharedPreferences.getInstance();
       final list = prefs.getStringList('web_outbox') ?? [];
-      return list.map((e) => Map<String, Object?>.from(jsonDecode(e) as Map)).toList();
+      return list
+          .map((e) => Map<String, Object?>.from(jsonDecode(e) as Map))
+          .toList();
     }
     final db = await database;
     if (db == null) return [];
@@ -144,7 +165,10 @@ class DatabaseService {
   static Future<void> bumpAttempts(int id) async {
     if (kIsWeb) return;
     final db = await database;
-    await db?.rawUpdate('UPDATE outbox SET attempts = attempts + 1 WHERE id = ?', [id]);
+    await db?.rawUpdate(
+      'UPDATE outbox SET attempts = attempts + 1 WHERE id = ?',
+      [id],
+    );
   }
 
   static Future<void> cacheList(String table, List<dynamic> items) async {
@@ -214,13 +238,74 @@ class DatabaseService {
       }
     }
     final db = await database;
-    final rows = await db?.query('cache', where: 'key = ?', whereArgs: [key], limit: 1);
+    final rows = await db?.query(
+      'cache',
+      where: 'key = ?',
+      whereArgs: [key],
+      limit: 1,
+    );
     if (rows == null || rows.isEmpty) return null;
     try {
       return jsonDecode(rows.first['value'] as String);
     } catch (_) {
       return null;
     }
+  }
+
+  static Future<void> removeCachedValue(String key) async {
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('cache_value_$key');
+      return;
+    }
+    final db = await database;
+    await db?.delete('cache', where: 'key = ?', whereArgs: [key]);
+  }
+
+  static Future<String?> getCachedPersonImagePath(String url) async {
+    if (kIsWeb) return null;
+    final db = await database;
+    final rows = await db?.query(
+      'person_image_cache',
+      columns: ['local_path'],
+      where: 'image_url = ?',
+      whereArgs: [url],
+      limit: 1,
+    );
+    if (rows == null || rows.isEmpty) return null;
+    return rows.first['local_path'] as String?;
+  }
+
+  static Future<void> cachePersonImagePath(String url, String path) async {
+    if (kIsWeb) return;
+    final db = await database;
+    await db?.insert('person_image_cache', {
+      'image_url': url,
+      'local_path': path,
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  static Future<void> removeCachedPersonImage(String url) async {
+    if (kIsWeb) return;
+    final db = await database;
+    await db?.delete(
+      'person_image_cache',
+      where: 'image_url = ?',
+      whereArgs: [url],
+    );
+  }
+
+  static Future<List<Map<String, Object?>>> getCachedPersonImages() async {
+    if (kIsWeb) return [];
+    final db = await database;
+    return db?.query('person_image_cache') ?? [];
+  }
+
+  static Future<void> clearCachedPersonImages() async {
+    if (kIsWeb) return;
+    final db = await database;
+    await db?.delete('person_image_cache');
   }
 
   static Future<void> clearCache() async {

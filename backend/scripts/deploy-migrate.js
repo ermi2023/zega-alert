@@ -36,10 +36,12 @@ try {
   await applyFile('schema.sql', { tolerant: false });
   await applyFile('migration_defence.sql', { tolerant: true });
   await applyFile('migration_gaps.sql', { tolerant: false });
+  await applyFile('migration_station_routing.sql', { tolerant: false });
   await applyFile('migration_spec_align.sql', { tolerant: false });
   await applyFile('migration_consent.sql', { tolerant: false });
   await applyFile('migration_person_approval.sql', { tolerant: false });
   await applyFile('migration_social.sql', { tolerant: false });
+  await applyFile('migration_fan_verification.sql', { tolerant: false });
   await applyFile('migration_news.sql', { tolerant: true });
   await applyFile('migration_audit_indexes.sql', { tolerant: true });
   await applyFile('seed.sql', { tolerant: true });

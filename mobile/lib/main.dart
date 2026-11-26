@@ -341,9 +341,29 @@ class _MainShellState extends State<MainShell> {
     unawaited(
       SafetyZoneTrackingService.resumeIfEnabled().catchError((Object error) {
         debugPrint('Safety Zone monitoring could not resume: $error');
+        final loc = AppLocalizations.of(context);
         final message = error is SafetyZoneTrackingException
-            ? error.message
-            : 'Safety Zone alerts could not restart. Check location and notification permissions in Settings.';
+            ? switch (error.issue) {
+                SafetyZoneTrackingIssue.androidOnly =>
+                  loc.backgroundLocationAndroidOnly,
+                SafetyZoneTrackingIssue.deviceLocationOff =>
+                  loc.turnOnDeviceLocation,
+                SafetyZoneTrackingIssue.backgroundLocationPermission =>
+                  loc.alwaysLocationPermission,
+                SafetyZoneTrackingIssue.notificationsUnavailable =>
+                  loc.safetyNotificationsUnavailable,
+                SafetyZoneTrackingIssue.notificationPermission =>
+                  loc.allowSafetyNotifications,
+                SafetyZoneTrackingIssue.monitoringStartFailed =>
+                  loc.couldNotStartLocationMonitoring,
+                SafetyZoneTrackingIssue.monitoringRestartFailed =>
+                  loc.couldNotRestartLocationMonitoring,
+                SafetyZoneTrackingIssue.monitoringStopped =>
+                  loc.locationMonitoringStopped,
+                SafetyZoneTrackingIssue.boundaryCheckFailed =>
+                  loc.couldNotCheckZoneBoundaries,
+              }
+            : loc.couldNotEnableSafetyZoneAlerts;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           ScaffoldMessenger.of(context)

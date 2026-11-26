@@ -7,13 +7,22 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+enum SafetyZoneTrackingIssue {
+  androidOnly,
+  deviceLocationOff,
+  backgroundLocationPermission,
+  notificationsUnavailable,
+  notificationPermission,
+  monitoringStartFailed,
+  monitoringRestartFailed,
+  monitoringStopped,
+  boundaryCheckFailed,
+}
+
 class SafetyZoneTrackingException implements Exception {
-  const SafetyZoneTrackingException(this.message);
+  const SafetyZoneTrackingException(this.issue);
 
-  final String message;
-
-  @override
-  String toString() => message;
+  final SafetyZoneTrackingIssue issue;
 }
 
 class SafetyZoneTrackingService {
@@ -29,9 +38,9 @@ class SafetyZoneTrackingService {
   static List<Map<String, dynamic>> _zones = [];
   static Map<String, bool> _insideStates = {};
   static bool _notificationsInitialized = false;
-  static String? _lastError;
+  static SafetyZoneTrackingIssue? _lastError;
 
-  static String? get lastError => _lastError;
+  static SafetyZoneTrackingIssue? get lastError => _lastError;
   static int get monitoredZoneCount => _zones.length;
 
   static Future<bool> isEnabled() async {
@@ -42,7 +51,7 @@ class SafetyZoneTrackingService {
   static Future<void> enable(List<dynamic> zones) async {
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
       throw const SafetyZoneTrackingException(
-        'Background Safety Zone alerts are currently available on Android.',
+        SafetyZoneTrackingIssue.androidOnly,
       );
     }
 
@@ -55,8 +64,8 @@ class SafetyZoneTrackingService {
     } catch (error) {
       await preferences.setBool(_enabledKey, false);
       _lastError = error is SafetyZoneTrackingException
-          ? error.message
-          : 'Could not start Safety Zone location monitoring.';
+          ? error.issue
+          : SafetyZoneTrackingIssue.monitoringStartFailed;
       rethrow;
     }
   }
@@ -73,7 +82,7 @@ class SafetyZoneTrackingService {
     if (!await isEnabled()) return;
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
       throw const SafetyZoneTrackingException(
-        'Background Safety Zone alerts are currently available on Android.',
+        SafetyZoneTrackingIssue.androidOnly,
       );
     }
 
@@ -101,8 +110,8 @@ class SafetyZoneTrackingService {
       await _startMonitoring();
     } catch (error) {
       _lastError = error is SafetyZoneTrackingException
-          ? error.message
-          : 'Could not restart Safety Zone location monitoring.';
+          ? error.issue
+          : SafetyZoneTrackingIssue.monitoringRestartFailed;
       rethrow;
     }
   }
@@ -148,12 +157,12 @@ class SafetyZoneTrackingService {
     if (_positionSubscription != null) return;
     if (!await Geolocator.isLocationServiceEnabled()) {
       throw const SafetyZoneTrackingException(
-        'Turn on device Location to enable Safety Zone alerts.',
+        SafetyZoneTrackingIssue.deviceLocationOff,
       );
     }
     if (await Geolocator.checkPermission() != LocationPermission.always) {
       throw const SafetyZoneTrackingException(
-        'Allow ZEGA Alert to access location all the time in app permissions, then turn Safety Zone alerts on again.',
+        SafetyZoneTrackingIssue.backgroundLocationPermission,
       );
     }
 
@@ -178,7 +187,7 @@ class SafetyZoneTrackingService {
       _handlePosition,
       onError: (Object error, StackTrace stackTrace) {
         _lastError =
-            'Location monitoring stopped. Check device Location and permissions.';
+            SafetyZoneTrackingIssue.monitoringStopped;
         debugPrint('Safety Zone location stream failed: $error');
       },
     );
@@ -199,7 +208,7 @@ class SafetyZoneTrackingService {
         >();
     if (android == null) {
       throw const SafetyZoneTrackingException(
-        'Safety Zone notifications are not available on this device.',
+        SafetyZoneTrackingIssue.notificationsUnavailable,
       );
     }
 
@@ -218,7 +227,7 @@ class SafetyZoneTrackingService {
     }
     if (!notificationsEnabled) {
       throw const SafetyZoneTrackingException(
-        'Allow notifications for ZEGA Alert to receive Safety Zone entry alerts.',
+        SafetyZoneTrackingIssue.notificationPermission,
       );
     }
     _notificationsInitialized = true;
@@ -227,7 +236,7 @@ class SafetyZoneTrackingService {
   static void _handlePosition(Position position) {
     unawaited(
       _evaluatePosition(position).catchError((Object error, StackTrace stack) {
-        _lastError = 'Could not check the current Safety Zone boundaries.';
+        _lastError = SafetyZoneTrackingIssue.boundaryCheckFailed;
         debugPrint('Safety Zone boundary check failed: $error');
       }),
     );

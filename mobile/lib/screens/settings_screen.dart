@@ -82,8 +82,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _load() async {
     _safetyZoneTrackingEnabled = await SafetyZoneTrackingService.isEnabled();
-    if (SafetyZoneTrackingService.lastError != null) {
-      _status = SafetyZoneTrackingService.lastError;
+    final trackingIssue = SafetyZoneTrackingService.lastError;
+    if (trackingIssue != null) {
+      _status = _safetyTrackingMessage(
+        AppLocalizations.of(context),
+        trackingIssue,
+      );
     }
     final cachedProfile = Api.profile;
     if (_loggedIn && cachedProfile != null) {
@@ -232,6 +236,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
+  String _safetyTrackingMessage(
+    AppLocalizations loc,
+    SafetyZoneTrackingIssue issue,
+  ) => switch (issue) {
+    SafetyZoneTrackingIssue.androidOnly => loc.backgroundLocationAndroidOnly,
+    SafetyZoneTrackingIssue.deviceLocationOff => loc.turnOnDeviceLocation,
+    SafetyZoneTrackingIssue.backgroundLocationPermission =>
+      loc.alwaysLocationPermission,
+    SafetyZoneTrackingIssue.notificationsUnavailable =>
+      loc.safetyNotificationsUnavailable,
+    SafetyZoneTrackingIssue.notificationPermission =>
+      loc.allowSafetyNotifications,
+    SafetyZoneTrackingIssue.monitoringStartFailed =>
+      loc.couldNotStartLocationMonitoring,
+    SafetyZoneTrackingIssue.monitoringRestartFailed =>
+      loc.couldNotRestartLocationMonitoring,
+    SafetyZoneTrackingIssue.monitoringStopped => loc.locationMonitoringStopped,
+    SafetyZoneTrackingIssue.boundaryCheckFailed => loc.couldNotCheckZoneBoundaries,
+  };
+
   @override
   void initState() {
     super.initState();
@@ -312,12 +336,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
         if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
           throw const SafetyZoneTrackingException(
-            'Background Safety Zone alerts are currently available on Android.',
+            SafetyZoneTrackingIssue.androidOnly,
           );
         }
         if (!await Geolocator.isLocationServiceEnabled()) {
           throw const SafetyZoneTrackingException(
-            'Turn on device Location to enable Safety Zone alerts.',
+            SafetyZoneTrackingIssue.deviceLocationOff,
           );
         }
 
@@ -371,11 +395,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       } catch (error) {
         if (mounted) {
           final message = error is SafetyZoneTrackingException
-              ? error.message
+              ? _safetyTrackingMessage(loc, error.issue)
               : Api.userMessage(
                   error,
-                  fallback:
-                      'Could not enable Safety Zone alerts. Check your connection, location permission, and notification settings.',
+                  fallback: loc.couldNotEnableSafetyZoneAlerts,
                 );
           setState(() {
             _safetyZoneTrackingEnabled = !enabled;

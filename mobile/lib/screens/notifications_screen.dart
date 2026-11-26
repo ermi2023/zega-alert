@@ -126,10 +126,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       final selectedZone = zone;
       if (selectedZone == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'This area is no longer active. Check Safety Zones for current information.',
-            ),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).safetyZoneNoLongerActive),
           ),
         );
         return;

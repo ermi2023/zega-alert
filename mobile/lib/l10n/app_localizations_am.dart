@@ -893,4 +893,90 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get couldNotCheckZoneBoundaries => 'የአሁኑን የደህንነት ዞን ወሰኖች መፈተሽ አልተቻለም።';
+
+  @override
+  String get biometricCancelled => 'በባዮሜትሪክስ ማረጋገጥ ተሰርዟል።';
+
+  @override
+  String get settingsLoadFailed => 'ቅንብሮችን አሁን መጫን አልተቻለም።';
+
+  @override
+  String get savedPhotoStorageFailed => 'የተቀመጡ ፎቶዎችን ማከማቻ ማንበብ አልተቻለም።';
+
+  @override
+  String get photoStorageUpdateFailed => 'የፎቶ ማከማቻ ቅንብሮችን ማዘመን አልተቻለም።';
+
+  @override
+  String get photoStorageClearFailed => 'የተቀመጡ ፎቶዎችን ማጽዳት አልተቻለም።';
+
+  @override
+  String get passwordChanged => 'የይለፍ ቃሉ በተሳካ ሁኔታ ተቀይሯል።';
+
+  @override
+  String get passwordChangeFailed => 'የይለፍ ቃልዎን መቀየር አልተቻለም።';
+
+  @override
+  String get clearPhotos => 'ፎቶዎችን አጽዳ';
+
+  @override
+  String get aboutSupport => 'ስለ መተግበሪያው እና እገዛ';
+
+  @override
+  String get aboutZegaAlert => 'ስለ ZEGA-ALERT';
+
+  @override
+  String get version => 'ስሪት';
+
+  @override
+  String get termsConditions => 'ውሎች እና ሁኔታዎች';
+
+  @override
+  String get privacyPolicy => 'የግላዊነት ፖሊሲ';
+
+  @override
+  String get rateZegaAlert => 'ZEGA-ALERTን ደረጃ ይስጡ';
+
+  @override
+  String get chatWithAdmin => 'ከአስተዳዳሪ ጋር ይወያዩ';
+
+  @override
+  String get followUpOnReports => 'በሪፖርቶች ላይ ክትትል ያድርጉ';
+
+  @override
+  String get leaveFeedback => 'አስተያየት ይስጡ';
+
+  @override
+  String get feedbackHint => 'እንዴት ማሻሻል እንደምንችል ይንገሩን...';
+
+  @override
+  String get feedbackSubmitted => 'አስተያየቱ ተልኳል። እናመሰግናለን!';
+
+  @override
+  String get contactUs => 'ያግኙን';
+
+  @override
+  String get policeEmergency => 'የፖሊስ ድንገተኛ እርዳታ';
+
+  @override
+  String get emailSupport => 'በኢሜይል እገዛ';
+
+  @override
+  String get close => 'ዝጋ';
+
+  @override
+  String get searchAppStoreToRate =>
+      'ደረጃ ለመስጠት ZEGA-ALERTን በመተግበሪያ መደብርዎ ይፈልጉ።';
+
+  @override
+  String aboutBody(Object version) {
+    return 'ZEGA-ALERT የኢትዮጵያ ፌዴራል ፖሊስ የዜጎች ደህንነት መተግበሪያ ነው። ከአደጋ ጊዜ ማዕከል፣ የወንጀል ሪፖርት፣ የጠፉ እና የሚፈለጉ ሰዎች፣ ይፋዊ ማሳወቂያዎች እና ከፖሊስ ጋር በሁለት አቅጣጫ ግንኙነት ያገናኝዎታል።\n\nስሪት $version';
+  }
+
+  @override
+  String get termsBody =>
+      '1. ZEGA-ALERTን ለእውነተኛ አደጋዎች፣ የወንጀል ሪፖርቶች እና የሕዝብ ደህንነት መረጃ ብቻ ይጠቀሙ።\n\n2. ሆን ብሎ የሐሰት ሪፖርት መላክ ወንጀል ነው፤ መለያ ሊታገድ እና ሕጋዊ እርምጃ ሊወሰድ ይችላል።\n\n3. የአደጋ ጊዜ ባህሪያት በኔትወርክ ሽፋን እና በአካባቢ አገልግሎት ላይ ይመሰረታሉ። መተግበሪያው ካልተገናኘ ሁልጊዜ 991 ይደውሉ።\n\n4. የሚያቀርቧቸው ሪፖርቶች ለምርመራ ለሚመለከተው ፖሊስ ጣቢያ እና ክልላዊ አስተዳዳሪዎች ይጋራሉ።\n\n5. የመለያ መግቢያ መረጃዎን በሚስጥር ይያዙ። በመለያዎ ላይ ለሚፈጸሙ እንቅስቃሴዎች ኃላፊ ነዎት።';
+
+  @override
+  String get privacyBody =>
+      'ZEGA-ALERT ደህንነትዎን ለመጠበቅ የሚያስፈልገውን መረጃ ብቻ ይሰበስባል፦ ስምዎን፣ ስልክ ቁጥርዎን፣ ክልልዎን እና ለማቅረብ የመረጡትን ሪፖርቶች።\n\nአካባቢ ለSOS ማሳወቂያዎች፣ ቅርብ ጣቢያ ፍለጋ፣ የደህንነት ዞኖች እና የክስተት ካርታ ይጠቀማል። እነዚህን ባህሪያት ሲጠቀሙ ብቻ ይላካል።\n\nበጠፉ ሰዎች ማሳወቂያ ያሉ የግንኙነት ዝርዝሮች በማከማቻ ጊዜ ይመሰጠራሉ። ስሱ መረጃዎችን የተፈቀደላቸው የፖሊስ ሰራተኞች ብቻ ያያሉ።\n\nዜናን፣ የሚፈለጉ እና የጠፉ ሰዎችን እንደ እንግዳ ማየት ይችላሉ። ድጋፍን በማነጋገር መለያዎን ማጥፋት ይችላሉ።';
 }

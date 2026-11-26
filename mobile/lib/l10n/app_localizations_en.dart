@@ -909,4 +909,91 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get couldNotCheckZoneBoundaries =>
       'Could not check the current Safety Zone boundaries.';
+
+  @override
+  String get biometricCancelled => 'Biometric authentication was cancelled.';
+
+  @override
+  String get settingsLoadFailed => 'Could not load settings right now.';
+
+  @override
+  String get savedPhotoStorageFailed => 'Could not read saved photo storage.';
+
+  @override
+  String get photoStorageUpdateFailed =>
+      'Could not update photo storage settings.';
+
+  @override
+  String get photoStorageClearFailed => 'Could not clear saved photos.';
+
+  @override
+  String get passwordChanged => 'Password changed successfully.';
+
+  @override
+  String get passwordChangeFailed => 'Could not change your password.';
+
+  @override
+  String get clearPhotos => 'Clear photos';
+
+  @override
+  String get aboutSupport => 'About & support';
+
+  @override
+  String get aboutZegaAlert => 'About ZEGA-ALERT';
+
+  @override
+  String get version => 'Version';
+
+  @override
+  String get termsConditions => 'Terms & Conditions';
+
+  @override
+  String get privacyPolicy => 'Privacy Policy';
+
+  @override
+  String get rateZegaAlert => 'Rate ZEGA-ALERT';
+
+  @override
+  String get chatWithAdmin => 'Chat with Admin';
+
+  @override
+  String get followUpOnReports => 'Follow up on reports';
+
+  @override
+  String get leaveFeedback => 'Leave Feedback';
+
+  @override
+  String get feedbackHint => 'Tell us how we can improve...';
+
+  @override
+  String get feedbackSubmitted => 'Feedback submitted. Thank you!';
+
+  @override
+  String get contactUs => 'Contact us';
+
+  @override
+  String get policeEmergency => 'Police emergency';
+
+  @override
+  String get emailSupport => 'Email support';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get searchAppStoreToRate =>
+      'Search for ZEGA-ALERT in your app store to rate us.';
+
+  @override
+  String aboutBody(Object version) {
+    return 'ZEGA-ALERT is the Ethiopian Federal Police citizen safety app. It connects you to emergency dispatch, crime reporting, missing and wanted persons, official announcements and two-way communication with officers — in English, Amharic, Oromifa, Tigrinya and Ethio Somali.\n\nVersion $version';
+  }
+
+  @override
+  String get termsBody =>
+      '1. Use ZEGA-ALERT only for genuine emergencies, crime reports and public-safety information.\n\n2. Knowingly sending false reports is an offence and may lead to account suspension and legal action.\n\n3. Emergency features depend on network coverage and location services. Always call 991 if the app cannot connect.\n\n4. Reports you submit are shared with the responsible police station and regional administrators for investigation.\n\n5. Keep your account credentials private. You are responsible for activity on your account.';
+
+  @override
+  String get privacyBody =>
+      'ZEGA-ALERT collects only the information needed to keep you safe: your name, phone number, region and the content of reports you choose to submit.\n\nLocation is used for SOS alerts, nearest-station lookup, safety zones and incident mapping. It is transmitted only while you use these features.\n\nContact details on missing-person notices are encrypted at rest. Sensitive information is visible only to authorised police staff.\n\nYou can browse news, wanted and missing persons as a guest. You can delete your account by contacting support.';
 }

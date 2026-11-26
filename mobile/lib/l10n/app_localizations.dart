@@ -1741,6 +1741,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not check the current Safety Zone boundaries.'**
   String get couldNotCheckZoneBoundaries;
+
+  /// No description provided for @biometricCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Biometric authentication was cancelled.'**
+  String get biometricCancelled;
+
+  /// No description provided for @settingsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load settings right now.'**
+  String get settingsLoadFailed;
+
+  /// No description provided for @savedPhotoStorageFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read saved photo storage.'**
+  String get savedPhotoStorageFailed;
+
+  /// No description provided for @photoStorageUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update photo storage settings.'**
+  String get photoStorageUpdateFailed;
+
+  /// No description provided for @photoStorageClearFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not clear saved photos.'**
+  String get photoStorageClearFailed;
+
+  /// No description provided for @passwordChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Password changed successfully.'**
+  String get passwordChanged;
+
+  /// No description provided for @passwordChangeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change your password.'**
+  String get passwordChangeFailed;
+
+  /// No description provided for @clearPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear photos'**
+  String get clearPhotos;
+
+  /// No description provided for @aboutSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'About & support'**
+  String get aboutSupport;
+
+  /// No description provided for @aboutZegaAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'About ZEGA-ALERT'**
+  String get aboutZegaAlert;
+
+  /// No description provided for @version.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get version;
+
+  /// No description provided for @termsConditions.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms & Conditions'**
+  String get termsConditions;
+
+  /// No description provided for @privacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get privacyPolicy;
+
+  /// No description provided for @rateZegaAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate ZEGA-ALERT'**
+  String get rateZegaAlert;
+
+  /// No description provided for @chatWithAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat with Admin'**
+  String get chatWithAdmin;
+
+  /// No description provided for @followUpOnReports.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow up on reports'**
+  String get followUpOnReports;
+
+  /// No description provided for @leaveFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave Feedback'**
+  String get leaveFeedback;
+
+  /// No description provided for @feedbackHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us how we can improve...'**
+  String get feedbackHint;
+
+  /// No description provided for @feedbackSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback submitted. Thank you!'**
+  String get feedbackSubmitted;
+
+  /// No description provided for @contactUs.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact us'**
+  String get contactUs;
+
+  /// No description provided for @policeEmergency.
+  ///
+  /// In en, this message translates to:
+  /// **'Police emergency'**
+  String get policeEmergency;
+
+  /// No description provided for @emailSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Email support'**
+  String get emailSupport;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @searchAppStoreToRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for ZEGA-ALERT in your app store to rate us.'**
+  String get searchAppStoreToRate;
+
+  /// No description provided for @aboutBody.
+  ///
+  /// In en, this message translates to:
+  /// **'ZEGA-ALERT is the Ethiopian Federal Police citizen safety app. It connects you to emergency dispatch, crime reporting, missing and wanted persons, official announcements and two-way communication with officers — in English, Amharic, Oromifa, Tigrinya and Ethio Somali.\n\nVersion {version}'**
+  String aboutBody(Object version);
+
+  /// No description provided for @termsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'1. Use ZEGA-ALERT only for genuine emergencies, crime reports and public-safety information.\n\n2. Knowingly sending false reports is an offence and may lead to account suspension and legal action.\n\n3. Emergency features depend on network coverage and location services. Always call 991 if the app cannot connect.\n\n4. Reports you submit are shared with the responsible police station and regional administrators for investigation.\n\n5. Keep your account credentials private. You are responsible for activity on your account.'**
+  String get termsBody;
+
+  /// No description provided for @privacyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'ZEGA-ALERT collects only the information needed to keep you safe: your name, phone number, region and the content of reports you choose to submit.\n\nLocation is used for SOS alerts, nearest-station lookup, safety zones and incident mapping. It is transmitted only while you use these features.\n\nContact details on missing-person notices are encrypted at rest. Sensitive information is visible only to authorised police staff.\n\nYou can browse news, wanted and missing persons as a guest. You can delete your account by contacting support.'**
+  String get privacyBody;
 }
 
 class _AppLocalizationsDelegate

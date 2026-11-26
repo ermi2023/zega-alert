@@ -916,6 +916,13 @@ class AppLocalizationsTi extends AppLocalizations {
   String get clearPhotos => 'ፎቶታት ኣጽርይ';
 
   @override
+  String get clearSavedPersonPhotosTitle => 'ዝተዓቀቡ ፎቶታት ሰባት ኣጽርይ?';
+
+  @override
+  String get clearSavedPersonPhotosBody =>
+      'እዚ ኣብዚ መሳርሒ ዝተዓቀቡ ፎቶታት ዝድለዩን ዝጠፍኡን ሰባት ይስርዝ። ምዕቃብ ፎቶ እንተተኸፊቱ እንደገና ክዕቀቡ ይኽእሉ።';
+
+  @override
   String get aboutSupport => 'ብዛዕባን ሓገዝን';
 
   @override

@@ -1790,6 +1790,18 @@ abstract class AppLocalizations {
   /// **'Clear photos'**
   String get clearPhotos;
 
+  /// No description provided for @clearSavedPersonPhotosTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear saved person photos?'**
+  String get clearSavedPersonPhotosTitle;
+
+  /// No description provided for @clearSavedPersonPhotosBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes wanted and missing-person photos saved on this device. They can be saved again while photo storage is enabled.'**
+  String get clearSavedPersonPhotosBody;
+
   /// No description provided for @aboutSupport.
   ///
   /// In en, this message translates to:

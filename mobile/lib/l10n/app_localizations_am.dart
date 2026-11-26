@@ -919,6 +919,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get clearPhotos => 'ፎቶዎችን አጽዳ';
 
   @override
+  String get clearSavedPersonPhotosTitle => 'የተቀመጡ የሰዎች ፎቶዎችን ያጽዱ?';
+
+  @override
+  String get clearSavedPersonPhotosBody =>
+      'ይህ በዚህ መሣሪያ ላይ የተቀመጡ የሚፈለጉ እና የጠፉ ሰዎችን ፎቶዎች ያስወግዳል። የፎቶ ማከማቻ ከበራ እንደገና ሊቀመጡ ይችላሉ።';
+
+  @override
   String get aboutSupport => 'ስለ መተግበሪያው እና እገዛ';
 
   @override

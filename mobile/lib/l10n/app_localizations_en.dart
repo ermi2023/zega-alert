@@ -936,6 +936,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clearPhotos => 'Clear photos';
 
   @override
+  String get clearSavedPersonPhotosTitle => 'Clear saved person photos?';
+
+  @override
+  String get clearSavedPersonPhotosBody =>
+      'This removes wanted and missing-person photos saved on this device. They can be saved again while photo storage is enabled.';
+
+  @override
   String get aboutSupport => 'About & support';
 
   @override

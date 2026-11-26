@@ -943,6 +943,14 @@ class AppLocalizationsOm extends AppLocalizations {
   String get clearPhotos => 'Suuraawwan haqi';
 
   @override
+  String get clearSavedPersonPhotosTitle =>
+      'Suuraawwan namootaa kuufaman haquu?';
+
+  @override
+  String get clearSavedPersonPhotosBody =>
+      'Kun suuraawwan namoota barbaadaman fi badan meeshaa kana irratti kuufaman haqa. Kuusaan suuraa yoo baname deebi\'anii kuufamuu danda\'u.';
+
+  @override
   String get aboutSupport => 'Waa\'ee fi gargaarsa';
 
   @override

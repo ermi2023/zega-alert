@@ -954,6 +954,14 @@ class AppLocalizationsSo extends AppLocalizations {
   String get clearPhotos => 'Tirtir sawirrada';
 
   @override
+  String get clearSavedPersonPhotosTitle =>
+      'Tirtir sawirrada dadka ee kaydsan?';
+
+  @override
+  String get clearSavedPersonPhotosBody =>
+      'Tani waxay ka saaraysaa sawirrada dadka la doonayo iyo kuwa maqan ee qalabkan lagu kaydiyey. Mar kale ayaa la kaydin karaa haddii kaydinta sawirradu daaran tahay.';
+
+  @override
   String get aboutSupport => 'Ku saabsan & taageero';
 
   @override

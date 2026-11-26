@@ -441,7 +441,18 @@ class _MainShellState extends State<MainShell> {
         content: Text(loc.callerIsCalling(callerName)),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () async {
+              Navigator.pop(context);
+              if (roomId.toString().isEmpty) return;
+              try {
+                await Api.post('/webrtc/end', {'roomId': roomId});
+              } catch (error) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Could not decline call: $error')),
+                );
+              }
+            },
             child: Text(loc.decline, style: const TextStyle(color: Colors.red)),
           ),
           TextButton(

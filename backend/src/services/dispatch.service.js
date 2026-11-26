@@ -1,9 +1,10 @@
 import { query } from '../config/db.js';
 import { getRecentPositions } from '../controllers/position.controller.js';
+import { haversine } from './geo.service.js';
 
-const EARTH_RADIUS_M = 6371000;
 // Average urban police response speed assumed for ETA estimation (~40 km/h).
 const ASSUMED_SPEED_MPS = 11.1;
+export { haversine };
 
 export async function evaluateGeofenceContext(alert) {
   const context = { inside_safety_zone: false, nearest_police_station: null, nearest_zone: null };
@@ -34,18 +35,17 @@ export async function evaluateGeofenceContext(alert) {
 }
 
 export async function dispatchSos(alert) {
-  const where = [];
-  const params = [];
-  where.push(`role IN ('police','dispatcher')`);
-  where.push(`is_active = true`);
-  if (alert.region) { params.push(alert.region); where.push(`region = $${params.length}`); }
-  if (alert.sub_city) { params.push(alert.sub_city); where.push(`sub_city = $${params.length}`); }
-  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
-  const { rows: staff } = await query(
-    `SELECT id, full_name, role, region, sub_city FROM users ${whereSql} ORDER BY created_at ASC LIMIT 50`,
-    params,
-  );
-  const candidates = (staff || []);
+  const { rows: candidates } = alert.station_id
+    ? await query(
+      `SELECT u.id, u.full_name, u.role, u.region, u.sub_city
+       FROM police_station_users psu
+       JOIN police_stations station ON station.id = psu.station_id AND station.is_active = true
+       JOIN users u ON u.id = psu.user_id
+       WHERE psu.station_id = $1 AND u.role = 'police' AND u.is_active = true
+       ORDER BY u.created_at ASC`,
+      [alert.station_id],
+    )
+    : { rows: [] };
 
   // Rank candidates by real distance to their last reported position (nearest first),
   // then estimate arrival time (doc SD-4 / collaboration diagram steps 4-6).
@@ -93,15 +93,10 @@ export async function dispatchSos(alert) {
     [alert.id, assignments.length],
   );
   const geofence = await evaluateGeofenceContext(alert);
-  return { nearest, assignments, geofence };
-}
-
-export function haversine(lat1, lon1, lat2, lon2) {
-  if (lat1 == null || lon1 == null || lat2 == null || lon2 == null) return Infinity;
-  const toRad = (d) => (d * Math.PI) / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a = Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-  return 2 * EARTH_RADIUS_M * Math.asin(Math.sqrt(a));
+  return {
+    nearest,
+    assignments,
+    geofence,
+    station_id: alert.station_id || null,
+  };
 }

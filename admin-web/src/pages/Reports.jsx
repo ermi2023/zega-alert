@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { api } from '../api/client';
+import { api, API_BASE, TOKEN_KEY } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { io } from 'socket.io-client';
 
 function timeAgo(dateStr) {
   if (!dateStr) return '—';
@@ -37,7 +38,24 @@ export default function Reports() {
   useEffect(() => { load(); }, [status, region, q]);
 
   useEffect(() => {
-    if (canAssign) api.get('/admin/users?role=police').then(setOfficers).catch(() => {});
+    const socket = io(API_BASE || undefined, {
+      auth: { token: localStorage.getItem(TOKEN_KEY) },
+    });
+    socket.on('report:new', (report) => {
+      setRows((current) => [report, ...current.filter((row) => row.id !== report.id)]);
+    });
+    return () => socket.close();
+  }, []);
+
+  useEffect(() => {
+    if (canAssign) {
+      Promise.all([
+        api.get('/admin/users?role=police&limit=1000'),
+        api.get('/admin/users?role=dispatcher&limit=1000'),
+      ]).then(([police, dispatchers]) => {
+        setOfficers([...police, ...dispatchers]);
+      }).catch(() => {});
+    }
   }, [canAssign]);
 
   const assign = async (r, officerId) => {
@@ -66,8 +84,8 @@ export default function Reports() {
       <div className="page-head">
         <div><h1>{t('reports.title')}</h1><p>{t('reports.subtitle')}</p></div>
         <button className="btn ghost" onClick={() => {
-          const headers = ['Date','Title','Category','Severity','Region','Status','Reporter'];
-          const csv = [headers, ...rows.map(r => [r.reported_at, r.title, r.category, r.severity, r.region, r.status, r.reporter_name||'anonymous'])].map(r => r.map(c => `"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+          const headers = ['Date','Title','Category','Severity','Region','Routed to','Status','Reporter'];
+          const csv = [headers, ...rows.map(r => [r.reported_at, r.title, r.category, r.severity, r.region, r.dispatch_route === 'central_dispatch' ? 'Central dispatch' : r.station_name, r.status, r.reporter_name||'anonymous'])].map(r => r.map(c => `"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
           const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv'})); a.download = 'reports.csv'; a.click();
         }}>Export CSV</button>
       </div>
@@ -81,7 +99,7 @@ export default function Reports() {
       </div>
       <div className="panel">
         <table>
-          <thead><tr><th>{t('reports.reported')}</th><th>{t('reports.reportTitle')}</th><th>{t('reports.category')}</th><th>{t('reports.severity')}</th><th>{t('reports.location')}</th><th>{t('reports.status')}</th>{canAssign && <th>Assign to</th>}<th>{t('reports.actions')}</th></tr></thead>
+          <thead><tr><th>{t('reports.reported')}</th><th>{t('reports.reportTitle')}</th><th>{t('reports.category')}</th><th>{t('reports.severity')}</th><th>{t('reports.location')}</th><th>Routed to</th><th>{t('reports.status')}</th>{canAssign && <th>Assign to</th>}<th>{t('reports.actions')}</th></tr></thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.id} style={{ cursor: 'pointer' }} onClick={() => showDetail(r)}>
@@ -98,12 +116,13 @@ export default function Reports() {
                     <div style={{ color: 'var(--muted)', fontSize: 12 }}>{r.address_text}</div>
                   )}
                 </td>
+                <td>{r.dispatch_route === 'central_dispatch' ? 'Central dispatch' : r.station_name || 'Nearest station'}</td>
                 <td><span className={`badge ${badge(r.status)}`}>{r.status}</span></td>
                 {canAssign && (
                   <td onClick={(e) => e.stopPropagation()}>
                     <select defaultValue="" onChange={(e) => assign(r, e.target.value)}>
                       <option value="" disabled>{r.assigned_to ? 'Reassign…' : 'Select officer…'}</option>
-                      {officers.map((o) => <option key={o.id} value={o.id}>{o.full_name}</option>)}
+                      {officers.filter((o) => r.route_recipient_ids?.includes(o.id)).map((o) => <option key={o.id} value={o.id}>{o.full_name}</option>)}
                     </select>
                   </td>
                 )}
@@ -117,7 +136,7 @@ export default function Reports() {
                 </td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={canAssign ? 8 : 7} style={{ color: 'var(--muted)' }}>{t('reports.noReports')}</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={canAssign ? 9 : 8} style={{ color: 'var(--muted)' }}>{t('reports.noReports')}</td></tr>}
           </tbody>
         </table>
       </div>
@@ -140,6 +159,7 @@ export default function Reports() {
               <div><strong>Category</strong><p>{detail.category}</p></div>
               <div><strong>Region</strong><p>{detail.region || '—'}</p></div>
               <div><strong>Sub-city</strong><p>{detail.sub_city || '—'}</p></div>
+              <div><strong>Routed to</strong><p>{detail.dispatch_route === 'central_dispatch' ? 'Central dispatch' : detail.station_name || 'Nearest station'}</p></div>
             </div>
             <div style={{ marginBottom: 12 }}>
               <strong>{t('reports.reporter')}</strong>

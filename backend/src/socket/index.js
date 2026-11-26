@@ -1,6 +1,8 @@
 import { io } from './socket.js';
 import { verifyToken } from '../utils/jwt.js';
 import { query } from '../config/db.js';
+import { endLiveStreamsForUser } from '../controllers/sos-live.controller.js';
+import { getRouteRecipients } from '../services/police-station.service.js';
 
 export function setupSocket() {
   io.use(async (socket, next) => {
@@ -25,13 +27,49 @@ export function setupSocket() {
     }
     socket.join('citizens');
 
-    socket.on('chat:join', (conversationId) => {
-      socket.join(`conversation:${conversationId}`);
-    });
+    const joinConversationIfMember = async (conversationId) => {
+      if (typeof conversationId !== 'string') return;
+      try {
+        const { rows } = await query(
+          `SELECT 1 FROM conversation_participants
+           WHERE conversation_id = $1 AND user_id = $2`,
+          [conversationId, socket.user.id],
+        );
+        if (rows.length) socket.join(`conversation:${conversationId}`);
+      } catch (error) {
+        console.error('[SOCKET CHAT JOIN]', error.message);
+      }
+    };
+
+    socket.on('chat:join', joinConversationIfMember);
+
+    const joinSosIfRecipient = async (sosId) => {
+      if (typeof sosId !== 'string') return;
+      try {
+        const { rows } = await query(
+          'SELECT user_id, station_id FROM sos_alerts WHERE id = $1',
+          [sosId],
+        );
+        if (!rows[0]) return;
+        if (rows[0].user_id === socket.user.id) {
+          socket.join(`sos:${sosId}`);
+          return;
+        }
+        const recipients = await getRouteRecipients(rows[0].station_id);
+        if (recipients.userIds.includes(socket.user.id)) {
+          socket.join(`sos:${sosId}`);
+        }
+      } catch (error) {
+        console.error('[SOCKET SOS JOIN]', error.message);
+      }
+    };
 
     socket.on('join', (room) => {
-      if (typeof room === 'string' && (room.startsWith('sos:') || room.startsWith('conversation:'))) {
-        socket.join(room);
+      if (typeof room !== 'string') return;
+      if (room.startsWith('sos:')) {
+        void joinSosIfRecipient(room.slice(4));
+      } else if (room.startsWith('conversation:')) {
+        void joinConversationIfMember(room.slice(13));
       }
     });
 
@@ -61,13 +99,28 @@ export function setupSocket() {
     });
 
     socket.on('sos:ack', async ({ sosId }) => {
+      const { rows } = await query(
+        'SELECT station_id FROM sos_alerts WHERE id = $1',
+        [sosId],
+      );
+      if (!rows[0]) return;
+      const recipients = await getRouteRecipients(rows[0].station_id);
+      if (!recipients.userIds.includes(socket.user.id)) return;
       await query(
         `UPDATE sos_alerts SET status = 'acknowledged', dispatcher_id = $2 WHERE id = $1`,
         [sosId, socket.user.id],
       );
-      io.to('staff').emit('sos:updated', { sosId, status: 'acknowledged', by: socket.user.full_name });
+      for (const userId of recipients.userIds) {
+        io.to(`user:${userId}`).emit('sos:updated', {
+          sosId,
+          status: 'acknowledged',
+          by: socket.user.full_name,
+        });
+      }
     });
 
-    socket.on('disconnect', () => {});
+    socket.on('disconnect', () => {
+      endLiveStreamsForUser(socket.user.id);
+    });
   });
 }

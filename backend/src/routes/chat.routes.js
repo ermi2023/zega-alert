@@ -3,6 +3,7 @@ import { authenticate, requireRole } from '../middleware/auth.js';
 import {
   createConversation, myConversations, getMessages, sendMessage, listMessagesForAdmin,
   getEstimatedWait, rateConversation, getUnreadCount, markConversationRead,
+  createNearestStationConversation,
 } from '../controllers/chat.controller.js';
 
 const router = Router();
@@ -11,6 +12,7 @@ router.use(authenticate);
 router.get('/wait-time', getEstimatedWait);
 router.get('/unread-count', getUnreadCount);
 router.patch('/conversations/:id/read', markConversationRead);
+router.post('/conversations/nearest-station', requireRole('citizen'), createNearestStationConversation);
 router.post('/conversations', createConversation);
 router.get('/conversations', myConversations);
 router.get('/conversations/:id/messages', getMessages);

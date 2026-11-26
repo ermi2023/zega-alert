@@ -24,12 +24,13 @@ class LocationService {
 
   /// Try the GPS first, then the network fallback. Returns null if both fail.
   static Future<Position?> best({Duration gpsTimeout = const Duration(seconds: 10)}) async {
-    final gps = await _gps(gpsTimeout);
-    if (gps != null) return gps;
+    final position = await gps(timeout: gpsTimeout);
+    if (position != null) return position;
     return (await networkLocation())?.toPosition();
   }
 
-  static Future<Position?> _gps(Duration timeout) async {
+  /// Return a device GPS fix only. Use this when selecting a nearby station.
+  static Future<Position?> gps({Duration timeout = const Duration(seconds: 10)}) async {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) return null;
       var permission = await Geolocator.checkPermission();

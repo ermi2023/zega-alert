@@ -3,6 +3,7 @@ import { query } from '../config/db.js';
 import { ok, fail } from '../utils/response.js';
 import { io } from '../socket/socket.js';
 import { mirrorSet } from '../services/firebase.service.js';
+import { findNearestPoliceStation, getStationStaffIds } from '../services/police-station.service.js';
 
 export const createConversation = async (req, res) => {
   const { type = 'direct', title, participant_ids } = req.body;
@@ -26,6 +27,70 @@ export const createConversation = async (req, res) => {
   } catch (e) {
     await client.query('ROLLBACK');
     throw e;
+  } finally {
+    client.release();
+  }
+};
+
+export const createNearestStationConversation = async (req, res) => {
+  const { latitude, longitude } = req.body;
+  const station = await findNearestPoliceStation({ latitude, longitude });
+  if (!station) {
+    return fail(res, 'No active police station with a registered address and location is available nearby', 503);
+  }
+  const staffIds = await getStationStaffIds(station.id);
+  if (!staffIds.length) {
+    return fail(res, 'The nearest station has no active officers assigned yet. Please contact central dispatch.', 409);
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    let conversationId;
+    const existing = await client.query(
+      `SELECT c.id FROM conversations c
+       JOIN conversation_participants cp ON cp.conversation_id = c.id
+       WHERE c.police_station_id = $1 AND cp.user_id = $2
+       ORDER BY c.created_at DESC LIMIT 1`,
+      [station.id, req.user.id],
+    );
+    if (existing.rows[0]) {
+      conversationId = existing.rows[0].id;
+      await client.query(
+        `DELETE FROM conversation_participants cp
+         USING users u
+         WHERE cp.conversation_id = $1 AND cp.user_id = u.id
+           AND cp.user_id <> $2 AND u.role = 'police'
+           AND NOT (u.id = ANY($3::uuid[]))`,
+        [conversationId, req.user.id, staffIds],
+      );
+    } else {
+      const { rows } = await client.query(
+        `INSERT INTO conversations (type, title, police_station_id)
+         VALUES ('group', $1, $2) RETURNING id`,
+        [station.name, station.id],
+      );
+      conversationId = rows[0].id;
+    }
+
+    for (const userId of [req.user.id, ...staffIds]) {
+      await client.query(
+        `INSERT INTO conversation_participants (conversation_id, user_id)
+         VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+        [conversationId, userId],
+      );
+    }
+    await client.query('COMMIT');
+    ok(res, {
+      id: conversationId,
+      type: 'group',
+      title: station.name,
+      police_station_id: station.id,
+      station_address: station.address_text,
+    }, 'Station conversation ready', 201);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
   } finally {
     client.release();
   }

@@ -90,15 +90,18 @@ export default function Sos() {
   const [units, setUnits] = useState({});
   const [assignDialog, setAssignDialog] = useState(null);
   const [availableOfficers, setAvailableOfficers] = useState([]);
+  const [assignmentError, setAssignmentError] = useState(null);
   const [officers, setOfficers] = useState({});
   const [muted, setMuted] = useState(false);
   const [regionFilter, setRegionFilter] = useState('');
   const [subCityFilter, setSubCityFilter] = useState('');
   const [connected, setConnected] = useState(true);
   const [page, setPage] = useState(1);
+  const [liveStreams, setLiveStreams] = useState([]);
   const PER_PAGE = 20;
   const rowsRef = useRef([]);
   const mutedRef = useRef(muted);
+  const livePeersRef = useRef(new Map());
 
   const { playAlarm, showDesktopNotification } = useSosAlarm();
 
@@ -106,6 +109,20 @@ export default function Sos() {
 
   const load = () => api.get(`/sos${filter ? `?status=${filter}` : ''}`).then(setRows);
   useEffect(() => { load(); }, [filter]);
+
+  useEffect(() => {
+    let active = true;
+    api.get('/sos/live/active')
+      .then((offers) => {
+        if (!active || !Array.isArray(offers)) return;
+        setLiveStreams((current) => [
+          ...current.filter((stream) => !offers.some((offer) => offer.streamId === stream.streamId)),
+          ...offers,
+        ]);
+      })
+      .catch((error) => console.error('Could not load active SOS live streams:', error));
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => { rowsRef.current = rows; }, [rows]);
 
@@ -122,7 +139,7 @@ export default function Sos() {
     });
     socket.on('sos:new', (a) => {
       const alert = a.alert || a;
-      setRows((p) => (p.some((x) => x.id === alert.id) ? p : [alert, ...p]));
+      setRows((p) => [alert, ...p.filter((x) => x.id !== alert.id)]);
       socket.emit('join', `sos:${alert.id}`);
       playAlarm(mutedRef.current);
       showDesktopNotification(
@@ -139,6 +156,36 @@ export default function Sos() {
       setOfficers((prev) => ({ ...prev, [p.userId]: p }));
     });
     socket.on('dispatch:updated', ({ sosId }) => loadUnits(sosId));
+    socket.on('sos:live-offer', (offer) => {
+      setLiveStreams((current) => [
+        ...current.filter((stream) => stream.streamId !== offer.streamId),
+        { ...offer, status: 'ringing' },
+      ]);
+    });
+    socket.on('sos:live-state', (update) => {
+      setLiveStreams((current) => current.map((stream) =>
+        stream.streamId === update.streamId ? { ...stream, ...update } : stream
+      ));
+    });
+    socket.on('sos:live-ice', ({ streamId, candidate }) => {
+      const peer = livePeersRef.current.get(streamId);
+      if (!peer || !candidate) return;
+      if (peer.pc.remoteDescription) {
+        peer.pc.addIceCandidate(new RTCIceCandidate(candidate))
+          .catch((error) => {
+            updateLiveStream(streamId, { status: 'error', error: error.message });
+            endLiveStream({ sosId: peer.sosId, streamId });
+          });
+      } else {
+        peer.pendingRemoteCandidates.push(candidate);
+      }
+    });
+    socket.on('sos:live-ended', ({ streamId }) => {
+      const peer = livePeersRef.current.get(streamId);
+      peer?.pc.close();
+      livePeersRef.current.delete(streamId);
+      setLiveStreams((current) => current.filter((stream) => stream.streamId !== streamId));
+    });
     socket.on('connect', () => {
       setConnected(true);
       // Join each active SOS room so dispatch:updated events (emitted to
@@ -148,8 +195,116 @@ export default function Sos() {
         .forEach((s) => socket.emit('join', `sos:${s.id}`));
     });
     socket.on('disconnect', () => setConnected(false));
-    return () => socket.close();
+    return () => {
+      socket.close();
+      livePeersRef.current.forEach((peer, streamId) => {
+        peer.ending = true;
+        peer.pc.close();
+        api.post(`/sos/${peer.sosId}/live/end`, { streamId })
+          .catch((error) => console.error('Could not end SOS live stream:', error));
+      });
+      livePeersRef.current.clear();
+    };
   }, []);
+
+  const updateLiveStream = (streamId, changes) => {
+    setLiveStreams((current) => current.map((stream) =>
+      stream.streamId === streamId ? { ...stream, ...changes } : stream
+    ));
+  };
+
+  const endLiveStream = async (stream) => {
+    const peer = livePeersRef.current.get(stream.streamId);
+    if (peer?.ending) return;
+    if (peer) peer.ending = true;
+    try {
+      await api.post(`/sos/${stream.sosId}/live/end`, { streamId: stream.streamId });
+    } catch (error) {
+      if (peer) peer.ending = false;
+      updateLiveStream(stream.streamId, { status: 'error', error: error.message });
+      return;
+    }
+    peer?.pc.close();
+    livePeersRef.current.delete(stream.streamId);
+  };
+
+  const acceptLiveStream = async (stream) => {
+    updateLiveStream(stream.streamId, { status: 'connecting', error: null });
+    const pc = new RTCPeerConnection({
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+      ],
+    });
+    const peer = {
+      pc,
+      sosId: stream.sosId,
+      pendingRemoteCandidates: [],
+      pendingLocalCandidates: [],
+      answered: false,
+    };
+    livePeersRef.current.set(stream.streamId, peer);
+    pc.ontrack = (event) => {
+      if (event.streams[0]) {
+        updateLiveStream(stream.streamId, { remoteStream: event.streams[0] });
+      }
+    };
+    pc.onicecandidate = (event) => {
+      if (!event.candidate) return;
+      const candidate = event.candidate.toJSON();
+      if (!peer.answered) {
+        peer.pendingLocalCandidates.push(candidate);
+        return;
+      }
+      api.post(`/sos/${stream.sosId}/live/ice`, {
+        streamId: stream.streamId,
+        candidate,
+      }).catch((error) => {
+        updateLiveStream(stream.streamId, { status: 'error', error: error.message });
+        endLiveStream(stream);
+      });
+    };
+    pc.onconnectionstatechange = () => {
+      if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+        updateLiveStream(stream.streamId, {
+          status: 'error',
+          error: 'The live media connection was interrupted.',
+        });
+        if (!peer.ending) endLiveStream(stream);
+      }
+    };
+    try {
+      await pc.setRemoteDescription(stream.offer);
+      for (const candidate of peer.pendingRemoteCandidates) {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      }
+      peer.pendingRemoteCandidates = [];
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      await api.post(`/sos/${stream.sosId}/live/answer`, {
+        streamId: stream.streamId,
+        answer: { type: answer.type, sdp: answer.sdp },
+      });
+      peer.answered = true;
+      updateLiveStream(stream.streamId, { status: 'connected' });
+      for (const candidate of peer.pendingLocalCandidates) {
+        await api.post(`/sos/${stream.sosId}/live/ice`, {
+          streamId: stream.streamId,
+          candidate,
+        });
+      }
+      peer.pendingLocalCandidates = [];
+    } catch (error) {
+      pc.close();
+      livePeersRef.current.delete(stream.streamId);
+      updateLiveStream(stream.streamId, { status: 'error', error: error.message });
+      try {
+        await api.post(`/sos/${stream.sosId}/live/end`, { streamId: stream.streamId });
+      } catch {
+        // The dashboard already shows the negotiation failure.
+      }
+    }
+  };
 
   const rowIds = rows.map((s) => s.id).join(',');
   useEffect(() => {
@@ -167,15 +322,24 @@ export default function Sos() {
   const openAssign = async (sosId) => {
     try {
       const officers = await api.get('/auth/staff?q=');
-      setAvailableOfficers(officers.filter((o) => o.role === 'police' || o.role === 'dispatcher'));
+      const routeRecipientIds = rows.find((row) => row.id === sosId)?.route_recipient_ids || [];
+      setAvailableOfficers(officers.filter((officer) =>
+        routeRecipientIds.includes(officer.id) &&
+        (officer.role === 'police' || officer.role === 'dispatcher')));
     } catch { setAvailableOfficers([]); }
+    setAssignmentError(null);
     setAssignDialog(sosId);
   };
 
   const assignUnits = async (sosId, officerIds) => {
-    await api.post(`/dispatch/${sosId}/assign`, { officer_ids: officerIds });
-    loadUnits(sosId);
-    setAssignDialog(null);
+    try {
+      await api.post(`/dispatch/${sosId}/assign`, { officer_ids: officerIds });
+      loadUnits(sosId);
+      setAssignDialog(null);
+      setAssignmentError(null);
+    } catch (error) {
+      setAssignmentError(error.message);
+    }
   };
 
   const removeUnit = async (sosId, assignmentId) => {
@@ -213,8 +377,18 @@ export default function Sos() {
   const paged = filteredRows.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
 
   const exportCsv = () => {
-    const headers = ['Time','User','Phone','Location','Region','Status'];
-    const csv = [headers, ...filteredRows.map(s => [s.created_at, s.user_name||'', s.user_phone||'', s.address_text||'', s.region||'', s.status])].map(r => r.map(c => `"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+    const headers = ['Time','User','Phone','Location','Region','Routed to','Status'];
+    const csv = [headers, ...filteredRows.map(s => [
+      s.created_at,
+      s.user_name || '',
+      s.user_phone || '',
+      s.address_text || '',
+      s.region || '',
+      s.dispatch_route === 'nearest_station'
+        ? s.station_name || 'Nearest station'
+        : `Central dispatch${s.station_name ? ` (${s.station_name} unstaffed)` : ''}`,
+      s.status,
+    ])].map(r => r.map(c => `"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv'})); a.download = 'sos-alerts.csv'; a.click();
   };
 
@@ -243,9 +417,58 @@ export default function Sos() {
         <LiveMap alerts={activeRows} officers={officerPts} height={360} />
       </div>
 
+      {liveStreams.length > 0 && (
+        <div className="panel" style={{ marginBottom: 16, padding: 12 }}>
+          <div className="section-head" style={{ marginBottom: 10 }}>
+            <h2>Live SOS audio/video<small>Citizen-started streams</small></h2>
+          </div>
+          {liveStreams.map((stream) => {
+            const hasLocalPeer = livePeersRef.current.has(stream.streamId);
+            return (
+              <div key={stream.streamId} style={{ marginBottom: 10, padding: 10, border: '1px solid #fca5a5', borderRadius: 8, background: '#fff7f7' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <strong>Live {stream.mediaType} from {stream.callerName}</strong>
+                  <span>SOS {stream.sosId.slice(0, 8)}</span>
+                  <span>
+                    {stream.status === 'ringing'
+                      ? 'Waiting for dispatch to accept'
+                      : stream.status === 'connected'
+                        ? `Connected to ${stream.dispatcherName || 'dispatch'}`
+                        : stream.status}
+                  </span>
+                  {stream.status === 'ringing' && (
+                    <>
+                      <button className="btn small" onClick={() => acceptLiveStream(stream)}>Accept live stream</button>
+                      <button className="btn small danger" onClick={() => endLiveStream(stream)}>Decline</button>
+                    </>
+                  )}
+                  {hasLocalPeer && ['connected', 'connecting', 'error'].includes(stream.status) && (
+                    <button className="btn small danger" onClick={() => endLiveStream(stream)}>End stream</button>
+                  )}
+                  {stream.error && <span style={{ color: '#b91c1c' }}>{stream.error}</span>}
+                </div>
+                {stream.remoteStream && (
+                  <video
+                    autoPlay
+                    playsInline
+                    controls
+                    ref={(element) => {
+                      if (element && element.srcObject !== stream.remoteStream) {
+                        element.srcObject = stream.remoteStream;
+                      }
+                    }}
+                    style={{ display: 'block', width: 'min(100%, 480px)', maxHeight: 300, marginTop: 8, background: '#111', borderRadius: 6 }}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <div className="panel">
         <table>
-          <thead><tr><th>{t('sos.time')}</th><th>{t('sos.user')}</th><th>{t('reports.location')}</th><th>{t('sos.region')}</th><th>{t('sos.status')}</th><th>{t('sos.actions')}</th></tr></thead>
+          <thead><tr><th>{t('sos.time')}</th><th>{t('sos.user')}</th><th>{t('reports.location')}</th><th>{t('sos.region')}</th><th>Routed to</th><th>{t('sos.status')}</th><th>{t('sos.actions')}</th></tr></thead>
           <tbody>
             {paged.map((s) => (
               <tr key={s.id}>
@@ -253,6 +476,9 @@ export default function Sos() {
                 <td>{s.user_name || '—'}<br /><small>{s.user_phone}</small></td>
                 <td>{s.address_text || `${s.latitude?.toFixed(4)}, ${s.longitude?.toFixed(4)}`}</td>
                 <td>{s.region || '—'}</td>
+                <td>{s.dispatch_route === 'nearest_station'
+                  ? s.station_name || 'Nearest station'
+                  : `Central dispatch${s.station_name ? ` (${s.station_name} unstaffed)` : ''}`}</td>
                 <td><span className={`badge ${badge(s.status)}`}>{s.status}</span>
                   {s.geofence && !s.geofence.inside_safety_zone && (
                     <div className="msg err" style={{ margin: '4px 0 0' }}>⚠ Outside safety zones</div>
@@ -275,7 +501,7 @@ export default function Sos() {
             ))}
             {paged.map((s) => (
               <tr key={`${s.id}-units`}>
-                <td colSpan={6} style={{ padding: 0 }}>
+                <td colSpan={7} style={{ padding: 0 }}>
                   <div style={{ padding: '8px 16px', background: '#f8f9fa', borderTop: '1px solid #eee' }}>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
                       <strong style={{ fontSize: 13 }}>{t('sos.assignedUnits')}</strong>
@@ -341,6 +567,7 @@ export default function Sos() {
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={{ background: 'white', borderRadius: 12, padding: 24, maxWidth: 400, width: '90%' }}>
             <h3>{t('sos.assignUnits')}</h3>
+            {assignmentError && <p role="alert" style={{ color: '#b91c1c' }}>{assignmentError}</p>}
             <div style={{ maxHeight: 300, overflow: 'auto' }}>
               {availableOfficers.map((o) => (
                 <label key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: '1px solid #eee' }}>

@@ -407,7 +407,7 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
             );
           }
         } else {
-          pos = await LocationService.best();
+          pos = await LocationService.gps();
         }
       } catch (_) {}
       final result = await Api.postOrQueue('/reports', {
@@ -425,9 +425,16 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
         'is_anonymous': _anonymous,
         'evidence': _evidence,
       });
+      final dispatchMessage = result['dispatch_recipient_count'] == 0
+          ? 'Report saved, but no station officers or central dispatch recipients are available. Please contact emergency services directly.'
+          : result['dispatch_route'] == 'central_dispatch'
+              ? result['station_name'] != null
+                  ? 'Nearest station has no assigned officers. Report sent to central dispatch.'
+                  : 'Report submitted to central dispatch because no nearby registered station/location was available.'
+              : 'Report submitted to ${result['station_name'] ?? 'the nearest police station'}. Thank you.';
       setState(() => _status = result['queued'] == true
           ? 'You are offline. ${draft ? 'Draft' : 'Report'} saved and will be synced automatically when back online.'
-          : (draft ? 'Draft saved. You can submit it later from My Reports.' : 'Report submitted. Thank you.'));
+          : (draft ? 'Draft saved. You can submit it later from My Reports.' : dispatchMessage));
   _title.clear();
   _desc.clear();
   _manualAddress.clear();
@@ -442,7 +449,7 @@ class _CrimeReportScreenState extends State<CrimeReportScreen> {
             ? 'Saved offline. ${draft ? 'Your draft' : 'Your report'} will sync automatically when you are back online.'
             : (draft
                 ? 'Draft saved. You can finish and submit it from My Reports.'
-                : 'Report submitted successfully. Thank you for helping keep your community safe.')),
+                : dispatchMessage)),
       ));
       Navigator.of(context).pop();
     } catch (e) {

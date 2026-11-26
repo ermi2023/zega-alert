@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'video_call_screen.dart';
 import '../services/api.dart';
 
 class CallbackSessionScreen extends StatefulWidget {
@@ -45,6 +46,37 @@ class _CallbackSessionScreenState extends State<CallbackSessionScreen> {
     }
   }
 
+  Future<void> _startVideoCall() async {
+    final cb = widget.callback;
+    final currentUserId = Api.userId?.toString();
+    final citizenId = cb['citizen_id']?.toString();
+    final officerId = cb['officer_id']?.toString();
+    final targetUserId = currentUserId == citizenId
+        ? officerId
+        : currentUserId == officerId
+            ? citizenId
+            : null;
+    if (targetUserId == null || targetUserId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not find the other call participant.')),
+      );
+      return;
+    }
+
+    final targetName = targetUserId == officerId
+        ? cb['officer_name'] ?? 'Officer'
+        : cb['citizen_name'] ?? 'Citizen';
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => VideoCallScreen(
+          targetUserId: targetUserId,
+          targetName: targetName.toString(),
+          callType: 'video',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cb = widget.callback;
@@ -75,7 +107,21 @@ class _CallbackSessionScreenState extends State<CallbackSessionScreen> {
             const SizedBox(height: 24),
             Text(elapsed, textAlign: TextAlign.center, style: const TextStyle(fontSize: 32)),
             const SizedBox(height: 8),
-            const Text('Connected · this session stays inside ZEGA-ALERT', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 12)),
+            Text(
+              mode == 'video'
+                  ? 'Callback session active · start a live video call when ready'
+                  : 'Connected · this session stays inside ZEGA-ALERT',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+            if (mode == 'video') ...[
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: _startVideoCall,
+                icon: const Icon(Icons.videocam),
+                label: const Text('Start live video conversation'),
+              ),
+            ],
             if (cb['notes'] != null && cb['notes'].toString().isNotEmpty) ...[
               const SizedBox(height: 20),
               Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(cb['notes'].toString()))),

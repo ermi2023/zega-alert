@@ -485,7 +485,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         const SizedBox(height: 4),
         if (!_loggedIn) _guestBanner(loc),
-        _category('Help & accessibility', Icons.accessible_forward, [
+        _category(loc.helpAndAccessibility, Icons.accessible_forward, [
           Semantics(
             label: 'People of Determination actions. Request a direct call or record a sign language video.',
             child: const PodActions(),
@@ -493,19 +493,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 8),
           Semantics(
             label:
-                'Police and rescue emergency contacts. Police 991, rescue 907.',
+                '${loc.policeRescueContacts}. Police 991, rescue 907.',
             child: ListTile(
               leading: const Icon(Icons.local_police_outlined),
-              title: const Text('Police and rescue contacts'),
-              subtitle: const Text('Police 991 · Ambulance / rescue 907'),
+              title: Text(loc.policeRescueContacts),
+              subtitle: Text('${loc.police} 991 · ${loc.ambulanceRescue} 907'),
               trailing: const Icon(Icons.chevron_right),
               onTap: _contact,
             ),
           ),
         ]),
         if (_loggedIn) ...[
-          _profileHeader(),
-          _category('Personal information', Icons.person_outline, [
+          _profileHeader(loc),
+          _category(loc.personalInformation, Icons.person_outline, [
             Semantics(
               label: 'Full name input',
               child: Form(
@@ -529,8 +529,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     TextFormField(
                       controller: _email,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: 'Email address',
+                      decoration: InputDecoration(
+                        labelText: loc.emailAddress,
                         prefixIcon: Icon(Icons.email_outlined),
                         border: OutlineInputBorder(),
                       ),
@@ -540,7 +540,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
                                 .hasMatch(email)
                             ? null
-                            : 'Enter a valid email address.';
+                            : loc.validEmailRequired;
                       },
                     ),
                   ],
@@ -548,7 +548,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            _accountDetails(),
+            _accountDetails(loc),
             _section(loc.locationLabel, Icons.location_on_outlined),
             Card(
               color: const Color(0xFFEAF2FF),
@@ -556,12 +556,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   SwitchListTile(
                     secondary: const Icon(Icons.health_and_safety_outlined),
-                    title: const Text('Safety Zone entry alerts'),
-                    subtitle: const Text(
-                      'When enabled, ZEGA Alert checks your location in the '
-                      'background and alerts you when you enter an active '
-                      'published Safety Zone. Available on Android.',
-                    ),
+                    title: Text(loc.safetyZoneEntryAlerts),
+                    subtitle: Text(loc.safetyZoneEntryAlertsDescription),
                     value: _safetyZoneTrackingEnabled,
                     onChanged: _safetyZoneTrackingBusy ||
                             kIsWeb ||
@@ -575,22 +571,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     padding: EdgeInsets.fromLTRB(16, 0, 16, 14),
                     child: Align(
                       alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Precise location for these alerts stays on this '
-                        'device and is not uploaded. Android shows an ongoing '
-                        'notification while monitoring; this can use more '
-                        'battery. SOS and report actions may use location '
-                        'separately. Your saved Region/Sub-city fields remain '
-                        'the manual fallback and still control area-based '
-                        'information.',
-                      ),
+                      child: Text(loc.safetyZoneLocationPrivacy),
                     ),
                   ),
                 ],
               ),
             ),
             Semantics(
-              label: 'Region dropdown. Currently set to $_region.',
+              label: loc.regionSelectedSemantics(_region),
               child: DropdownButtonFormField<String>(
                 value: ethiopianRegions.contains(_region) ? _region : null,
                 decoration: InputDecoration(
@@ -612,7 +600,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             if ((subCitiesByRegion[_region] ?? []).isNotEmpty) ...[
               const SizedBox(height: 12),
               Semantics(
-                label: 'Sub city dropdown. Currently set to $_subCity.',
+                label: loc.subCitySelectedSemantics(_subCity),
                 child: DropdownButtonFormField<String>(
                   value:
                       (subCitiesByRegion[_region] ?? const []).contains(
@@ -634,16 +622,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ], controller: _profileTileController),
         ],
         if (_loggedIn) ...[
-          _category('Security', Icons.lock_outline, [
-            _changePasswordForm(),
+          _category(loc.security, Icons.lock_outline, [
+            _changePasswordForm(loc),
             const SizedBox(height: 12),
             _identityVerification(loc),
           ]),
         ],
-        _category('Preferences', Icons.tune, [
+        _category(loc.preferences, Icons.tune, [
           _section(loc.languageLabel, Icons.language),
           Semantics(
-            label: 'Preferred language dropdown. Currently set to $_language.',
+            label: loc.languageSelectedSemantics(_language),
             child: DropdownButtonFormField<String>(
               value: _language,
               decoration: InputDecoration(
@@ -696,22 +684,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         ]),
-        _category('Offline data', Icons.cloud_download_outlined, [
+        _category(loc.offlineData, Icons.cloud_download_outlined, [
           SwitchListTile(
-            title: const Text('Save wanted and missing-person photos'),
-            subtitle: const Text(
-              'Photos you view are stored on this device for offline access. '
-              'This is off by default.',
-            ),
+            title: Text(loc.savePersonPhotos),
+            subtitle: Text(loc.savePersonPhotosDescription),
             value: _personPhotoCachingEnabled,
             onChanged: _personPhotoCacheBusy ? null : _setPersonPhotoCaching,
           ),
           ListTile(
             leading: const Icon(Icons.delete_outline),
-            title: const Text('Clear saved person photos'),
+            title: Text(loc.clearSavedPhotos),
             subtitle: Text(
-              '$_cachedPersonPhotoCount photos · '
-              '${_formatStorageSize(_cachedPersonPhotoBytes)} used',
+              loc.photosCountAndStorage(
+                _cachedPersonPhotoCount,
+                _formatStorageSize(_cachedPersonPhotoBytes),
+              ),
             ),
             trailing: _personPhotoCacheBusy
                 ? const SizedBox(
@@ -730,18 +717,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const Padding(
               padding: EdgeInsets.only(bottom: 12),
               child: Text(
-                'View official safety areas published by local authorities. '
-                'New or changed areas and emergency incidents inside a zone '
-                'appear in Notifications; push alerts require device '
-                'notifications to be enabled. This information does not '
-                'guarantee safety.',
+                loc.officialSafetyAreasDescription,
               ),
             ),
             if (_geofences.isEmpty)
               const Padding(
                 padding: EdgeInsets.only(bottom: 12),
                 child: Text(
-                  'No official safety areas are available for this region yet.',
+                  loc.noOfficialSafetyAreas,
                 ),
               ),
             ..._geofences.map((g) {
@@ -749,7 +732,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               final name = zone['label'] ?? zone['name'] ?? 'Zone';
               return Semantics(
                 label:
-                    'Official safety area: $name. Type: ${zone['type'] ?? 'zone'}.',
+                    loc.officialSafetyArea(name, zone['type'] ?? 'zone'),
                 child: Card(
                   child: ListTile(
                     dense: true,
@@ -774,7 +757,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           '${zone['radius_m']} m radius',
                         if (zone['polygon'] is List &&
                             (zone['polygon'] as List).length >= 3)
-                          'Mapped boundary',
+                          loc.mappedBoundary,
                       ].join(' · '),
                     ),
                     trailing: const Icon(Icons.chevron_right),
@@ -1045,7 +1028,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _profileHeader() {
+  Widget _profileHeader(AppLocalizations loc) {
     final name = (_profile['full_name'] ?? _name.text).toString().trim();
     final phone = (_profile['phone'] ?? '').toString();
     final verified = _profile['is_identity_verified'] == true;
@@ -1074,7 +1057,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    name.isEmpty ? 'Citizen profile' : name,
+                    name.isEmpty ? loc.citizenProfile : name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -1099,7 +1082,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         vertical: 4,
                       ),
                       child: Text(
-                        verified ? 'Verified account' : 'Unverified account',
+                        verified ? loc.verifiedAccount : loc.unverifiedAccount,
                         style: TextStyle(
                           color: verified
                               ? const Color(0xFF166534)
@@ -1114,7 +1097,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             IconButton(
-              tooltip: 'Edit profile',
+              tooltip: loc.editProfile,
               onPressed: _editProfile,
               icon: const Icon(Icons.edit_outlined, color: Color(0xFF2563EB)),
             ),
@@ -1124,12 +1107,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _accountDetails() {
+  Widget _accountDetails(AppLocalizations loc) {
     final createdAt = DateTime.tryParse(
       (_profile['created_at'] ?? '').toString(),
     );
     final formattedDate = createdAt == null
-        ? 'Not available'
+        ? loc.notAvailable
         : DateFormat.yMMMd().format(createdAt.toLocal());
     final verified = _profile['is_identity_verified'] == true;
     return Card(
@@ -1138,15 +1121,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ListTile(
             dense: true,
             leading: const Icon(Icons.phone_outlined),
-            title: const Text('Phone number'),
-            subtitle: Text((_profile['phone'] ?? 'Not available').toString()),
+            title: Text(loc.phone),
+            subtitle: Text((_profile['phone'] ?? loc.notAvailable).toString()),
             trailing: const Icon(Icons.lock_outline, size: 18),
           ),
           const Divider(height: 1, indent: 56),
           ListTile(
             dense: true,
             leading: const Icon(Icons.calendar_today_outlined),
-            title: const Text('Member since'),
+            title: Text(loc.memberSince),
             subtitle: Text(formattedDate),
           ),
           const Divider(height: 1, indent: 56),
@@ -1156,15 +1139,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               verified ? Icons.verified_outlined : Icons.info_outline,
               color: verified ? const Color(0xFF16A34A) : null,
             ),
-            title: const Text('Verification status'),
-            subtitle: Text(verified ? 'Verified' : 'Unverified'),
+            title: Text(loc.verificationStatus),
+            subtitle: Text(verified ? loc.verified : loc.notVerified),
           ),
         ],
       ),
     );
   }
 
-  Widget _changePasswordForm() {
+  Widget _changePasswordForm(AppLocalizations loc) {
     InputDecoration decoration(String label) => InputDecoration(
       labelText: label,
       prefixIcon: const Icon(Icons.lock_outline),
@@ -1190,9 +1173,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 controller: _currentPassword,
                 obscureText: !_showPasswords,
                 textInputAction: TextInputAction.next,
-                decoration: decoration('Current password'),
+                decoration: decoration(loc.currentPassword),
                 validator: (value) => value == null || value.isEmpty
-                    ? 'Enter your current password.'
+                    ? loc.currentPasswordRequired
                     : null,
               ),
               const SizedBox(height: 12),
@@ -1200,20 +1183,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 controller: _newPassword,
                 obscureText: !_showPasswords,
                 textInputAction: TextInputAction.next,
-                decoration: decoration('New password'),
+                decoration: decoration(loc.newPassword),
                 validator: (value) => value != null && value.length >= 8
                     ? null
-                    : 'Use at least 8 characters.',
+                    : loc.passwordMinimumLength,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _confirmPassword,
                 obscureText: !_showPasswords,
                 textInputAction: TextInputAction.done,
-                decoration: decoration('Confirm new password'),
+                decoration: decoration(loc.confirmNewPassword),
                 validator: (value) => value == _newPassword.text
                     ? null
-                    : 'Passwords do not match.',
+                    : loc.passwordsDoNotMatch,
               ),
               if (_passwordStatus != null) ...[
                 const SizedBox(height: 10),
@@ -1240,7 +1223,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Update password'),
+                      : Text(loc.updatePassword),
                 ),
               ),
             ],

@@ -334,5 +334,15 @@
   "callbackModeVoice": "ድምጺ",
   "callbackModeVideo": "ቪድዮ",
   "callbackModeChat": "ጽሑፍ",
-  "accessibilityActionsDescription": "ቀጥታ ጻውዒት ሕተት ወይ ቪድዮ ቋንቋ ምልክት ቅረጽ።"
+  "accessibilityActionsDescription": "ቀጥታ ጻውዒት ሕተት ወይ ቪድዮ ቋንቋ ምልክት ቅረጽ።",
+  "switchToStreetMap": "ናብ ናይ ጎደና ካርታ ቀይር",
+  "switchToSatelliteImagery": "ናብ ስእሊ ሳተላይት ቀይር",
+  "areaBoundaryNotAvailable": "ዶብ እቲ ከባቢ ገና ኣይተረኽበን።",
+  "safetyArea": "ከባቢ ድሕነት",
+  "officialMappedBoundary": "ብወግዒ ኣብ ካርታ ዝተሰኣለ ዶብ። ኣብ ውሽጡ ዘሎ ሪፖርት SOS ንሰራሕተኛታት ህጹጽ ኩነታት ይረአ።",
+  "officialRadiusBoundary": "ወግዓዊ ከባቢ · ራድየስ {radius} ሜትር። ኣብ ውሽጡ ዘሎ ሪፖርት SOS ንሰራሕተኛታት ህጹጽ ኩነታት ይረአ።",
+  "safetyZoneSavedBoundaryWarning": "ኣብ መሳርሒ ዘሎ ምልክታ ነቲ ዝተዓቀበ ዶባት ዞባ ይጥቀም ኣሎ። ንምሕዳስ እንደገና ተራኸብን ዞባታት ድሕነት ኣሐድስን።",
+  "loadingSafetyZones": "ዞባታት ድሕነት ይጽዓን ኣሎ",
+  "retryLoadingSafetyZones": "ዞባታት ድሕነት እንደገና ኣጽዕን",
+  "openMapAndBoundary": "ካርታን ዶብን ክፈት።"
 }

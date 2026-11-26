@@ -334,5 +334,15 @@
   "callbackModeVoice": "sagalee",
   "callbackModeVideo": "viidiyoo",
   "callbackModeChat": "barreeffama",
-  "accessibilityActionsDescription": "Bilbila kallattiin gaafadhu yookaan viidiyoo afaan mallattoo waraabi."
+  "accessibilityActionsDescription": "Bilbila kallattiin gaafadhu yookaan viidiyoo afaan mallattoo waraabi.",
+  "switchToStreetMap": "Kaartaa daandii jijjiiri",
+  "switchToSatelliteImagery": "Suuraa saatalaayitii jijjiiri",
+  "areaBoundaryNotAvailable": "Daangaan naannoo ammaa hin jiru.",
+  "safetyArea": "Naannoo nageenyaa",
+  "officialMappedBoundary": "Daangaa kaartaan mootummaa kaa'ame. Gabaasni SOS keessa jiru hojjettoota balaa hatattamaaf ni mul'ata.",
+  "officialRadiusBoundary": "Naannoo mootummaa · raadiyeesii meetira {radius}. Gabaasni SOS keessa jiru hojjettoota balaa hatattamaaf ni mul'ata.",
+  "safetyZoneSavedBoundaryWarning": "Akeekkachiisni meeshaa irratti daangaa aanaa kuufame fayyadamaa jira. Haaromsuuf deebi'ii qunnamiitii Aanaalee Nageenyaa haaromsi.",
+  "loadingSafetyZones": "Aanaalee nageenyaa fe'aa jira",
+  "retryLoadingSafetyZones": "Aanaalee nageenyaa irra deebi'ii fe'i",
+  "openMapAndBoundary": "Kaartaa fi daangaa bani."
 }

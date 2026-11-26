@@ -334,5 +334,15 @@
   "callbackModeVoice": "ድምፅ",
   "callbackModeVideo": "ቪዲዮ",
   "callbackModeChat": "ጽሑፍ",
-  "accessibilityActionsDescription": "ቀጥተኛ ጥሪ ይጠይቁ ወይም የምልክት ቋንቋ ቪዲዮ ይቅረጹ።"
+  "accessibilityActionsDescription": "ቀጥተኛ ጥሪ ይጠይቁ ወይም የምልክት ቋንቋ ቪዲዮ ይቅረጹ።",
+  "switchToStreetMap": "ወደ መደበኛ ካርታ ይቀይሩ",
+  "switchToSatelliteImagery": "ወደ ሳተላይት ምስል ይቀይሩ",
+  "areaBoundaryNotAvailable": "የአካባቢው ወሰን ገና አልተገኘም።",
+  "safetyArea": "የደህንነት አካባቢ",
+  "officialMappedBoundary": "በይፋ የተቀረጸ ወሰን። በዚህ ውስጥ የተላኩ SOS ሪፖርቶች ለአደጋ ጊዜ ሰራተኞች ይታያሉ።",
+  "officialRadiusBoundary": "ይፋዊ አካባቢ · {radius} ሜትር ራዲየስ። በዚህ ውስጥ የተላኩ SOS ሪፖርቶች ለአደጋ ጊዜ ሰራተኞች ይታያሉ።",
+  "safetyZoneSavedBoundaryWarning": "በመሣሪያው ላይ ያሉ ማሳወቂያዎች የተቀመጡትን የዞን ወሰኖች እየተጠቀሙ ነው። እነሱን ለማዘመን እንደገና ይገናኙ እና የደህንነት ዞኖችን ያድሱ።",
+  "loadingSafetyZones": "የደህንነት ዞኖች በመጫን ላይ",
+  "retryLoadingSafetyZones": "የደህንነት ዞኖችን እንደገና ለመጫን ይሞክሩ",
+  "openMapAndBoundary": "ካርታውን እና ወሰኑን ይክፈቱ።"
 }

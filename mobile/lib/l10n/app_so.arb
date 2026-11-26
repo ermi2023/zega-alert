@@ -334,5 +334,15 @@
   "callbackModeVoice": "cod",
   "callbackModeVideo": "muuqaal",
   "callbackModeChat": "qoraal",
-  "accessibilityActionsDescription": "Codso wicitaan toos ah ama duub muuqaal luqadda calaamadaha ah."
+  "accessibilityActionsDescription": "Codso wicitaan toos ah ama duub muuqaal luqadda calaamadaha ah.",
+  "switchToStreetMap": "U beddel khariidadda waddooyinka",
+  "switchToSatelliteImagery": "U beddel sawirka dayax-gacmeedka",
+  "areaBoundaryNotAvailable": "Xuduudda aagga weli lama hayo.",
+  "safetyArea": "Aag badbaado",
+  "officialMappedBoundary": "Xuduud rasmi ah oo khariidadda lagu calaamadeeyey. Warbixinnada SOS ee gudaha waxaa arki kara shaqaalaha gurmadka.",
+  "officialRadiusBoundary": "Aag rasmi ah · dhexroor {radius} m. Warbixinnada SOS ee gudaha waxaa arki kara shaqaalaha gurmadka.",
+  "safetyZoneSavedBoundaryWarning": "Digniinaha gelitaanka qalabku waxay isticmaalayaan xuduudihii aagga ee kaydsanaa. Dib ugu xidh oo cusboonaysii Aagagga Badbaadada si aad u cusboonaysiiso.",
+  "loadingSafetyZones": "Waxaa la soo dejinayaa aagagga badbaadada",
+  "retryLoadingSafetyZones": "Mar kale isku day soo dejinta aagagga badbaadada",
+  "openMapAndBoundary": "Fur khariidadda iyo xuduudda."
 }

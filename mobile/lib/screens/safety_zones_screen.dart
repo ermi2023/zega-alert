@@ -25,6 +25,7 @@ class _SafetyZonesScreenState extends State<SafetyZonesScreen> {
   }
 
   Future<void> _load() async {
+    final loc = AppLocalizations.of(context);
     setState(() {
       _loading = true;
       _error = null;
@@ -47,9 +48,7 @@ class _SafetyZonesScreenState extends State<SafetyZonesScreen> {
           }
           await SafetyZoneTrackingService.updatePublishedZones(allZones);
         } catch (error) {
-          _trackingRefreshWarning =
-              'On-device entry alerts are using saved zone boundaries. '
-              'Reconnect and refresh Safety Zones to update them.';
+          _trackingRefreshWarning = loc.safetyZoneSavedBoundaryWarning;
         }
       }
       if (mounted) setState(() => _geofences = result);
@@ -121,7 +120,7 @@ class _SafetyZonesScreenState extends State<SafetyZonesScreen> {
               padding: EdgeInsets.all(28),
               child: Center(
                 child: CircularProgressIndicator(
-                  semanticsLabel: 'Loading safety zones',
+                semanticsLabel: loc.loadingSafetyZones,
                 ),
               ),
             )
@@ -131,7 +130,7 @@ class _SafetyZonesScreenState extends State<SafetyZonesScreen> {
                 leading: const Icon(Icons.error_outline, color: Colors.red),
                 title: Text(_error!),
                 trailing: IconButton(
-                  tooltip: 'Retry loading safety zones',
+                  tooltip: loc.retryLoadingSafetyZones,
                   onPressed: _load,
                   icon: const Icon(Icons.refresh),
                 ),
@@ -157,9 +156,9 @@ class _SafetyZonesScreenState extends State<SafetyZonesScreen> {
               else
                 ..._geofences.map((item) {
                   final zone = Map<String, dynamic>.from(item as Map);
-                  final name = (zone['label'] ?? zone['name'] ?? 'Safety zone')
+                  final name = (zone['label'] ?? zone['name'] ?? loc.safetyZones)
                       .toString();
-                  final type = (zone['type'] ?? 'area').toString().replaceAll(
+                  final type = (zone['type'] ?? loc.safetyArea).toString().replaceAll(
                     '_',
                     ' ',
                   );
@@ -171,7 +170,7 @@ class _SafetyZonesScreenState extends State<SafetyZonesScreen> {
                     child: Semantics(
                       button: true,
                       label:
-                          '$name, $type. ${location.isEmpty ? '' : '$location. '}Open map and boundary.',
+                          '$name, $type. ${location.isEmpty ? '' : '$location. '}${loc.openMapAndBoundary}',
                       child: ListTile(
                         leading: const Icon(
                           Icons.location_on_outlined,

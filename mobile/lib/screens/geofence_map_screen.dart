@@ -75,15 +75,15 @@ class _GeofenceMapScreenState extends State<GeofenceMapScreen> {
         actions: [
           IconButton(
             tooltip: _satellite
-                ? 'Switch to street map'
-                : 'Switch to satellite imagery',
+                  ? loc.switchToStreetMap
+                  : loc.switchToSatelliteImagery,
             onPressed: () => setState(() => _satellite = !_satellite),
             icon: Icon(_satellite ? Icons.map_outlined : Icons.satellite_alt),
           ),
         ],
       ),
       body: center == null
-          ? const Center(child: Text('The area boundary is not available yet.'))
+          ? Center(child: Text(loc.areaBoundaryNotAvailable))
           : Column(
               children: [
                 Expanded(
@@ -138,16 +138,16 @@ class _GeofenceMapScreenState extends State<GeofenceMapScreen> {
                     child: ListTile(
                       leading: const Icon(Icons.verified_user_outlined),
                       title: Text(
-                        (geofence['type'] ?? 'safety area')
+                        (geofence['type'] ?? loc.safetyArea)
                             .toString()
                             .replaceAll('_', ' '),
                       ),
                       subtitle: Text(
                         hasPolygon
-                            ? 'Official mapped boundary. SOS reports inside it are highlighted for emergency staff.'
+                            ? loc.officialMappedBoundary
                             : radius != null && radius > 0
-                            ? 'Official area · ${radius.round()} m radius. SOS reports inside it are highlighted for emergency staff.'
-                            : 'The area boundary is not available yet.',
+                            ? loc.officialRadiusBoundary(radius.round())
+                            : loc.areaBoundaryNotAvailable,
                       ),
                     ),
                   ),

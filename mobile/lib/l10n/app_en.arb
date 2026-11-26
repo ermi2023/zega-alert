@@ -334,5 +334,15 @@
   "callbackModeVoice": "voice",
   "callbackModeVideo": "video",
   "callbackModeChat": "chat",
-  "accessibilityActionsDescription": "Request a direct call or record a sign-language video."
+  "accessibilityActionsDescription": "Request a direct call or record a sign-language video.",
+  "switchToStreetMap": "Switch to street map",
+  "switchToSatelliteImagery": "Switch to satellite imagery",
+  "areaBoundaryNotAvailable": "The area boundary is not available yet.",
+  "safetyArea": "Safety area",
+  "officialMappedBoundary": "Official mapped boundary. SOS reports inside it are highlighted for emergency staff.",
+  "officialRadiusBoundary": "Official area · {radius} m radius. SOS reports inside it are highlighted for emergency staff.",
+  "safetyZoneSavedBoundaryWarning": "On-device entry alerts are using saved zone boundaries. Reconnect and refresh Safety Zones to update them.",
+  "loadingSafetyZones": "Loading safety zones",
+  "retryLoadingSafetyZones": "Retry loading safety zones",
+  "openMapAndBoundary": "Open map and boundary."
 }

@@ -116,8 +116,8 @@ class _SafetyZonesScreenState extends State<SafetyZonesScreen> {
           ),
           const SizedBox(height: 8),
           if (_loading)
-            const Padding(
-              padding: EdgeInsets.all(28),
+            Padding(
+              padding: const EdgeInsets.all(28),
               child: Center(
                 child: CircularProgressIndicator(
                   semanticsLabel: loc.loadingSafetyZones,

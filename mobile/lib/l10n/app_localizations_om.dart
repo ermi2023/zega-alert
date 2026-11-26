@@ -154,15 +154,15 @@ class AppLocalizationsOm extends AppLocalizations {
 
   @override
   String get safetyZonesHomeDescription =>
-      'Safety-zone updates and emergency incidents inside a zone are added to your notification inbox and sent as push alerts when notifications are enabled. Select an area below to see its map and boundary. Follow local instructions; a zone does not guarantee safety.';
+      'Jijjiiramoonni naannoo nageenyaa fi balaa tasaa naannoo sana keessatti mudatan sanduuqa beeksisaa keessatti galmaa\'u; beeksisni bilbilaa yoo hayyamame ni ergama. Kaartaa fi daangaa isaa ilaaluuf naannoo armaan gadii filadhu. Qajeelfama mootummaa naannoo hordofi; naannoon sun nageenya hin mirkaneessu.';
 
   @override
   String get noSafetyZonesAvailable =>
-      'No official safety zones are currently published for your region.';
+      'Naannoo keessaniif yeroo ammaa naannoon nageenyaa mootummaa beeksifame hin jiru.';
 
   @override
   String get safetyZonesLoadFailed =>
-      'Safety-zone information could not be loaded. Try again.';
+      'Odeeffannoo naannoo nageenyaa fe\'uun hin danda\'amne. Irra deebi\'ii yaali.';
 
   @override
   String get addSafetyZone => 'Naannoo nageenya dabali';

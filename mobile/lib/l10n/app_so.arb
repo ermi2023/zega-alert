@@ -47,6 +47,7 @@
   "languageLabel": "Luuqad",
   "preferredLanguage": "Luuqada la door biday",
   "safetyZones": "Aagagga badbaadada (geofences)",
+  "safetyZonesTab": "Aagag",
   "safetyZonesHomeDescription": "Cusboonaysiinta aagagga badbaadada iyo xaaladaha degdegga ah ee ka dhaca gudaha aag waxaa lagu daraa sanduuqa ogeysiisyada, waxaana loo diraa ogeysiis degdeg ah haddii ogeysiisyadu daaran yihiin. Dooro aag hoose si aad u aragto khariidad iyo xuduud. Raac tilmaamaha maamulka; aaggu ma dammaanad qaado badbaado.",
   "noSafetyZonesAvailable": "Gobolkaaga hadda lagama diiwaangelin aag badbaado oo rasmi ah.",
   "safetyZonesLoadFailed": "Xogta aagagga badbaadada lama soo dejin karin. Mar kale isku day.",

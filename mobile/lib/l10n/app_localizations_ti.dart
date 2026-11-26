@@ -154,15 +154,13 @@ class AppLocalizationsTi extends AppLocalizations {
 
   @override
   String get safetyZonesHomeDescription =>
-      'Safety-zone updates and emergency incidents inside a zone are added to your notification inbox and sent as push alerts when notifications are enabled. Select an area below to see its map and boundary. Follow local instructions; a zone does not guarantee safety.';
+      'ለውጢ ዞባታት ድሕነትን ኣብ ውሽጢ ዞባ ዘጋጥሙ ህጹጽ ኩነታትን ኣብ ሳጹን ምልክታኹም ይውሰኹ፤ ምልክታታት እንተተፈቒዶም ብግፊት ይለኣኹ። ካርታን ዶብን ንምርኣይ ኣብ ታሕቲ ዘሎ ቦታ ምረጹ። መምርሒ ኣካባቢ ባለስልጣናት ስዓቡ፤ እቲ ዞባ ድሕንነት ኣየረጋግጽን።';
 
   @override
-  String get noSafetyZonesAvailable =>
-      'No official safety zones are currently published for your region.';
+  String get noSafetyZonesAvailable => 'ንከባቢኹም ሕጂ ዝተሓበረ ወግዓዊ ዞባ ድሕነት የለን።';
 
   @override
-  String get safetyZonesLoadFailed =>
-      'Safety-zone information could not be loaded. Try again.';
+  String get safetyZonesLoadFailed => 'ሓበሬታ ዞባታት ድሕነት ምጽዓን ኣይተኻእለን። እንደገና ፈትኑ።';
 
   @override
   String get addSafetyZone => 'ዞባ ድሕነት ወስኽ';

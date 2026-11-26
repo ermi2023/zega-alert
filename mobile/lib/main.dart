@@ -21,6 +21,7 @@ import 'screens/communication_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/callbacks_screen.dart';
 import 'screens/notifications_screen.dart';
+import 'screens/safety_zones_screen.dart';
 import 'screens/video_call_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'services/api.dart';
@@ -313,6 +314,7 @@ class _MainShellState extends State<MainShell> {
     const ReportScreen(),
     const NewsScreen(),
     const CommunicationScreen(),
+    const SafetyZonesScreen(),
     const SettingsScreen(),
   ];
 
@@ -589,9 +591,9 @@ class _MainShellState extends State<MainShell> {
               onPressed: _toggleHomeSearch,
             ),
           IconButton(
-            tooltip: 'Profile',
-            icon: const Icon(Icons.person_outline),
-            onPressed: () => _selectTab(4),
+            tooltip: 'Settings',
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () => _selectTab(5),
           ),
           const _NotificationBell(),
           const SizedBox(width: 4),
@@ -641,7 +643,11 @@ class _MainShellState extends State<MainShell> {
                     2,
                     badgeCount: _newsUnread,
                   ),
-                  _navItem(Icons.settings_outlined, loc.settings, 4),
+                  _navItem(
+                    Icons.health_and_safety_outlined,
+                    loc.safetyZonesTab,
+                    4,
+                  ),
                 ],
               ),
             ),

@@ -47,6 +47,7 @@
   "languageLabel": "ቋንቋ",
   "preferredLanguage": "ዝመረጽካዮ ቋንቋ",
   "safetyZones": "ዞባታት ድሕነት (ጂኦፌንስ)",
+  "safetyZonesTab": "ዞባታት",
   "safetyZonesHomeDescription": "ለውጢ ዞባታት ድሕነትን ኣብ ውሽጢ ዞባ ዘጋጥሙ ህጹጽ ኩነታትን ኣብ ሳጹን ምልክታኹም ይውሰኹ፤ ምልክታታት እንተተፈቒዶም ብግፊት ይለኣኹ። ካርታን ዶብን ንምርኣይ ኣብ ታሕቲ ዘሎ ቦታ ምረጹ። መምርሒ ኣካባቢ ባለስልጣናት ስዓቡ፤ እቲ ዞባ ድሕንነት ኣየረጋግጽን።",
   "noSafetyZonesAvailable": "ንከባቢኹም ሕጂ ዝተሓበረ ወግዓዊ ዞባ ድሕነት የለን።",
   "safetyZonesLoadFailed": "ሓበሬታ ዞባታት ድሕነት ምጽዓን ኣይተኻእለን። እንደገና ፈትኑ።",

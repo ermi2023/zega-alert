@@ -1000,7 +1000,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Browsing as guest',
+                    loc.guestBrowsing,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: scheme.onPrimaryContainer,
@@ -1008,7 +1008,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Sign in to file reports, send SOS, message officers and verify your ID.',
+                    loc.guestFeaturesInfo,
                     style: TextStyle(
                       fontSize: 12,
                       color: scheme.onPrimaryContainer,
@@ -1020,7 +1020,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(width: 8),
             FilledButton(
               onPressed: () => openAuth(context),
-              child: const Text('Sign in'),
+              child: Text(loc.signingIn),
             ),
           ],
         ),
@@ -1030,14 +1030,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _identityVerification(AppLocalizations loc) {
     return Semantics(
-      label: 'Identity verification. Verify your identity with your national ID card.',
+      label: '${loc.identityVerification}. ${loc.verifyIdentityDesc}',
       child: Card(
         child: ListTile(
           leading: const Icon(Icons.verified_user_outlined, color: Colors.teal),
-          title: const Text('FAN identity verification'),
-          subtitle: const Text(
-            'Scan your original ID QR or enter its 16-digit FAN to check the administrator’s mock record.',
-          ),
+          title: Text(loc.fanIdentityTitle),
+          subtitle: Text(loc.fanIdentityDescription),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const IdVerificationScreen()),

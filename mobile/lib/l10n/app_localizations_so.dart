@@ -1124,4 +1124,43 @@ class AppLocalizationsSo extends AppLocalizations {
 
   @override
   String get callbackModeChat => 'qoraal';
+
+  @override
+  String get accessibilityActionsDescription =>
+      'Codso wicitaan toos ah ama duub muuqaal luqadda calaamadaha ah.';
+
+  @override
+  String get switchToStreetMap => 'U beddel khariidadda waddooyinka';
+
+  @override
+  String get switchToSatelliteImagery => 'U beddel sawirka dayax-gacmeedka';
+
+  @override
+  String get areaBoundaryNotAvailable => 'Xuduudda aagga weli lama hayo.';
+
+  @override
+  String get safetyArea => 'Aag badbaado';
+
+  @override
+  String get officialMappedBoundary =>
+      'Xuduud rasmi ah oo khariidadda lagu calaamadeeyey. Warbixinnada SOS ee gudaha waxaa arki kara shaqaalaha gurmadka.';
+
+  @override
+  String officialRadiusBoundary(Object radius) {
+    return 'Aag rasmi ah · dhexroor $radius m. Warbixinnada SOS ee gudaha waxaa arki kara shaqaalaha gurmadka.';
+  }
+
+  @override
+  String get safetyZoneSavedBoundaryWarning =>
+      'Digniinaha gelitaanka qalabku waxay isticmaalayaan xuduudihii aagga ee kaydsanaa. Dib ugu xidh oo cusboonaysii Aagagga Badbaadada si aad u cusboonaysiiso.';
+
+  @override
+  String get loadingSafetyZones => 'Waxaa la soo dejinayaa aagagga badbaadada';
+
+  @override
+  String get retryLoadingSafetyZones =>
+      'Mar kale isku day soo dejinta aagagga badbaadada';
+
+  @override
+  String get openMapAndBoundary => 'Fur khariidadda iyo xuduudda.';
 }

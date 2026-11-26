@@ -1081,4 +1081,42 @@ class AppLocalizationsTi extends AppLocalizations {
 
   @override
   String get callbackModeChat => 'ጽሑፍ';
+
+  @override
+  String get accessibilityActionsDescription =>
+      'ቀጥታ ጻውዒት ሕተት ወይ ቪድዮ ቋንቋ ምልክት ቅረጽ።';
+
+  @override
+  String get switchToStreetMap => 'ናብ ናይ ጎደና ካርታ ቀይር';
+
+  @override
+  String get switchToSatelliteImagery => 'ናብ ስእሊ ሳተላይት ቀይር';
+
+  @override
+  String get areaBoundaryNotAvailable => 'ዶብ እቲ ከባቢ ገና ኣይተረኽበን።';
+
+  @override
+  String get safetyArea => 'ከባቢ ድሕነት';
+
+  @override
+  String get officialMappedBoundary =>
+      'ብወግዒ ኣብ ካርታ ዝተሰኣለ ዶብ። ኣብ ውሽጡ ዘሎ ሪፖርት SOS ንሰራሕተኛታት ህጹጽ ኩነታት ይረአ።';
+
+  @override
+  String officialRadiusBoundary(Object radius) {
+    return 'ወግዓዊ ከባቢ · ራድየስ $radius ሜትር። ኣብ ውሽጡ ዘሎ ሪፖርት SOS ንሰራሕተኛታት ህጹጽ ኩነታት ይረአ።';
+  }
+
+  @override
+  String get safetyZoneSavedBoundaryWarning =>
+      'ኣብ መሳርሒ ዘሎ ምልክታ ነቲ ዝተዓቀበ ዶባት ዞባ ይጥቀም ኣሎ። ንምሕዳስ እንደገና ተራኸብን ዞባታት ድሕነት ኣሐድስን።';
+
+  @override
+  String get loadingSafetyZones => 'ዞባታት ድሕነት ይጽዓን ኣሎ';
+
+  @override
+  String get retryLoadingSafetyZones => 'ዞባታት ድሕነት እንደገና ኣጽዕን';
+
+  @override
+  String get openMapAndBoundary => 'ካርታን ዶብን ክፈት።';
 }

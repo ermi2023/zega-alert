@@ -75,8 +75,8 @@ class _GeofenceMapScreenState extends State<GeofenceMapScreen> {
         actions: [
           IconButton(
             tooltip: _satellite
-                  ? loc.switchToStreetMap
-                  : loc.switchToSatelliteImagery,
+                ? loc.switchToStreetMap
+                : loc.switchToSatelliteImagery,
             onPressed: () => setState(() => _satellite = !_satellite),
             icon: Icon(_satellite ? Icons.map_outlined : Icons.satellite_alt),
           ),

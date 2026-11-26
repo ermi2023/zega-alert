@@ -1103,4 +1103,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get callbackModeChat => 'chat';
+
+  @override
+  String get accessibilityActionsDescription =>
+      'Request a direct call or record a sign-language video.';
+
+  @override
+  String get switchToStreetMap => 'Switch to street map';
+
+  @override
+  String get switchToSatelliteImagery => 'Switch to satellite imagery';
+
+  @override
+  String get areaBoundaryNotAvailable =>
+      'The area boundary is not available yet.';
+
+  @override
+  String get safetyArea => 'Safety area';
+
+  @override
+  String get officialMappedBoundary =>
+      'Official mapped boundary. SOS reports inside it are highlighted for emergency staff.';
+
+  @override
+  String officialRadiusBoundary(Object radius) {
+    return 'Official area · $radius m radius. SOS reports inside it are highlighted for emergency staff.';
+  }
+
+  @override
+  String get safetyZoneSavedBoundaryWarning =>
+      'On-device entry alerts are using saved zone boundaries. Reconnect and refresh Safety Zones to update them.';
+
+  @override
+  String get loadingSafetyZones => 'Loading safety zones';
+
+  @override
+  String get retryLoadingSafetyZones => 'Retry loading safety zones';
+
+  @override
+  String get openMapAndBoundary => 'Open map and boundary.';
 }

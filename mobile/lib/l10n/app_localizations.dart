@@ -2101,6 +2101,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'chat'**
   String get callbackModeChat;
+
+  /// No description provided for @accessibilityActionsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Request a direct call or record a sign-language video.'**
+  String get accessibilityActionsDescription;
+
+  /// No description provided for @switchToStreetMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to street map'**
+  String get switchToStreetMap;
+
+  /// No description provided for @switchToSatelliteImagery.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to satellite imagery'**
+  String get switchToSatelliteImagery;
+
+  /// No description provided for @areaBoundaryNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The area boundary is not available yet.'**
+  String get areaBoundaryNotAvailable;
+
+  /// No description provided for @safetyArea.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety area'**
+  String get safetyArea;
+
+  /// No description provided for @officialMappedBoundary.
+  ///
+  /// In en, this message translates to:
+  /// **'Official mapped boundary. SOS reports inside it are highlighted for emergency staff.'**
+  String get officialMappedBoundary;
+
+  /// No description provided for @officialRadiusBoundary.
+  ///
+  /// In en, this message translates to:
+  /// **'Official area · {radius} m radius. SOS reports inside it are highlighted for emergency staff.'**
+  String officialRadiusBoundary(Object radius);
+
+  /// No description provided for @safetyZoneSavedBoundaryWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'On-device entry alerts are using saved zone boundaries. Reconnect and refresh Safety Zones to update them.'**
+  String get safetyZoneSavedBoundaryWarning;
+
+  /// No description provided for @loadingSafetyZones.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading safety zones'**
+  String get loadingSafetyZones;
+
+  /// No description provided for @retryLoadingSafetyZones.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry loading safety zones'**
+  String get retryLoadingSafetyZones;
+
+  /// No description provided for @openMapAndBoundary.
+  ///
+  /// In en, this message translates to:
+  /// **'Open map and boundary.'**
+  String get openMapAndBoundary;
 }
 
 class _AppLocalizationsDelegate

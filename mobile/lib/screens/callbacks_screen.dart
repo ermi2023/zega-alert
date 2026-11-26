@@ -36,10 +36,7 @@ class _CallbacksScreenState extends State<CallbacksScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = Api.userMessage(
-          e,
-          fallback: loc.callbacksLoadFailed,
-        );
+        _error = Api.userMessage(e, fallback: loc.callbacksLoadFailed);
         _loading = false;
       });
     }
@@ -87,9 +84,8 @@ class _CallbacksScreenState extends State<CallbacksScreen> {
     );
     if (!slot.isAfter(DateTime.now())) {
       if (mounted)
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(loc.chooseFutureTime)));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(loc.chooseFutureTime)));
       return;
     }
     try {
@@ -97,20 +93,14 @@ class _CallbacksScreenState extends State<CallbacksScreen> {
         'proposed_slot': slot.toUtc().toIso8601String(),
       });
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.alternativeTimeSent)),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(loc.alternativeTimeSent)));
       _load();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              Api.userMessage(
-                e,
-                fallback: loc.callbackSendFailed,
-              ),
-            ),
+            content: Text(Api.userMessage(e, fallback: loc.callbackSendFailed)),
           ),
         );
       }

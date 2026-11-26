@@ -1085,4 +1085,42 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get callbackModeChat => 'ጽሑፍ';
+
+  @override
+  String get accessibilityActionsDescription =>
+      'ቀጥተኛ ጥሪ ይጠይቁ ወይም የምልክት ቋንቋ ቪዲዮ ይቅረጹ።';
+
+  @override
+  String get switchToStreetMap => 'ወደ መደበኛ ካርታ ይቀይሩ';
+
+  @override
+  String get switchToSatelliteImagery => 'ወደ ሳተላይት ምስል ይቀይሩ';
+
+  @override
+  String get areaBoundaryNotAvailable => 'የአካባቢው ወሰን ገና አልተገኘም።';
+
+  @override
+  String get safetyArea => 'የደህንነት አካባቢ';
+
+  @override
+  String get officialMappedBoundary =>
+      'በይፋ የተቀረጸ ወሰን። በዚህ ውስጥ የተላኩ SOS ሪፖርቶች ለአደጋ ጊዜ ሰራተኞች ይታያሉ።';
+
+  @override
+  String officialRadiusBoundary(Object radius) {
+    return 'ይፋዊ አካባቢ · $radius ሜትር ራዲየስ። በዚህ ውስጥ የተላኩ SOS ሪፖርቶች ለአደጋ ጊዜ ሰራተኞች ይታያሉ።';
+  }
+
+  @override
+  String get safetyZoneSavedBoundaryWarning =>
+      'በመሣሪያው ላይ ያሉ ማሳወቂያዎች የተቀመጡትን የዞን ወሰኖች እየተጠቀሙ ነው። እነሱን ለማዘመን እንደገና ይገናኙ እና የደህንነት ዞኖችን ያድሱ።';
+
+  @override
+  String get loadingSafetyZones => 'የደህንነት ዞኖች በመጫን ላይ';
+
+  @override
+  String get retryLoadingSafetyZones => 'የደህንነት ዞኖችን እንደገና ለመጫን ይሞክሩ';
+
+  @override
+  String get openMapAndBoundary => 'ካርታውን እና ወሰኑን ይክፈቱ።';
 }

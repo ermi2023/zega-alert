@@ -120,7 +120,7 @@ class _SafetyZonesScreenState extends State<SafetyZonesScreen> {
               padding: EdgeInsets.all(28),
               child: Center(
                 child: CircularProgressIndicator(
-                semanticsLabel: loc.loadingSafetyZones,
+                  semanticsLabel: loc.loadingSafetyZones,
                 ),
               ),
             )
@@ -136,60 +136,58 @@ class _SafetyZonesScreenState extends State<SafetyZonesScreen> {
                 ),
               ),
             )
-          else
-            ...[
-              if (_trackingRefreshWarning != null)
-                Card(
-                  color: const Color(0xFFFFF4D6),
-                  child: ListTile(
-                    leading: const Icon(Icons.info_outline),
-                    title: Text(_trackingRefreshWarning!),
-                  ),
+          else ...[
+            if (_trackingRefreshWarning != null)
+              Card(
+                color: const Color(0xFFFFF4D6),
+                child: ListTile(
+                  leading: const Icon(Icons.info_outline),
+                  title: Text(_trackingRefreshWarning!),
                 ),
-              if (_geofences.isEmpty)
-                Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.info_outline),
-                    title: Text(loc.noSafetyZonesAvailable),
-                  ),
-                )
-              else
-                ..._geofences.map((item) {
-                  final zone = Map<String, dynamic>.from(item as Map);
-                  final name = (zone['label'] ?? zone['name'] ?? loc.safetyZones)
-                      .toString();
-                  final type = (zone['type'] ?? loc.safetyArea).toString().replaceAll(
-                    '_',
-                    ' ',
-                  );
-                  final location = [
-                    if (zone['region'] != null) zone['region'].toString(),
-                    if (zone['sub_city'] != null) zone['sub_city'].toString(),
-                  ].join(' · ');
-                  return Card(
-                    child: Semantics(
-                      button: true,
-                      label:
-                          '$name, $type. ${location.isEmpty ? '' : '$location. '}${loc.openMapAndBoundary}',
-                      child: ListTile(
-                        leading: const Icon(
-                          Icons.location_on_outlined,
-                          color: Color(0xFF123B73),
-                        ),
-                        title: Text(
-                          name,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        subtitle: Text(
-                          [type, if (location.isNotEmpty) location].join(' · '),
-                        ),
-                        trailing: const Icon(Icons.map_outlined),
-                        onTap: () => _openZone(item),
+              ),
+            if (_geofences.isEmpty)
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.info_outline),
+                  title: Text(loc.noSafetyZonesAvailable),
+                ),
+              )
+            else
+              ..._geofences.map((item) {
+                final zone = Map<String, dynamic>.from(item as Map);
+                final name = (zone['label'] ?? zone['name'] ?? loc.safetyZones)
+                    .toString();
+                final type = (zone['type'] ?? loc.safetyArea)
+                    .toString()
+                    .replaceAll('_', ' ');
+                final location = [
+                  if (zone['region'] != null) zone['region'].toString(),
+                  if (zone['sub_city'] != null) zone['sub_city'].toString(),
+                ].join(' · ');
+                return Card(
+                  child: Semantics(
+                    button: true,
+                    label:
+                        '$name, $type. ${location.isEmpty ? '' : '$location. '}${loc.openMapAndBoundary}',
+                    child: ListTile(
+                      leading: const Icon(
+                        Icons.location_on_outlined,
+                        color: Color(0xFF123B73),
                       ),
+                      title: Text(
+                        name,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(
+                        [type, if (location.isNotEmpty) location].join(' · '),
+                      ),
+                      trailing: const Icon(Icons.map_outlined),
+                      onTap: () => _openZone(item),
                     ),
-                  );
-                }),
-            ],
+                  ),
+                );
+              }),
+          ],
         ],
       ),
     );

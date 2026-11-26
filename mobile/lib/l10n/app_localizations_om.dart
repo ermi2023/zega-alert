@@ -1115,4 +1115,43 @@ class AppLocalizationsOm extends AppLocalizations {
 
   @override
   String get callbackModeChat => 'barreeffama';
+
+  @override
+  String get accessibilityActionsDescription =>
+      'Bilbila kallattiin gaafadhu yookaan viidiyoo afaan mallattoo waraabi.';
+
+  @override
+  String get switchToStreetMap => 'Kaartaa daandii jijjiiri';
+
+  @override
+  String get switchToSatelliteImagery => 'Suuraa saatalaayitii jijjiiri';
+
+  @override
+  String get areaBoundaryNotAvailable => 'Daangaan naannoo ammaa hin jiru.';
+
+  @override
+  String get safetyArea => 'Naannoo nageenyaa';
+
+  @override
+  String get officialMappedBoundary =>
+      'Daangaa kaartaan mootummaa kaa\'ame. Gabaasni SOS keessa jiru hojjettoota balaa hatattamaaf ni mul\'ata.';
+
+  @override
+  String officialRadiusBoundary(Object radius) {
+    return 'Naannoo mootummaa · raadiyeesii meetira $radius. Gabaasni SOS keessa jiru hojjettoota balaa hatattamaaf ni mul\'ata.';
+  }
+
+  @override
+  String get safetyZoneSavedBoundaryWarning =>
+      'Akeekkachiisni meeshaa irratti daangaa aanaa kuufame fayyadamaa jira. Haaromsuuf deebi\'ii qunnamiitii Aanaalee Nageenyaa haaromsi.';
+
+  @override
+  String get loadingSafetyZones => 'Aanaalee nageenyaa fe\'aa jira';
+
+  @override
+  String get retryLoadingSafetyZones =>
+      'Aanaalee nageenyaa irra deebi\'ii fe\'i';
+
+  @override
+  String get openMapAndBoundary => 'Kaartaa fi daangaa bani.';
 }

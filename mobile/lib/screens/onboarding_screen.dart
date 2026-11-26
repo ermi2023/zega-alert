@@ -77,16 +77,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(pages.length, (i) => AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      width: _page == i ? 24 : 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: _page == i ? const Color(0xFF2563EB) : Colors.white24,
-                        borderRadius: BorderRadius.circular(4),
+                    children: List.generate(
+                      pages.length,
+                      (i) => AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: _page == i ? 24 : 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: _page == i
+                              ? const Color(0xFF2563EB)
+                              : Colors.white24,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
                       ),
-                    )),
+                    ),
                   ),
                   const SizedBox(height: 20),
                   SizedBox(
@@ -95,11 +100,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: FilledButton(
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFF2563EB),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
                       onPressed: () {
                         if (_page < pages.length - 1) {
-                          _controller.nextPage(duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
+                          _controller.nextPage(
+                            duration: const Duration(milliseconds: 400),
+                            curve: Curves.easeInOut,
+                          );
                         } else {
                           _done();
                         }
@@ -108,7 +118,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         _page < pages.length - 1
                             ? loc.onboardingNext
                             : loc.onboardingGetStarted,
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),

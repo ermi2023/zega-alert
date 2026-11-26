@@ -134,10 +134,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       if (mounted)
         setState(
-          () => _loadError = Api.userMessage(
-            e,
-            fallback: loc.settingsLoadFailed,
-          ),
+          () =>
+              _loadError = Api.userMessage(e, fallback: loc.settingsLoadFailed),
         );
     }
   }
@@ -252,7 +250,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     SafetyZoneTrackingIssue.monitoringRestartFailed =>
       loc.couldNotRestartLocationMonitoring,
     SafetyZoneTrackingIssue.monitoringStopped => loc.locationMonitoringStopped,
-    SafetyZoneTrackingIssue.boundaryCheckFailed => loc.couldNotCheckZoneBoundaries,
+    SafetyZoneTrackingIssue.boundaryCheckFailed =>
+      loc.couldNotCheckZoneBoundaries,
   };
 
   @override
@@ -317,96 +316,93 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _setSafetyZoneTracking(bool enabled) async {
     final loc = AppLocalizations.of(context);
-      setState(() {
-        _safetyZoneTrackingBusy = true;
-        _status = null;
-      });
-      try {
-        if (!enabled) {
-          await SafetyZoneTrackingService.disable();
-          if (mounted) {
-            setState(() {
-              _safetyZoneTrackingEnabled = false;
-              _status = loc.safetyZoneAlertsOff;
-            });
-          }
-          return;
-        }
-
-        if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
-          throw const SafetyZoneTrackingException(
-            SafetyZoneTrackingIssue.androidOnly,
-          );
-        }
-        if (!await Geolocator.isLocationServiceEnabled()) {
-          throw const SafetyZoneTrackingException(
-            SafetyZoneTrackingIssue.deviceLocationOff,
-          );
-        }
-
-        var permission = await Geolocator.checkPermission();
-        if (permission == LocationPermission.denied) {
-          permission = await Geolocator.requestPermission();
-        }
-        if (permission != LocationPermission.always) {
-          if (!mounted) return;
-          final openSettings = await showDialog<bool>(
-            context: context,
-            builder: (dialogContext) => AlertDialog(
-              title: Text(loc.allowBackgroundLocation),
-              content: Text(loc.allowBackgroundLocationDescription),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext, false),
-                  child: Text(loc.notNow),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.pop(dialogContext, true),
-                  child: Text(loc.openAppSettings),
-                ),
-              ],
-            ),
-          );
-          if (openSettings == true) await Geolocator.openAppSettings();
-          if (mounted) {
-            setState(
-              () => _status = loc.backgroundLocationPermissionRequired,
-            );
-          }
-          return;
-        }
-
-        final zones = await Api.get('/geofences');
-        if (zones is! List) {
-          throw const FormatException('Unexpected Safety Zone response.');
-        }
-        await SafetyZoneTrackingService.enable(zones);
+    setState(() {
+      _safetyZoneTrackingBusy = true;
+      _status = null;
+    });
+    try {
+      if (!enabled) {
+        await SafetyZoneTrackingService.disable();
         if (mounted) {
-          final monitoredZoneCount =
-              SafetyZoneTrackingService.monitoredZoneCount;
           setState(() {
-            _safetyZoneTrackingEnabled = true;
-            _status = monitoredZoneCount == 0
-                ? loc.safetyZoneAlertsOnNoZones
-                : loc.safetyZoneAlertsOn;
+            _safetyZoneTrackingEnabled = false;
+            _status = loc.safetyZoneAlertsOff;
           });
         }
-      } catch (error) {
-        if (mounted) {
-          final message = error is SafetyZoneTrackingException
-              ? _safetyTrackingMessage(loc, error.issue)
-              : Api.userMessage(
-                  error,
-                  fallback: loc.couldNotEnableSafetyZoneAlerts,
-                );
-          setState(() {
-            _safetyZoneTrackingEnabled = !enabled;
-            _status = message;
-          });
-        }
-      } finally {
-        if (mounted) setState(() => _safetyZoneTrackingBusy = false);
+        return;
       }
+
+      if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+        throw const SafetyZoneTrackingException(
+          SafetyZoneTrackingIssue.androidOnly,
+        );
+      }
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        throw const SafetyZoneTrackingException(
+          SafetyZoneTrackingIssue.deviceLocationOff,
+        );
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission != LocationPermission.always) {
+        if (!mounted) return;
+        final openSettings = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: Text(loc.allowBackgroundLocation),
+            content: Text(loc.allowBackgroundLocationDescription),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: Text(loc.notNow),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: Text(loc.openAppSettings),
+              ),
+            ],
+          ),
+        );
+        if (openSettings == true) await Geolocator.openAppSettings();
+        if (mounted) {
+          setState(() => _status = loc.backgroundLocationPermissionRequired);
+        }
+        return;
+      }
+
+      final zones = await Api.get('/geofences');
+      if (zones is! List) {
+        throw const FormatException('Unexpected Safety Zone response.');
+      }
+      await SafetyZoneTrackingService.enable(zones);
+      if (mounted) {
+        final monitoredZoneCount = SafetyZoneTrackingService.monitoredZoneCount;
+        setState(() {
+          _safetyZoneTrackingEnabled = true;
+          _status = monitoredZoneCount == 0
+              ? loc.safetyZoneAlertsOnNoZones
+              : loc.safetyZoneAlertsOn;
+        });
+      }
+    } catch (error) {
+      if (mounted) {
+        final message = error is SafetyZoneTrackingException
+            ? _safetyTrackingMessage(loc, error.issue)
+            : Api.userMessage(
+                error,
+                fallback: loc.couldNotEnableSafetyZoneAlerts,
+              );
+        setState(() {
+          _safetyZoneTrackingEnabled = !enabled;
+          _status = message;
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _safetyZoneTrackingBusy = false);
+    }
   }
 
   Future<void> _changePassword() async {
@@ -517,8 +513,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 8),
           Semantics(
-            label:
-                '${loc.policeRescueContacts}. Police 991, rescue 907.',
+            label: '${loc.policeRescueContacts}. Police 991, rescue 907.',
             child: ListTile(
               leading: const Icon(Icons.local_police_outlined),
               title: Text(loc.policeRescueContacts),
@@ -584,14 +579,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: Text(loc.safetyZoneEntryAlerts),
                     subtitle: Text(loc.safetyZoneEntryAlertsDescription),
                     value: _safetyZoneTrackingEnabled,
-                    onChanged: _safetyZoneTrackingBusy ||
+                    onChanged:
+                        _safetyZoneTrackingBusy ||
                             kIsWeb ||
                             defaultTargetPlatform != TargetPlatform.android
                         ? null
                         : _setSafetyZoneTracking,
                   ),
-                  if (_safetyZoneTrackingBusy)
-                    const LinearProgressIndicator(),
+                  if (_safetyZoneTrackingBusy) const LinearProgressIndicator(),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
                     child: Align(
@@ -752,8 +747,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               final zone = Map<String, dynamic>.from(g as Map);
               final name = zone['label'] ?? zone['name'] ?? 'Zone';
               return Semantics(
-                label:
-                    loc.officialSafetyArea(name, zone['type'] ?? 'zone'),
+                label: loc.officialSafetyArea(name, zone['type'] ?? 'zone'),
                 child: Card(
                   child: ListTile(
                     dense: true,
@@ -917,9 +911,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ElevatedButton(
                             onPressed: () {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(loc.feedbackSubmitted),
-                                ),
+                                SnackBar(content: Text(loc.feedbackSubmitted)),
                               );
                             },
                             style: ElevatedButton.styleFrom(
@@ -948,7 +940,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           if (_loggedIn) ...[
             Semantics(
-                label: '${loc.callbackRequests}. ${loc.callbackSubtitle}',
+              label: '${loc.callbackRequests}. ${loc.callbackSubtitle}',
               child: Card(
                 child: ListTile(
                   leading: const Icon(
@@ -1211,9 +1203,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 obscureText: !_showPasswords,
                 textInputAction: TextInputAction.done,
                 decoration: decoration(loc.confirmNewPassword),
-                validator: (value) => value == _newPassword.text
-                    ? null
-                    : loc.passwordsDoNotMatch,
+                validator: (value) =>
+                    value == _newPassword.text ? null : loc.passwordsDoNotMatch,
               ),
               if (_passwordStatus != null) ...[
                 const SizedBox(height: 10),
@@ -1329,10 +1320,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (ctx) => AlertDialog(
         title: Text(loc.termsConditions),
         content: SingleChildScrollView(
-          child: Text(
-            loc.termsBody,
-            style: const TextStyle(height: 1.4),
-          ),
+          child: Text(loc.termsBody, style: const TextStyle(height: 1.4)),
         ),
         actions: [
           TextButton(
@@ -1351,10 +1339,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (ctx) => AlertDialog(
         title: Text(loc.privacyPolicy),
         content: SingleChildScrollView(
-          child: Text(
-            loc.privacyBody,
-            style: const TextStyle(height: 1.4),
-          ),
+          child: Text(loc.privacyBody, style: const TextStyle(height: 1.4)),
         ),
         actions: [
           TextButton(
@@ -1378,11 +1363,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     } catch (_) {}
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(loc.searchAppStoreToRate),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(loc.searchAppStoreToRate)));
     }
   }
 

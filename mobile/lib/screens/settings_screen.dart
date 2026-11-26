@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -9,6 +12,7 @@ import 'id_verification_screen.dart';
 import 'communication_screen.dart';
 import '../services/api.dart';
 import '../services/person_image_cache_service.dart';
+import '../services/safety_zone_tracking_service.dart';
 import '../widgets/auth_gate.dart';
 import '../widgets/pod_actions.dart';
 import 'callbacks_screen.dart';
@@ -51,6 +55,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _showPasswords = false;
   bool _personPhotoCachingEnabled = PersonImageCacheService.enabled.value;
   bool _personPhotoCacheBusy = false;
+  bool _safetyZoneTrackingEnabled = false;
+  bool _safetyZoneTrackingBusy = false;
   int _cachedPersonPhotoBytes = 0;
   int _cachedPersonPhotoCount = 0;
 
@@ -75,6 +81,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _load() async {
+    _safetyZoneTrackingEnabled = await SafetyZoneTrackingService.isEnabled();
+    if (SafetyZoneTrackingService.lastError != null) {
+      _status = SafetyZoneTrackingService.lastError;
+    }
     final cachedProfile = Api.profile;
     if (_loggedIn && cachedProfile != null) {
       _profile = cachedProfile;
@@ -282,6 +292,105 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+    Future<void> _setSafetyZoneTracking(bool enabled) async {
+      setState(() {
+        _safetyZoneTrackingBusy = true;
+        _status = null;
+      });
+      try {
+        if (!enabled) {
+          await SafetyZoneTrackingService.disable();
+          if (mounted) {
+            setState(() {
+              _safetyZoneTrackingEnabled = false;
+              _status = 'Safety Zone location alerts are off.';
+            });
+          }
+          return;
+        }
+
+        if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+          throw const SafetyZoneTrackingException(
+            'Background Safety Zone alerts are currently available on Android.',
+          );
+        }
+        if (!await Geolocator.isLocationServiceEnabled()) {
+          throw const SafetyZoneTrackingException(
+            'Turn on device Location to enable Safety Zone alerts.',
+          );
+        }
+
+        var permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
+        }
+        if (permission != LocationPermission.always) {
+          if (!mounted) return;
+          final openSettings = await showDialog<bool>(
+            context: context,
+            builder: (dialogContext) => AlertDialog(
+              title: const Text('Allow background location'),
+              content: const Text(
+                'To check for Safety Zone entry while ZEGA Alert is closed, '
+                'Android must allow location access all the time. In app '
+                'permissions, choose “Allow all the time”.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  child: const Text('Not now'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(dialogContext, true),
+                  child: const Text('Open app settings'),
+                ),
+              ],
+            ),
+          );
+          if (openSettings == true) await Geolocator.openAppSettings();
+          if (mounted) {
+            setState(
+              () => _status =
+                  'Choose “Allow all the time” in app permissions, then turn on Safety Zone alerts again.',
+            );
+          }
+          return;
+        }
+
+        final zones = await Api.get('/geofences');
+        if (zones is! List) {
+          throw const FormatException('Unexpected Safety Zone response.');
+        }
+        await SafetyZoneTrackingService.enable(zones);
+        if (mounted) {
+          final monitoredZoneCount =
+              SafetyZoneTrackingService.monitoredZoneCount;
+          setState(() {
+            _safetyZoneTrackingEnabled = true;
+            _status = monitoredZoneCount == 0
+                ? 'Location alerts are on. No published Safety Zones are available yet.'
+                : 'Safety Zone entry alerts are on.';
+          });
+        }
+      } catch (error) {
+        if (mounted) {
+          final message = error is SafetyZoneTrackingException
+              ? error.message
+              : Api.userMessage(
+                  error,
+                  fallback:
+                      'Could not enable Safety Zone alerts. Check your connection, location permission, and notification settings.',
+                );
+          setState(() {
+            _safetyZoneTrackingEnabled = !enabled;
+            _status = message;
+          });
+        }
+      } finally {
+        if (mounted) setState(() => _safetyZoneTrackingBusy = false);
+      }
+  }
+
   Future<void> _changePassword() async {
     if (!(_passwordForm.currentState?.validate() ?? false)) return;
     setState(() {
@@ -319,6 +428,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _logout() async {
+    await SafetyZoneTrackingService.disable();
     final refreshToken = Api.refreshToken;
     try {
       await Api.post('/auth/logout', {'refreshToken': refreshToken});
@@ -444,6 +554,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 10),
             _accountDetails(),
             _section(loc.locationLabel, Icons.location_on_outlined),
+            Card(
+              color: const Color(0xFFEAF2FF),
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    secondary: const Icon(Icons.health_and_safety_outlined),
+                    title: const Text('Safety Zone entry alerts'),
+                    subtitle: const Text(
+                      'When enabled, ZEGA Alert checks your location in the '
+                      'background and alerts you when you enter an active '
+                      'published Safety Zone. Available on Android.',
+                    ),
+                    value: _safetyZoneTrackingEnabled,
+                    onChanged: _safetyZoneTrackingBusy ||
+                            kIsWeb ||
+                            defaultTargetPlatform != TargetPlatform.android
+                        ? null
+                        : _setSafetyZoneTracking,
+                  ),
+                  if (_safetyZoneTrackingBusy)
+                    const LinearProgressIndicator(),
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(16, 0, 16, 14),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Precise location for these alerts stays on this '
+                        'device and is not uploaded. Android shows an ongoing '
+                        'notification while monitoring; this can use more '
+                        'battery. SOS and report actions may use location '
+                        'separately. Your saved Region/Sub-city fields remain '
+                        'the manual fallback and still control area-based '
+                        'information.',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             Semantics(
               label: 'Region dropdown. Currently set to $_region.',
               child: DropdownButtonFormField<String>(
@@ -799,22 +948,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
           ),
-          _category('Backend server', Icons.dns_outlined, [
-            Semantics(
-              label:
-                  'Backend server. Currently ${Api.baseUrl}. Double tap to change.',
-              child: ListTile(
-                leading: const Icon(
-                  Icons.dns_outlined,
-                  color: Colors.deepPurple,
-                ),
-                title: const Text('Backend server'),
-                subtitle: Text(Api.baseUrl),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: _editServerUrl,
-              ),
-            ),
-          ]),
           if (_loggedIn) ...[
             Semantics(
               label: 'Callback requests. View police callback requests for your reports.',
@@ -1118,58 +1251,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Future<void> _editServerUrl() async {
-    final controller = TextEditingController(text: Api.overrideBaseUrl ?? '');
-    final result = await showDialog<String?>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Backend server'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Current: ${Api.baseUrl}',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              keyboardType: TextInputType.url,
-              decoration: const InputDecoration(
-                labelText: 'Server URL',
-                hintText: 'https://zega-api.example.et',
-                helperText: 'Leave blank to auto-detect on the local network.',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, ''),
-            child: const Text('Auto-detect'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, null),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, controller.text),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-    if (result == null) return;
-    await Api.setBaseUrl(result);
-    setState(
-      () => _status = result.trim().isEmpty
-          ? 'Backend set to auto-detect on the local network.'
-          : 'Backend server saved: ${Api.baseUrl}',
     );
   }
 

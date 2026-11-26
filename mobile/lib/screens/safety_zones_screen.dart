@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 import '../services/api.dart';
+import '../services/safety_zone_tracking_service.dart';
 import 'geofence_map_screen.dart';
 
 class SafetyZonesScreen extends StatefulWidget {
@@ -15,6 +16,7 @@ class _SafetyZonesScreenState extends State<SafetyZonesScreen> {
   List<dynamic> _geofences = [];
   bool _loading = true;
   String? _error;
+  String? _trackingRefreshWarning;
 
   @override
   void initState() {
@@ -35,6 +37,20 @@ class _SafetyZonesScreenState extends State<SafetyZonesScreen> {
       final result = await Api.get(endpoint);
       if (result is! List) {
         throw const FormatException('Unexpected safety-zone response');
+      }
+      _trackingRefreshWarning = null;
+      if (await SafetyZoneTrackingService.isEnabled()) {
+        try {
+          final allZones = await Api.get('/geofences');
+          if (allZones is! List) {
+            throw const FormatException('Unexpected Safety Zone response');
+          }
+          await SafetyZoneTrackingService.updatePublishedZones(allZones);
+        } catch (error) {
+          _trackingRefreshWarning =
+              'On-device entry alerts are using saved zone boundaries. '
+              'Reconnect and refresh Safety Zones to update them.';
+        }
       }
       if (mounted) setState(() => _geofences = result);
     } catch (error) {
@@ -121,49 +137,60 @@ class _SafetyZonesScreenState extends State<SafetyZonesScreen> {
                 ),
               ),
             )
-          else if (_geofences.isEmpty)
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.info_outline),
-                title: Text(loc.noSafetyZonesAvailable),
-              ),
-            )
           else
-            ..._geofences.map((item) {
-              final zone = Map<String, dynamic>.from(item as Map);
-              final name = (zone['label'] ?? zone['name'] ?? 'Safety zone')
-                  .toString();
-              final type = (zone['type'] ?? 'area').toString().replaceAll(
-                '_',
-                ' ',
-              );
-              final location = [
-                if (zone['region'] != null) zone['region'].toString(),
-                if (zone['sub_city'] != null) zone['sub_city'].toString(),
-              ].join(' · ');
-              return Card(
-                child: Semantics(
-                  button: true,
-                  label:
-                      '$name, $type. ${location.isEmpty ? '' : '$location. '}Open map and boundary.',
+            ...[
+              if (_trackingRefreshWarning != null)
+                Card(
+                  color: const Color(0xFFFFF4D6),
                   child: ListTile(
-                    leading: const Icon(
-                      Icons.location_on_outlined,
-                      color: Color(0xFF123B73),
-                    ),
-                    title: Text(
-                      name,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    subtitle: Text(
-                      [type, if (location.isNotEmpty) location].join(' · '),
-                    ),
-                    trailing: const Icon(Icons.map_outlined),
-                    onTap: () => _openZone(item),
+                    leading: const Icon(Icons.info_outline),
+                    title: Text(_trackingRefreshWarning!),
                   ),
                 ),
-              );
-            }),
+              if (_geofences.isEmpty)
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.info_outline),
+                    title: Text(loc.noSafetyZonesAvailable),
+                  ),
+                )
+              else
+                ..._geofences.map((item) {
+                  final zone = Map<String, dynamic>.from(item as Map);
+                  final name = (zone['label'] ?? zone['name'] ?? 'Safety zone')
+                      .toString();
+                  final type = (zone['type'] ?? 'area').toString().replaceAll(
+                    '_',
+                    ' ',
+                  );
+                  final location = [
+                    if (zone['region'] != null) zone['region'].toString(),
+                    if (zone['sub_city'] != null) zone['sub_city'].toString(),
+                  ].join(' · ');
+                  return Card(
+                    child: Semantics(
+                      button: true,
+                      label:
+                          '$name, $type. ${location.isEmpty ? '' : '$location. '}Open map and boundary.',
+                      child: ListTile(
+                        leading: const Icon(
+                          Icons.location_on_outlined,
+                          color: Color(0xFF123B73),
+                        ),
+                        title: Text(
+                          name,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(
+                          [type, if (location.isNotEmpty) location].join(' · '),
+                        ),
+                        trailing: const Icon(Icons.map_outlined),
+                        onTap: () => _openZone(item),
+                      ),
+                    ),
+                  );
+                }),
+            ],
         ],
       ),
     );

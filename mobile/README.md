@@ -12,7 +12,7 @@ This is the citizen-facing mobile app for the ZEGA-ALERT system. It provides Hom
 - **Report**: Submit crime reports with category, severity, evidence (photo/video/audio), anonymous option
 - **News**: 4-tab view — Announcements, Legal articles, Missing persons, Sightings
 - **Messages**: Real-time chat with staff via Socket.io
-- **Safety Zones**: View official local zones and open each mapped boundary; updates and incidents appear in Notifications
+- **Safety Zones**: View official local zones and open each mapped boundary; updates and incidents appear in Notifications. Android users can optionally enable on-device entry alerts in Settings → Personal information.
 - **Settings**: Account management, profile, region/city selection, language, accessibility, dark mode, callbacks
 - **Registration**: Phone OTP is entered on screen; in development, the temporary OTP is displayed in the app when SMS is unavailable
 - **Identity**: In Settings, verify with a 16-digit FAN or scan the original ID QR; only the FAN is checked against admin-managed mock records
@@ -50,6 +50,22 @@ flutter create .          # generates android/ios/etc scaffolding
 flutter pub get
 flutter run               # on an emulator/device
 ```
+
+### Optional background Safety Zone entry alerts (Android)
+
+In **Settings → Personal information**, enable **Safety Zone entry alerts** to
+receive a local notification when the device enters an active published zone.
+Android requires the app's location permission to be set to **Allow all the
+time**, device notifications to be enabled, and device Location to be on. An
+ongoing Android notification indicates that background monitoring is active;
+continuous GPS can use additional battery.
+
+Coordinates used for these entry alerts are checked on the device and are not
+uploaded. Saved Region/Sub-city values remain available for area-based
+information if tracking is off or unavailable. SOS and report actions may use
+location separately when submitted. Entry alerts are a supplementary warning,
+not a guarantee of safety; force-stopping the app or device power restrictions
+may stop background monitoring.
 
 ## Smaller Android releases for all CPU architectures
 

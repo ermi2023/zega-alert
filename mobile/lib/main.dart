@@ -30,6 +30,7 @@ import 'services/notification_service.dart';
 import 'services/notification_state.dart';
 import 'services/officer_position_service.dart';
 import 'services/person_image_cache_service.dart';
+import 'services/safety_zone_tracking_service.dart';
 
 import 'package:workmanager/workmanager.dart' as workmanager;
 
@@ -40,6 +41,7 @@ import 'widgets/sos_dialog.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> _handleExpiredSession() async {
+  await SafetyZoneTrackingService.disable();
   final navigator = navigatorKey.currentState;
   if (navigator == null) return;
   navigator.pushAndRemoveUntil(
@@ -325,6 +327,7 @@ class _MainShellState extends State<MainShell> {
     _fetchNewsUnread();
     if (Api.isLoggedIn) {
       unawaited(NotificationService.initialize());
+      _resumeSafetyZoneAlerts();
       SocketService.connect();
       SocketService.onCallbackNew = _onCallbackNew;
       SocketService.onSosStatus = _onSosStatus;
@@ -332,6 +335,22 @@ class _MainShellState extends State<MainShell> {
       SyncService.onSynced = _onSynced;
       SyncService.start();
     }
+  }
+
+  void _resumeSafetyZoneAlerts() {
+    unawaited(
+      SafetyZoneTrackingService.resumeIfEnabled().catchError((Object error) {
+        debugPrint('Safety Zone monitoring could not resume: $error');
+        final message = error is SafetyZoneTrackingException
+            ? error.message
+            : 'Safety Zone alerts could not restart. Check location and notification permissions in Settings.';
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(message)));
+        });
+      }),
+    );
   }
 
   void _onSynced(int pending) {

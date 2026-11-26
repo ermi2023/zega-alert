@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+
 import '../l10n/app_localizations.dart';
+import '../services/api.dart';
 import '../services/webrtc_service.dart';
 
 class VideoCallScreen extends StatefulWidget {
@@ -66,7 +68,10 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       if (mounted) {
         setState(() {
           _statusKey = 'error';
-          _callError = error.toString();
+          _callError = Api.userMessage(
+            error,
+            fallback: 'Could not connect the call. Check your connection and try again.',
+          );
         });
       }
     }
@@ -84,7 +89,10 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       if (mounted) {
         setState(() {
           _statusKey = 'error';
-          _callError = error.toString();
+          _callError = Api.userMessage(
+            error,
+            fallback: 'Could not connect the call. Check your connection and try again.',
+          );
         });
       }
     }
@@ -140,7 +148,8 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
                   if (_hasRemoteStream)
                     RTCVideoView(
                       _rtc.remoteRenderer,
-                      objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                      objectFit:
+                          RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
                     )
                   else
                     const Center(
@@ -166,7 +175,8 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
                         borderRadius: BorderRadius.circular(12),
                         child: RTCVideoView(
                           _rtc.localRenderer,
-                          objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                          objectFit:
+                              RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
                         ),
                       ),
                     ),
@@ -176,8 +186,21 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(widget.targetName, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                        Text(status, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                        Text(
+                          widget.targetName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          status,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -192,7 +215,9 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
                 children: [
                   IconButton(
                     onPressed: _toggleMicrophone,
-                    tooltip: _microphoneEnabled ? 'Mute microphone' : 'Unmute microphone',
+                    tooltip: _microphoneEnabled
+                        ? 'Mute microphone'
+                        : 'Unmute microphone',
                     icon: Icon(
                       _microphoneEnabled ? Icons.mic : Icons.mic_off,
                       color: Colors.white,
@@ -204,13 +229,19 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
                   ),
                   IconButton(
                     onPressed: _endCall,
-                    icon: const Icon(Icons.call_end, color: Colors.white, size: 36),
+                    icon: const Icon(
+                      Icons.call_end,
+                      color: Colors.white,
+                      size: 36,
+                    ),
                     style: IconButton.styleFrom(backgroundColor: Colors.red),
                   ),
                   if (widget.callType == 'video')
                     IconButton(
                       onPressed: _toggleCamera,
-                      tooltip: _cameraEnabled ? 'Turn camera off' : 'Turn camera on',
+                      tooltip: _cameraEnabled
+                          ? 'Turn camera off'
+                          : 'Turn camera on',
                       icon: Icon(
                         _cameraEnabled ? Icons.videocam : Icons.videocam_off,
                         color: Colors.white,

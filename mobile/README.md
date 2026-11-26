@@ -13,6 +13,8 @@ This is the citizen-facing mobile app for the ZEGA-ALERT system. It provides a 5
 - **News**: 4-tab view — Announcements, Legal articles, Missing persons, Sightings
 - **Messages**: Real-time chat with staff via Socket.io
 - **Settings**: Account management, region/city selection, language, safety zones, accessibility, dark mode, callbacks
+- **Registration**: Phone OTP is entered on screen; in development, the temporary OTP is displayed in the app when SMS is unavailable
+- **Identity**: In Settings, verify with a 16-digit FAN or scan the original ID QR; only the FAN is checked against admin-managed mock records
 
 ## Architecture
 
@@ -47,6 +49,30 @@ flutter create .          # generates android/ios/etc scaffolding
 flutter pub get
 flutter run               # on an emulator/device
 ```
+
+## Smaller Android releases for all CPU architectures
+
+For Google Play, build one Android App Bundle with 32-bit ARM, 64-bit ARM, and
+x86_64 support. Play delivers only the native libraries each device needs:
+
+```bash
+flutter build appbundle --release \
+  --target-platform=android-arm,android-arm64,android-x64
+```
+
+To install or share a single APK directly across supported devices, build a
+universal APK:
+
+```bash
+flutter build apk --release \
+  --target-platform=android-arm,android-arm64,android-x64
+```
+
+This creates `build/app/outputs/flutter-apk/app-release.apk` with all three
+architectures. Share the same file with every supported device; Android uses
+the native libraries matching that device. The universal APK is larger because
+it includes every architecture. For the smallest device-specific downloads,
+publish the App Bundle to Google Play instead.
 
 ## Configuration
 

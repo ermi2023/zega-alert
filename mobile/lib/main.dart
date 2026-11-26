@@ -38,6 +38,24 @@ import 'widgets/sos_dialog.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+Future<void> _handleExpiredSession() async {
+  final navigator = navigatorKey.currentState;
+  if (navigator == null) return;
+  navigator.pushAndRemoveUntil(
+    MaterialPageRoute(builder: (_) => const LoginScreen()),
+    (route) => false,
+  );
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Your session has ended. Please sign in again.'),
+      ),
+    );
+  });
+}
+
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   workmanager.Workmanager().executeTask((task, inputData) async {
@@ -55,6 +73,7 @@ void callbackDispatcher() {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  Api.onSessionExpired = _handleExpiredSession;
   if (!kIsWeb) {
     try {
       await Firebase.initializeApp(
@@ -85,9 +104,6 @@ void main() async {
   await Api.resolveHost();
   await Api.loadToken();
   await PersonImageCacheService.initialize();
-  if (Api.token != null && !kIsWeb) {
-    await NotificationService.initialize();
-  }
 
   if (Api.token != null) {
     try {
@@ -306,6 +322,7 @@ class _MainShellState extends State<MainShell> {
     NotificationState.changes.addListener(_fetchNewsUnread);
     _fetchNewsUnread();
     if (Api.isLoggedIn) {
+      unawaited(NotificationService.initialize());
       SocketService.connect();
       SocketService.onCallbackNew = _onCallbackNew;
       SocketService.onSosStatus = _onSosStatus;
@@ -361,7 +378,14 @@ class _MainShellState extends State<MainShell> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not clear news notifications: $e')),
+        SnackBar(
+          content: Text(
+            Api.userMessage(
+              e,
+              fallback: 'Could not clear notifications right now.',
+            ),
+          ),
+        ),
       );
     } finally {
       _markingNewsRead = false;
@@ -449,7 +473,14 @@ class _MainShellState extends State<MainShell> {
               } catch (error) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Could not decline call: $error')),
+                  SnackBar(
+                    content: Text(
+                      Api.userMessage(
+                        error,
+                        fallback: 'Could not decline the call.',
+                      ),
+                    ),
+                  ),
                 );
               }
             },

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../l10n/app_localizations.dart';
 import '../services/api.dart';
 import '../services/location_service.dart';
@@ -34,7 +35,8 @@ class _PodActionsState extends State<PodActions> {
   Future<void> _directCall() async {
     if (!await ensureAuthed(
       context,
-      reason: 'Sign in to request a direct call from the nearest police station.',
+      reason:
+          'Sign in to request a direct call from the nearest police station.',
     )) {
       return;
     }
@@ -48,7 +50,9 @@ class _PodActionsState extends State<PodActions> {
         'longitude': pos.lng,
       });
       final station = data is Map ? data['station'] : null;
-      final stationName = station is Map ? (station['name'] ?? 'nearest station') : 'nearest station';
+      final stationName = station is Map
+          ? (station['name'] ?? 'nearest station')
+          : 'nearest station';
       final stationPhone = station is Map ? station['phone']?.toString() : null;
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -68,7 +72,7 @@ class _PodActionsState extends State<PodActions> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.couldNotStartCall(e))),
+        SnackBar(content: Text(loc.couldNotStartCall(Api.userMessage(e)))),
       );
     } finally {
       if (mounted) setState(() => _busy = null);
@@ -95,12 +99,16 @@ class _PodActionsState extends State<PodActions> {
       String? videoUrl;
       if (kIsWeb) {
         final bytes = await file.readAsBytes();
-        final up = await Api.uploadBytes('/upload/single', [
-          MapEntry('file', bytes),
-        ], filenames: {'file': file.name});
+        final up = await Api.uploadBytes(
+          '/upload/single',
+          [MapEntry('file', bytes)],
+          filenames: {'file': file.name},
+        );
         videoUrl = Api.assetUrl(up['url']?.toString());
       } else {
-        final up = await Api.upload('/upload/single', [MapEntry('file', file.path)]);
+        final up = await Api.upload('/upload/single', [
+          MapEntry('file', file.path),
+        ]);
         videoUrl = Api.assetUrl(up['url']?.toString());
       }
 
@@ -112,13 +120,12 @@ class _PodActionsState extends State<PodActions> {
         'longitude': pos.lng,
       });
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.signLanguageRecorded)),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(loc.signLanguageRecorded)));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.couldNotRecordVideo(e))),
+        SnackBar(content: Text(loc.couldNotRecordVideo(Api.userMessage(e)))),
       );
     } finally {
       if (mounted) setState(() => _busy = null);

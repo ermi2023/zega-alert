@@ -14,7 +14,6 @@ import '../widgets/translatable_text.dart';
 import '../services/database_service.dart';
 import '../services/notification_state.dart';
 import 'announcement_detail_screen.dart';
-import 'id_verification_screen.dart';
 import 'missing_report_screen.dart';
 import 'person_detail_screen.dart';
 
@@ -143,8 +142,10 @@ class _NewsScreenState extends State<NewsScreen>
         } catch (e) {
           if (mounted) {
             setState(() {
-              _loadError =
-                  'Feed refreshed, but notifications could not be cleared: $e';
+              _loadError = Api.userMessage(
+                e,
+                fallback: 'The feed refreshed, but notifications could not be cleared.',
+              );
             });
           }
         }
@@ -169,7 +170,10 @@ class _NewsScreenState extends State<NewsScreen>
           }
         } else {
           setState(() {
-            _loadError = 'Failed to load updates: $e';
+            _loadError = Api.userMessage(
+              e,
+              fallback: 'Could not load updates right now.',
+            );
             _loading = false;
           });
         }
@@ -188,7 +192,14 @@ class _NewsScreenState extends State<NewsScreen>
       final data = await Api.get(path);
       if (mounted) setState(() => _legal = data is List ? data : []);
     } catch (e) {
-      if (mounted) setState(() => _loadError = 'Failed to load: $e');
+      if (mounted) {
+        setState(
+          () => _loadError = Api.userMessage(
+            e,
+            fallback: 'Could not load this information right now.',
+          ),
+        );
+      }
     }
   }
 
@@ -239,9 +250,13 @@ class _NewsScreenState extends State<NewsScreen>
         _dislikeCounts[key] = currentDislikes;
       });
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Please sign in to react: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              Api.userMessage(e, fallback: 'Please sign in to react.'),
+            ),
+          ),
+        );
       }
     }
   }
@@ -303,9 +318,13 @@ class _NewsScreenState extends State<NewsScreen>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to post comment: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              Api.userMessage(e, fallback: 'Could not post your comment.'),
+            ),
+          ),
+        );
       }
     }
   }
@@ -353,23 +372,6 @@ class _NewsScreenState extends State<NewsScreen>
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Scan Fayda ID',
-                  onPressed: () async {
-                    if (!await ensureAuthed(
-                      context,
-                      reason: 'Sign in to verify your Fayda National ID.',
-                    ))
-                      return;
-                    if (!context.mounted) return;
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const IdVerificationScreen(),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.qr_code_scanner),
-                ),
-                IconButton(
                   tooltip: 'Refresh',
                   onPressed: _loading
                       ? null
@@ -389,17 +391,17 @@ class _NewsScreenState extends State<NewsScreen>
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Card(
-                color: Colors.red.shade50,
+                color: Colors.blueGrey.shade50,
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: Row(
                     children: [
-                      const Icon(Icons.error_outline, color: Colors.red),
+                      const Icon(Icons.info_outline, color: Colors.blueGrey),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           _loadError!,
-                          style: const TextStyle(color: Colors.red),
+                          style: const TextStyle(color: Colors.blueGrey),
                         ),
                       ),
                     ],

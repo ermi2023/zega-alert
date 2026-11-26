@@ -144,7 +144,10 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
       if (mounted) {
         setState(() {
           _sending = false;
-          _statusText = 'Dispatch alert failed: $e';
+          _statusText = Api.userMessage(
+            e,
+            fallback: 'Could not send the emergency alert. Please try again.',
+          );
         });
       }
     }
@@ -179,7 +182,10 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
       if (!mounted) return;
       setState(() {
         _liveStatus = 'error';
-        _liveError = error.toString();
+        _liveError = Api.userMessage(
+          error,
+          fallback: 'Could not connect the live stream. Please try again.',
+        );
       });
     }
   }

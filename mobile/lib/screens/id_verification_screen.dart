@@ -1,6 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter/services.dart';
+
 import '../l10n/app_localizations.dart';
 import '../services/api.dart';
 import 'qr_scan_screen.dart';
@@ -13,11 +13,9 @@ class IdVerificationScreen extends StatefulWidget {
 }
 
 class _IdVerificationScreenState extends State<IdVerificationScreen> {
+  final _fanNumber = TextEditingController();
   String _status = 'not_verified';
-  XFile? _idFile;
-  Uint8List? _idBytes;
-  final _idNumber = TextEditingController();
-  final _fullName = TextEditingController();
+  Map<String, dynamic>? _mockRecord;
   bool _busy = false;
   String? _message;
 
@@ -27,105 +25,87 @@ class _IdVerificationScreenState extends State<IdVerificationScreen> {
     _checkStatus();
   }
 
+  @override
+  void dispose() {
+    _fanNumber.dispose();
+    super.dispose();
+  }
+
   Future<void> _checkStatus() async {
     try {
       final data = await Api.get('/verification/status');
-      setState(() => _status = data['status'] ?? 'not_verified');
-    } catch (_) {}
-  }
-
-  Future<void> _pickImage() async {
-    final loc = AppLocalizations.of(context);
-    final source = await showModalBottomSheet<ImageSource>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: Text(loc.takePhoto),
-              onTap: () => Navigator.pop(ctx, ImageSource.camera),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: Text(loc.chooseFromGallery),
-              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (source == null) return;
-
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: source, maxWidth: 1920, imageQuality: 85);
-    if (picked != null) {
-      final bytes = await picked.readAsBytes();
-      setState(() { _idFile = picked; _idBytes = bytes; });
+      if (mounted) {
+        setState(() {
+          _status = data['status'] ?? 'not_verified';
+          final record = data['mock_record'];
+          _mockRecord = record is Map
+              ? Map<String, dynamic>.from(record)
+              : null;
+        });
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _message = Api.userMessage(
+            error,
+            fallback: 'Verification status is unavailable right now. Try again later.',
+          );
+        });
+      }
     }
   }
 
-  Future<void> _scanQr() async {
-    final raw = await Navigator.of(context).push<String>(
-      MaterialPageRoute(builder: (_) => const QrScanScreen()),
-    );
-    if (raw == null || raw.isEmpty) return;
-    setState(() { _busy = true; _message = null; });
-    try {
-      final result = await Api.post('/verification/qr', {
-        'qr_data': raw,
-        'full_name': _fullName.text.trim().isNotEmpty ? _fullName.text.trim() : null,
-      });
-      setState(() {
-        _status = result['status'] ?? 'verified';
-        _message = result['message'] ?? 'Verified via Fayda QR.';
-      });
-    } catch (e) {
-      setState(() => _message = 'Failed: $e');
-    } finally {
-      setState(() => _busy = false);
-    }
-  }
-
-  Future<void> _submit() async {
-    final loc = AppLocalizations.of(context);
-    if (_idFile == null || _idNumber.text.trim().isEmpty) {
-      setState(() => _message = loc.idNumberPhotoRequired);
+  Future<void> _verifyFan() async {
+    final fanNumber = _fanNumber.text.trim();
+    if (!RegExp(r'^\d{16}$').hasMatch(fanNumber)) {
+      setState(() => _message = 'Enter a valid 16-digit FAN number.');
       return;
     }
 
-    setState(() { _busy = true; _message = null; });
+    await _submitVerification('/verification/fan', {'fan_number': fanNumber});
+  }
+
+  Future<void> _scanAndVerify() async {
+    final qrData = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (_) => const QrScanScreen(title: 'Scan original ID QR'),
+      ),
+    );
+    if (!mounted || qrData == null) return;
+    await _submitVerification('/verification/qr', {'qr_data': qrData});
+  }
+
+  Future<void> _submitVerification(
+    String endpoint,
+    Map<String, dynamic> body,
+  ) async {
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
     try {
-      final bytes = _idBytes ?? await _idFile!.readAsBytes();
-      String? imageUrl;
-      if (kIsWeb) {
-        final uploadResult = await Api.uploadBytes('/upload/single', [
-          MapEntry('file', bytes),
-        ], filenames: {'file': _idFile!.name});
-        imageUrl = Api.assetUrl(uploadResult['url']?.toString());
-      } else {
-        final uploadResult = await Api.upload('/upload/single', [MapEntry('file', _idFile!.path)]);
-        imageUrl = Api.assetUrl(uploadResult['url']?.toString());
-      }
-      if (imageUrl == null || imageUrl.isEmpty) {
-        throw Exception('Upload did not return a file URL');
-      }
-
-      final result = await Api.post('/verification/submit', {
-        'id_number': _idNumber.text.trim(),
-        'id_image_url': imageUrl,
-        'full_name': _fullName.text.trim().isNotEmpty ? _fullName.text.trim() : null,
-      });
-
+      final response = await Api.post(endpoint, body);
+      final result = response is Map
+          ? Map<String, dynamic>.from(response)
+          : <String, dynamic>{};
+      if (!mounted) return;
       setState(() {
-        _status = result['status'] ?? 'verified';
-        _message = result['message'] ?? loc.verificationSubmitted;
+        _status = result['status']?.toString() ?? 'not_verified';
+        _message = result['message']?.toString();
+        final record = result['mock_record'];
+        _mockRecord = record is Map ? Map<String, dynamic>.from(record) : null;
       });
-    } catch (e) {
-      setState(() => _message = 'Failed: $e');
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _message = Api.userMessage(
+            error,
+            fallback: 'We could not verify this FAN right now. Please try again later.',
+          );
+        });
+      }
     } finally {
-      setState(() => _busy = false);
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -133,8 +113,10 @@ class _IdVerificationScreenState extends State<IdVerificationScreen> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final verified = _status == 'verified';
+    final messageColor = verified ? Colors.green : Colors.blue;
+
     return Scaffold(
-      appBar: AppBar(title: Text(loc.faydaIdVerification)),
+      appBar: AppBar(title: const Text('FAN Identity Verification')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -144,16 +126,31 @@ class _IdVerificationScreenState extends State<IdVerificationScreen> {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  Icon(verified ? Icons.verified : Icons.info_outline, color: verified ? Colors.green : Colors.blue, size: 32),
+                  Icon(
+                    verified ? Icons.verified : Icons.info_outline,
+                    color: messageColor,
+                    size: 32,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(verified ? loc.verified : loc.notVerified,
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: verified ? Colors.green : Colors.blue)),
-                        Text(verified ? loc.identityVerifiedDesc : loc.verifyIdentityDesc,
-                          style: const TextStyle(color: Colors.grey)),
+                        Text(
+                          verified ? loc.verified : loc.notVerified,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: messageColor,
+                          ),
+                        ),
+                        Text(
+                          verified
+                              ? 'Your FAN number matched an active record.'
+                              : 'Enter a FAN number added by an administrator. '
+                                    'Numbers not in the records remain unverified.',
+                          style: const TextStyle(color: Colors.grey),
+                        ),
                       ],
                     ),
                   ),
@@ -161,74 +158,90 @@ class _IdVerificationScreenState extends State<IdVerificationScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 20),
           if (!verified) ...[
-            Text(loc.scanFaydaId, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 20),
+            const Text(
+              'Verify with your original ID',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
-            Text(loc.scanIdInstruction, style: const TextStyle(color: Colors.grey)),
+            const Text(
+              'Scan the QR code on your original ID or enter its 16-digit FAN. '
+              'The app checks only the FAN against the administrator’s mock '
+              'record and displays the saved mock details, not QR contents.',
+              style: TextStyle(color: Colors.grey),
+            ),
             const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: _busy ? null : _scanQr,
+            OutlinedButton.icon(
+              onPressed: _busy ? null : _scanAndVerify,
               icon: const Icon(Icons.qr_code_scanner),
-              label: const Text('Scan Fayda QR code'),
+              label: const Text('Scan original ID QR'),
             ),
-            const SizedBox(height: 16),
-            GestureDetector(
-              onTap: _pickImage,
-              child: Container(
-                height: 200,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: _idBytes != null
-                    ? ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.memory(_idBytes!, fit: BoxFit.cover))
-                    : Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.credit_card, size: 64, color: Colors.grey.shade400),
-                          const SizedBox(height: 8),
-                          Text(loc.tapToScanId, style: TextStyle(color: Colors.grey.shade600)),
-                        ],
-                      ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _idNumber,
+            const SizedBox(height: 12),
+            TextField(
+              controller: _fanNumber,
+              keyboardType: TextInputType.number,
+              maxLength: 16,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: InputDecoration(
-                labelText: loc.faydaIdNumber,
-                hintText: loc.faydaIdHint,
+                labelText: 'FAN number',
+                hintText: '16 digits',
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.badge_outlined),
-              ),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _fullName,
-              decoration: InputDecoration(
-                labelText: loc.fullNameAsOnId,
-                border: const OutlineInputBorder(),
-                prefixIcon: const Icon(Icons.person_outline),
+                suffixIcon: IconButton(
+                  tooltip: 'Clear FAN number',
+                  onPressed: _busy ? null : _fanNumber.clear,
+                  icon: const Icon(Icons.clear),
+                ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             FilledButton.icon(
-              onPressed: _busy ? null : _submit,
-              icon: _busy ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              onPressed: _busy ? null : _verifyFan,
+              icon: _busy
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
                   : const Icon(Icons.verified_user),
-              label: Text(_busy ? loc.verifying : loc.submitForVerification),
+              label: Text(_busy ? 'Checking FAN…' : 'Verify FAN'),
+            ),
+          ],
+          if (verified && _mockRecord != null) ...[
+            const SizedBox(height: 20),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Matched administrator record (mock data)',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    _recordDetail('Name', _mockRecord!['full_name']),
+                    _recordDetail('Phone', _mockRecord!['phone']),
+                    _recordDetail('FAN number', _mockRecord!['fan_number']),
+                  ],
+                ),
+              ),
             ),
           ],
           if (_message != null) ...[
             const SizedBox(height: 16),
             Card(
-              color: _message!.startsWith('Failed') ? Colors.red.shade50 : Colors.green.shade50,
+              color: messageColor.withValues(alpha: 0.08),
               child: Padding(
                 padding: const EdgeInsets.all(12),
-                child: Text(_message!, style: TextStyle(color: _message!.startsWith('Failed') ? Colors.red : Colors.green)),
+                child: Text(
+                  _message!,
+                  style: TextStyle(color: messageColor.shade700),
+                ),
               ),
             ),
           ],
@@ -236,4 +249,15 @@ class _IdVerificationScreenState extends State<IdVerificationScreen> {
       ),
     );
   }
+
+  Widget _recordDetail(String label, dynamic value) => Padding(
+    padding: const EdgeInsets.only(top: 6),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(width: 92, child: Text(label)),
+        Expanded(child: Text(value?.toString() ?? '—')),
+      ],
+    ),
+  );
 }

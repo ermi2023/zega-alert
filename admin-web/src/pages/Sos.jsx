@@ -480,8 +480,14 @@ export default function Sos() {
                   ? s.station_name || 'Nearest station'
                   : `Central dispatch${s.station_name ? ` (${s.station_name} unstaffed)` : ''}`}</td>
                 <td><span className={`badge ${badge(s.status)}`}>{s.status}</span>
-                  {s.geofence && !s.geofence.inside_safety_zone && (
-                    <div className="msg err" style={{ margin: '4px 0 0' }}>⚠ Outside safety zones</div>
+                  {s.geofence && s.latitude != null && s.longitude != null && (
+                    s.geofence.inside_safety_zone ? (
+                      <div className="msg ok" style={{ margin: '4px 0 0' }}>
+                        Inside safety area: {(s.geofence.matching_zones || []).map((zone) => zone.name).join(', ')}
+                      </div>
+                    ) : (
+                      <div className="msg err" style={{ margin: '4px 0 0' }}>Outside marked safety areas</div>
+                    )
                   )}
                   {s.geofence?.nearest_police_station && (
                     <div className="msg ok" style={{ margin: '4px 0 0' }}>Police station {Math.round(s.geofence.nearest_police_station.dist)}m away</div>

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+
 import '../l10n/app_localizations.dart';
 import '../services/api.dart';
 import '../services/location_service.dart';
@@ -30,11 +31,18 @@ class _MissingReportScreenState extends State<MissingReportScreen> {
   Future<void> _submit() async {
     final loc = AppLocalizations.of(context);
     if (!_form.currentState!.validate()) return;
-    setState(() { _busy = true; _status = null; });
+    setState(() {
+      _busy = true;
+      _status = null;
+    });
     try {
       Position? pos;
-      try { pos = await LocationService.best(); } catch (_) {}
-      final allPhotos = _photos.isNotEmpty ? _photos : (_photoUrl != null ? [_photoUrl!] : <String>[]);
+      try {
+        pos = await LocationService.best();
+      } catch (_) {}
+      final allPhotos = _photos.isNotEmpty
+          ? _photos
+          : (_photoUrl != null ? [_photoUrl!] : <String>[]);
       final result = await Api.postOrQueue('/persons/missing', {
         'name': _name.text.trim(),
         'age': int.tryParse(_age.text),
@@ -49,9 +57,11 @@ class _MissingReportScreenState extends State<MissingReportScreen> {
         'region': Api.region,
         'sub_city': Api.subCity,
       });
-      setState(() => _status = result['queued'] == true
-          ? 'You are offline. Report saved and will be submitted automatically when back online.'
-          : '${loc.missingPersonReportSubmitted} Pending Regional Admin approval before it is published publicly.');
+      setState(
+        () => _status = result['queued'] == true
+            ? 'You are offline. Report saved and will be submitted automatically when back online.'
+            : '${loc.missingPersonReportSubmitted} Pending Regional Admin approval before it is published publicly.',
+      );
       _name.clear();
       _age.clear();
       _desc.clear();
@@ -61,18 +71,39 @@ class _MissingReportScreenState extends State<MissingReportScreen> {
       _lastSeenAt = null;
       widget.onDone?.call();
     } catch (e) {
-      setState(() => _status = 'Failed: $e');
+      setState(
+        () => _status = Api.userMessage(
+          e,
+          fallback: 'Could not submit this report. Please try again.',
+        ),
+      );
     } finally {
       setState(() => _busy = false);
     }
   }
 
   Future<void> _pickLastSeen() async {
-    final picked = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime.now().subtract(const Duration(days: 3650)), lastDate: DateTime.now());
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now().subtract(const Duration(days: 3650)),
+      lastDate: DateTime.now(),
+    );
     if (picked == null || !mounted) return;
-    final time = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
     if (time == null || !mounted) return;
-    setState(() => _lastSeenAt = DateTime(picked.year, picked.month, picked.day, time.hour, time.minute));
+    setState(
+      () => _lastSeenAt = DateTime(
+        picked.year,
+        picked.month,
+        picked.day,
+        time.hour,
+        time.minute,
+      ),
+    );
   }
 
   @override
@@ -83,36 +114,89 @@ class _MissingReportScreenState extends State<MissingReportScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          if (_status != null) Card(color: _status!.startsWith('Failed') ? Colors.red.shade50 : Colors.green.shade50, child: Padding(padding: const EdgeInsets.all(12), child: Text(_status!, style: TextStyle(color: _status!.startsWith('Failed') ? Colors.red : Colors.green)))),
+          if (_status != null)
+            Card(
+              color: Colors.blueGrey.shade50,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Text(
+                  _status!,
+                  style: const TextStyle(color: Colors.blueGrey),
+                ),
+              ),
+            ),
           const SizedBox(height: 8),
           Form(
             key: _form,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                TextFormField(controller: _name, decoration: InputDecoration(labelText: loc.fullNameMissingPerson, border: const OutlineInputBorder()), validator: (v) => v == null || v.isEmpty ? loc.required : null),
+                TextFormField(
+                  controller: _name,
+                  decoration: InputDecoration(
+                    labelText: loc.fullNameMissingPerson,
+                    border: const OutlineInputBorder(),
+                  ),
+                  validator: (v) =>
+                      v == null || v.isEmpty ? loc.required : null,
+                ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Expanded(child: TextFormField(controller: _age, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: loc.ageOptional, border: const OutlineInputBorder()))),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _age,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: loc.ageOptional,
+                          border: const OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         initialValue: _gender,
-                        decoration: InputDecoration(labelText: loc.gender, border: const OutlineInputBorder()),
-                        items: [DropdownMenuItem(value: 'Male', child: Text(loc.male)), DropdownMenuItem(value: 'Female', child: Text(loc.female)), DropdownMenuItem(value: 'Unknown', child: Text(loc.unknown))],
+                        decoration: InputDecoration(
+                          labelText: loc.gender,
+                          border: const OutlineInputBorder(),
+                        ),
+                        items: [
+                          DropdownMenuItem(
+                            value: 'Male',
+                            child: Text(loc.male),
+                          ),
+                          DropdownMenuItem(
+                            value: 'Female',
+                            child: Text(loc.female),
+                          ),
+                          DropdownMenuItem(
+                            value: 'Unknown',
+                            child: Text(loc.unknown),
+                          ),
+                        ],
                         onChanged: (v) => setState(() => _gender = v!),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                TextFormField(controller: _address, decoration: InputDecoration(labelText: loc.lastSeenLocation, border: const OutlineInputBorder())),
+                TextFormField(
+                  controller: _address,
+                  decoration: InputDecoration(
+                    labelText: loc.lastSeenLocation,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
                   onPressed: _pickLastSeen,
                   icon: const Icon(Icons.schedule),
-                  label: Text(_lastSeenAt == null ? loc.lastSeenDateTime : loc.lastSeenPrefix(_lastSeenAt!.toLocal())),
+                  label: Text(
+                    _lastSeenAt == null
+                        ? loc.lastSeenDateTime
+                        : loc.lastSeenPrefix(_lastSeenAt!.toLocal()),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 PhotoUploadField(
@@ -122,9 +206,19 @@ class _MissingReportScreenState extends State<MissingReportScreen> {
                   onPhotosChanged: (list) => setState(() => _photos = list),
                 ),
                 const SizedBox(height: 12),
-                TextFormField(controller: _desc, maxLines: 4, decoration: InputDecoration(labelText: loc.descriptionIdentifying, border: const OutlineInputBorder())),
+                TextFormField(
+                  controller: _desc,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    labelText: loc.descriptionIdentifying,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
                 const SizedBox(height: 16),
-                FilledButton(onPressed: _busy ? null : _submit, child: Text(_busy ? loc.submitting : loc.submitReport)),
+                FilledButton(
+                  onPressed: _busy ? null : _submit,
+                  child: Text(_busy ? loc.submitting : loc.submitReport),
+                ),
               ],
             ),
           ),
@@ -135,7 +229,13 @@ class _MissingReportScreenState extends State<MissingReportScreen> {
 }
 
 class SightingReportScreen extends StatefulWidget {
-  const SightingReportScreen({super.key, this.onDone, this.title, this.missingPersonId, this.wantedPersonId});
+  const SightingReportScreen({
+    super.key,
+    this.onDone,
+    this.title,
+    this.missingPersonId,
+    this.wantedPersonId,
+  });
 
   final VoidCallback? onDone;
   final String? title;
@@ -158,10 +258,15 @@ class _SightingReportScreenState extends State<SightingReportScreen> {
   Future<void> _submit() async {
     final loc = AppLocalizations.of(context);
     if (!_form.currentState!.validate()) return;
-    setState(() { _busy = true; _status = null; });
+    setState(() {
+      _busy = true;
+      _status = null;
+    });
     try {
       Position? pos;
-      try { pos = await LocationService.best(); } catch (_) {}
+      try {
+        pos = await LocationService.best();
+      } catch (_) {}
       await Api.post('/persons/sightings', {
         'missing_person_id': widget.missingPersonId,
         'wanted_person_id': widget.wantedPersonId,
@@ -179,18 +284,39 @@ class _SightingReportScreenState extends State<SightingReportScreen> {
       _seenAt = null;
       widget.onDone?.call();
     } catch (e) {
-      setState(() => _status = 'Failed: $e');
+      setState(
+        () => _status = Api.userMessage(
+          e,
+          fallback: 'Could not submit this report. Please try again.',
+        ),
+      );
     } finally {
       setState(() => _busy = false);
     }
   }
 
   Future<void> _pickSeen() async {
-    final picked = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime.now().subtract(const Duration(days: 30)), lastDate: DateTime.now());
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now().subtract(const Duration(days: 30)),
+      lastDate: DateTime.now(),
+    );
     if (picked == null || !mounted) return;
-    final time = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
     if (time == null || !mounted) return;
-    setState(() => _seenAt = DateTime(picked.year, picked.month, picked.day, time.hour, time.minute));
+    setState(
+      () => _seenAt = DateTime(
+        picked.year,
+        picked.month,
+        picked.day,
+        time.hour,
+        time.minute,
+      ),
+    );
   }
 
   @override
@@ -201,26 +327,60 @@ class _SightingReportScreenState extends State<SightingReportScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          if (_status != null) Card(color: _status!.startsWith('Failed') ? Colors.red.shade50 : Colors.green.shade50, child: Padding(padding: const EdgeInsets.all(12), child: Text(_status!, style: TextStyle(color: _status!.startsWith('Failed') ? Colors.red : Colors.green)))),
+          if (_status != null)
+            Card(
+              color: Colors.blueGrey.shade50,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Text(
+                  _status!,
+                  style: const TextStyle(color: Colors.blueGrey),
+                ),
+              ),
+            ),
           const SizedBox(height: 8),
           Form(
             key: _form,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                TextFormField(controller: _address, decoration: InputDecoration(labelText: loc.whereSeen, border: const OutlineInputBorder())),
+                TextFormField(
+                  controller: _address,
+                  decoration: InputDecoration(
+                    labelText: loc.whereSeen,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
                   onPressed: _pickSeen,
                   icon: const Icon(Icons.schedule),
-                  label: Text(_seenAt == null ? loc.whenOptional : loc.seenAt(_seenAt!.toLocal())),
+                  label: Text(
+                    _seenAt == null
+                        ? loc.whenOptional
+                        : loc.seenAt(_seenAt!.toLocal()),
+                  ),
                 ),
                 const SizedBox(height: 12),
-                TextFormField(controller: _desc, maxLines: 3, decoration: InputDecoration(labelText: loc.descriptionOptional, border: const OutlineInputBorder())),
+                TextFormField(
+                  controller: _desc,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    labelText: loc.descriptionOptional,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
                 const SizedBox(height: 12),
-                PhotoUploadField(label: loc.photoOfSighting, allowMultiple: false, onUploaded: (url) => setState(() => _photoUrl = url)),
+                PhotoUploadField(
+                  label: loc.photoOfSighting,
+                  allowMultiple: false,
+                  onUploaded: (url) => setState(() => _photoUrl = url),
+                ),
                 const SizedBox(height: 16),
-                FilledButton(onPressed: _busy ? null : _submit, child: Text(_busy ? loc.submitting : loc.submitSighting)),
+                FilledButton(
+                  onPressed: _busy ? null : _submit,
+                  child: Text(_busy ? loc.submitting : loc.submitSighting),
+                ),
               ],
             ),
           ),

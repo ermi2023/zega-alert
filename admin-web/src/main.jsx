@@ -29,7 +29,7 @@ import ConfigPage from './pages/SystemAdmin/Config';
 import CarrierPage from './pages/SystemAdmin/Carrier';
 import ActivityPage from './pages/SystemAdmin/Activity';
 import ProfilePage from './pages/SystemAdmin/Profile';
-import { AdminUsersPage, AdminAuditPage, AdminLegalPage, AdminSecurityPage, AdminNotificationsPage } from './pages/SystemAdmin/Wrappers';
+import { AdminUsersPage, AdminFanRecordsPage, AdminAuditPage, AdminLegalPage, AdminSecurityPage, AdminNotificationsPage } from './pages/SystemAdmin/Wrappers';
 import './i18n';
 import './styles.css';
 
@@ -89,6 +89,7 @@ const App = () => (
                 dedicated /admin/* wrappers. */}
             <Route path="/admin"               element={<RequireSystemAdmin><SystemAdminDashboard /></RequireSystemAdmin>} />
             <Route path="/admin/users"         element={<RequireSystemAdmin><AdminUsersPage /></RequireSystemAdmin>} />
+            <Route path="/admin/fan-records"   element={<RequireSystemAdmin><AdminFanRecordsPage /></RequireSystemAdmin>} />
             <Route path="/admin/roles"         element={<RequireSystemAdmin><RolesPage /></RequireSystemAdmin>} />
             <Route path="/admin/config"        element={<RequireSystemAdmin><ConfigPage /></RequireSystemAdmin>} />
             <Route path="/admin/carrier"       element={<RequireSystemAdmin><CarrierPage /></RequireSystemAdmin>} />

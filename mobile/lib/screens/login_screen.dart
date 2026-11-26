@@ -154,7 +154,7 @@ class _LoginScreenState extends State<LoginScreen>
         s.contains('ClientException') ||
         s.toLowerCase().contains('timeout') ||
         s.contains('errno = 110')) {
-      return 'Cannot reach the server at ${Api.baseUrl}.\nCheck your internet connection.';
+      return Api.userMessage(e);
     }
     if (s.toLowerCase().contains('unauthorized') ||
         s.toLowerCase().contains('invalid credentials')) {
@@ -164,7 +164,10 @@ class _LoginScreenState extends State<LoginScreen>
         s.toLowerCase().contains('user not found')) {
       return 'No account found with this phone/email.';
     }
-    return s;
+    return Api.userMessage(
+      e,
+      fallback: 'Sign in could not be completed. Please try again.',
+    );
   }
 
   Future<void> _submit() async {
@@ -233,11 +236,13 @@ class _LoginScreenState extends State<LoginScreen>
       }
       final refreshed = await Api.refreshSession();
       if (!refreshed) {
-        if (mounted)
+        if (mounted) {
           setState(
-            () =>
-                _error = 'Session expired. Please sign in with your password.',
+            () => _error =
+                Api.refreshFailureMessage ??
+                'Your session has ended. Please sign in again.',
           );
+        }
         return;
       }
       if (!mounted) return;
@@ -245,7 +250,7 @@ class _LoginScreenState extends State<LoginScreen>
         context,
       ).pushReplacement(MaterialPageRoute(builder: (_) => const MainShell()));
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      if (mounted) setState(() => _error = Api.userMessage(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

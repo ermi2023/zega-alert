@@ -347,9 +347,9 @@
     "deleted": "Legal content deleted."
   },
   "geofences": {
-    "title": "Geofences",
-    "subtitle": "Safety zones (schools, hospitals, stations, events)",
-    "newGeofence": "New geofence",
+    "title": "Safety Areas",
+    "subtitle": "Official areas used to add context to SOS reports",
+    "newGeofence": "Publish a safety area",
     "name": "Name",
     "type": "Type",
     "region": "Region",

@@ -155,6 +155,18 @@ class AppLocalizationsSo extends AppLocalizations {
   String get safetyZones => 'Aagagga badbaadada (geofences)';
 
   @override
+  String get safetyZonesHomeDescription =>
+      'Cusboonaysiinta aagagga badbaadada iyo xaaladaha degdegga ah ee ka dhaca gudaha aag waxaa lagu daraa sanduuqa ogeysiisyada, waxaana loo diraa ogeysiis degdeg ah haddii ogeysiisyadu daaran yihiin. Dooro aag hoose si aad u aragto khariidad iyo xuduud. Raac tilmaamaha maamulka; aaggu ma dammaanad qaado badbaado.';
+
+  @override
+  String get noSafetyZonesAvailable =>
+      'Gobolkaaga hadda lagama diiwaangelin aag badbaado oo rasmi ah.';
+
+  @override
+  String get safetyZonesLoadFailed =>
+      'Xogta aagagga badbaadada lama soo dejin karin. Mar kale isku day.';
+
+  @override
   String get addSafetyZone => 'Ku dar aagga badbaadada';
 
   @override

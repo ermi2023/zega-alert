@@ -386,6 +386,24 @@ abstract class AppLocalizations {
   /// **'Safety zones (geofences)'**
   String get safetyZones;
 
+  /// No description provided for @safetyZonesHomeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety-zone updates and emergency incidents inside a zone are added to your notification inbox and sent as push alerts when notifications are enabled. Select an area below to see its map and boundary. Follow local instructions; a zone does not guarantee safety.'**
+  String get safetyZonesHomeDescription;
+
+  /// No description provided for @noSafetyZonesAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No official safety zones are currently published for your region.'**
+  String get noSafetyZonesAvailable;
+
+  /// No description provided for @safetyZonesLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety-zone information could not be loaded. Try again.'**
+  String get safetyZonesLoadFailed;
+
   /// No description provided for @addSafetyZone.
   ///
   /// In en, this message translates to:

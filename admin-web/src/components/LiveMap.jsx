@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Circle, Polygon, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -26,6 +26,25 @@ const pin = (kind) => {
 };
 
 const cssHeight = (h) => (typeof h === 'number' ? `${h}px` : h);
+
+function polygonPositions(polygon) {
+  if (!Array.isArray(polygon)) return [];
+  return polygon.map((point) => (Array.isArray(point)
+    ? [Number(point[0]), Number(point[1])]
+    : [Number(point.lat ?? point.latitude), Number(point.lng ?? point.longitude)]));
+}
+
+function geofenceCenter(geofence) {
+  const points = polygonPositions(geofence.polygon);
+  if (points.length >= 3) {
+    return [
+      points.reduce((sum, point) => sum + point[0], 0) / points.length,
+      points.reduce((sum, point) => sum + point[1], 0) / points.length,
+    ];
+  }
+  if (geofence.center_lat == null || geofence.center_lng == null) return null;
+  return [Number(geofence.center_lat), Number(geofence.center_lng)];
+}
 
 // Panels are laid out after mount, so the map needs a size recalculation.
 function ResizeFix() {
@@ -64,7 +83,7 @@ export default function LiveMap({
     center ||
     (alerts[0] && [Number(alerts[0].latitude), Number(alerts[0].longitude)]) ||
     (officers[0] && [Number(officers[0].latitude), Number(officers[0].longitude)]) ||
-    (geofences[0] && [Number(geofences[0].center_lat), Number(geofences[0].center_lng)]) ||
+    (geofences[0] && geofenceCenter(geofences[0])) ||
     defaultCenter;
 
   const fitPoints = [
@@ -83,23 +102,38 @@ export default function LiveMap({
         <ResizeFix />
         <FitBounds points={fitPoints} signature={signature} />
 
-        {geofences.filter((g) => g.center_lat && g.center_lng).map((g) => (
-          <Circle
-            key={`g-${g.id}`}
-            center={[Number(g.center_lat), Number(g.center_lng)]}
-            radius={Number(g.radius_m) || 300}
-            pathOptions={{ color: '#183C59', fillColor: '#183C59', fillOpacity: 0.15, weight: 1 }}
-          >
+        {geofences.filter((g) => g.polygon?.length >= 3 || (
+          g.center_lat != null && g.center_lng != null && Number(g.radius_m) > 0
+        )).map((g) => {
+          const popup = (
             <Popup>
               <div style={{ fontSize: 13 }}>
                 <b>{g.name}</b>
                 <div>Type: {g.type}</div>
                 <div>{g.region || '—'}</div>
-                {g.radius_m ? <div>{g.radius_m}m radius</div> : null}
+                {g.polygon?.length >= 3 ? <div>Mapped boundary</div> : g.radius_m ? <div>{g.radius_m}m radius</div> : null}
               </div>
             </Popup>
-          </Circle>
-        ))}
+          );
+          return g.polygon?.length >= 3 ? (
+            <Polygon
+              key={`g-${g.id}`}
+              positions={polygonPositions(g.polygon)}
+              pathOptions={{ color: '#183C59', fillColor: '#183C59', fillOpacity: 0.15, weight: 1 }}
+            >
+              {popup}
+            </Polygon>
+          ) : (
+            <Circle
+              key={`g-${g.id}`}
+              center={[Number(g.center_lat), Number(g.center_lng)]}
+              radius={Number(g.radius_m)}
+              pathOptions={{ color: '#183C59', fillColor: '#183C59', fillOpacity: 0.15, weight: 1 }}
+            >
+              {popup}
+            </Circle>
+          );
+        })}
 
         {alerts.filter((s) => s.latitude && s.longitude).map((s) => (
           <Marker key={`a-${s.id}`} position={[Number(s.latitude), Number(s.longitude)]} icon={pin('alert')}>

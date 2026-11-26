@@ -75,8 +75,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         'purpose': 'reset_password',
       });
       if (!mounted) return;
-      _developmentCode =
-          response is Map ? response['devOtp']?.toString() : null;
+      _developmentCode = response is Map
+          ? response['devOtp']?.toString()
+          : null;
       if (resend) {
         for (final controller in _otpControllers) {
           controller.clear();
@@ -89,7 +90,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       _startCountdown();
       _otpFocus.first.requestFocus();
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      if (mounted) setState(() => _error = Api.userMessage(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -130,7 +131,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       }
       setState(() => _step = 2);
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      if (mounted) setState(() => _error = Api.userMessage(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -150,7 +151,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       if (!mounted) return;
       setState(() => _step = 3);
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      if (mounted) setState(() => _error = Api.userMessage(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -193,8 +194,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               _step == 0
                                   ? Icons.shield_outlined
                                   : _step == 1
-                                      ? Icons.sms_outlined
-                                      : Icons.lock_reset_outlined,
+                                  ? Icons.sms_outlined
+                                  : Icons.lock_reset_outlined,
                               size: 42,
                               color: const Color(0xFF2563EB),
                             ),
@@ -203,8 +204,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               _step == 0
                                   ? 'Forgot password?'
                                   : _step == 1
-                                      ? 'Verify your number'
-                                      : 'Create a new password',
+                                  ? 'Verify your number'
+                                  : 'Create a new password',
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 color: Color(0xFF142B4A),
@@ -217,8 +218,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               _step == 0
                                   ? 'We’ll send a verification code to the phone number on your account.'
                                   : _step == 1
-                                      ? 'Enter the 6-digit code sent to ${_normalizedPhone()}.'
-                                      : 'Choose a strong password you have not used before.',
+                                  ? 'Enter the 6-digit code sent to ${_normalizedPhone()}.'
+                                  : 'Choose a strong password you have not used before.',
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 color: Color(0xFF64748B),
@@ -256,9 +257,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                   onPressed: _busy || _secondsUntilResend > 0
                                       ? null
                                       : () => _sendCode(resend: true),
-                                  child: Text(_secondsUntilResend > 0
-                                      ? 'Resend code in ${_secondsUntilResend}s'
-                                      : 'Resend code'),
+                                  child: Text(
+                                    _secondsUntilResend > 0
+                                        ? 'Resend code in ${_secondsUntilResend}s'
+                                        : 'Resend code',
+                                  ),
                                 ),
                               ),
                             ],
@@ -269,7 +272,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 liveRegion: true,
                                 child: Text(
                                   _error!,
-                                  style: TextStyle(color: colors.error),
+                                  style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
                                 ),
                               ),
                             ],
@@ -280,10 +287,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 onPressed: _busy
                                     ? null
                                     : _step == 0
-                                        ? () => _sendCode()
-                                        : _step == 1
-                                            ? _verifyCode
-                                            : _savePassword,
+                                    ? () => _sendCode()
+                                    : _step == 1
+                                    ? _verifyCode
+                                    : _savePassword,
                                 child: _busy
                                     ? const SizedBox(
                                         height: 22,
@@ -292,11 +299,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                           strokeWidth: 2,
                                         ),
                                       )
-                                    : Text(_step == 0
-                                        ? 'Send verification code'
-                                        : _step == 1
+                                    : Text(
+                                        _step == 0
+                                            ? 'Send verification code'
+                                            : _step == 1
                                             ? 'Verify code'
-                                            : 'Save new password'),
+                                            : 'Save new password',
+                                      ),
                               ),
                             ),
                             if (_step > 0)
@@ -304,11 +313,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 onPressed: _busy
                                     ? null
                                     : () => setState(() {
-                                          _step = 0;
-                                          _error = null;
-                                        }),
-                                child:
-                                    const Text('Use a different phone number'),
+                                        _step = 0;
+                                        _error = null;
+                                      }),
+                                child: const Text(
+                                  'Use a different phone number',
+                                ),
                               ),
                           ],
                         ),
@@ -347,7 +357,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         keyboardType: TextInputType.phone,
         textInputAction: TextInputAction.done,
         inputFormatters: [
-          FilteringTextInputFormatter.allow(RegExp(r'[\d+\s()-]'))
+          FilteringTextInputFormatter.allow(RegExp(r'[\d+\s()-]')),
         ],
         decoration: InputDecoration(
           labelText: 'Phone number',
@@ -368,8 +378,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Widget _otpInput() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width =
-            ((constraints.maxWidth - 30) / 6).clamp(34.0, 44.0).toDouble();
+        final width = ((constraints.maxWidth - 30) / 6)
+            .clamp(34.0, 44.0)
+            .toDouble();
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: List.generate(6, (index) {
@@ -418,9 +429,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               prefixIcon: const Icon(Icons.lock_outline),
               suffixIcon: IconButton(
                 onPressed: () => setState(() => _showPassword = !_showPassword),
-                icon: Icon(_showPassword
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined),
+                icon: Icon(
+                  _showPassword
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                ),
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),

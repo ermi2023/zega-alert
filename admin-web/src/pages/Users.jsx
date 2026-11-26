@@ -104,13 +104,14 @@ export default function Users() {
 
       <div className="panel">
         <table>
-          <thead><tr><th>{t('users.name')}</th><th>Phone</th><th>Role</th><th>Region</th><th>{t('users.status')}</th><th>{t('users.action')}</th></tr></thead>
+          <thead><tr><th>{t('users.name')}</th><th>Phone</th><th>Role</th><th>Region</th><th>Identity</th><th>{t('users.status')}</th><th>{t('users.action')}</th></tr></thead>
           <tbody>
             {rows.map((u) => (
               <tr key={u.id}>
                 <td>{u.full_name}</td><td>{u.phone}</td>
                 <td><span className="badge blue">{u.role}</span></td>
                 <td>{u.region || '—'}</td>
+                <td><span className={`badge ${u.is_identity_verified ? 'green' : 'blue'}`}>{u.is_identity_verified ? 'Verified' : 'Unverified'}</span></td>
                 <td>{u.is_active ? <span className="badge green">{t('users.active')}</span> : <span className="badge red">{t('users.disabled')}</span>}</td>
                 <td>
                   <button className="btn small ghost" onClick={() => startEdit(u)}>Edit</button>
@@ -121,7 +122,7 @@ export default function Users() {
                 </td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={6} style={{ color: 'var(--muted)' }}>{t('users.noUsers')}</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={7} style={{ color: 'var(--muted)' }}>{t('users.noUsers')}</td></tr>}
           </tbody>
         </table>
       </div>

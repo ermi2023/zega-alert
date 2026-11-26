@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS users (
   preferred_language VARCHAR(10) DEFAULT 'en',
   accessibility_mode BOOLEAN DEFAULT FALSE,
   is_verified        BOOLEAN DEFAULT FALSE,
+  is_identity_verified BOOLEAN NOT NULL DEFAULT FALSE,
   is_active          BOOLEAN DEFAULT TRUE,
   token_version      INTEGER NOT NULL DEFAULT 0,
   failed_login_attempts INTEGER NOT NULL DEFAULT 0,
@@ -92,6 +93,22 @@ CREATE TABLE IF NOT EXISTS users (
   created_at         TIMESTAMPTZ DEFAULT now(),
   updated_at         TIMESTAMPTZ DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS fan_verification_records (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  full_name        TEXT,
+  phone            TEXT,
+  fan_number       VARCHAR(16) NOT NULL UNIQUE CHECK (fan_number ~ '^[0-9]{16}$'),
+  is_active        BOOLEAN NOT NULL DEFAULT TRUE,
+  created_by       UUID REFERENCES users(id) ON DELETE SET NULL,
+  verified_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  verified_at      TIMESTAMPTZ,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_fan_verification_records_active
+  ON fan_verification_records(fan_number) WHERE is_active = TRUE;
 
 -- ------------------------------------------------------------------
 -- OTP CODES (phone/email verification)

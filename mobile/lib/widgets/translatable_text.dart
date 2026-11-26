@@ -183,7 +183,7 @@ class _TranslatableTextState extends State<TranslatableText> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _error = Api.userMessage(e);
           _loading = false;
         });
       }

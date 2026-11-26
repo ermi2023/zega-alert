@@ -13,6 +13,7 @@ import '../widgets/auth_gate.dart';
 import '../widgets/fullscreen_image_viewer.dart';
 import '../widgets/offline_person_image.dart';
 import '../widgets/translatable_text.dart';
+import 'geofence_map_screen.dart';
 import 'missing_report_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -32,6 +33,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _offline = false;
   bool _showFilterBar = false;
   String _selectedFilter = 'All'; // 'All', 'Missing', 'Wanted'
+  List<dynamic> _geofences = [];
+  bool _safetyZonesLoading = true;
+  String? _safetyZonesError;
 
   // Expanded descriptions
   final Set<String> _expandedCards = {};
@@ -55,6 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     SocketService.connect();
     _load();
+    _loadSafetyZones();
   }
 
   @override
@@ -110,7 +115,12 @@ class _HomeScreenState extends State<HomeScreen> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Could not clear person notifications: $e'),
+                content: Text(
+                  Api.userMessage(
+                    e,
+                    fallback: 'Could not clear notifications right now.',
+                  ),
+                ),
               ),
             );
           }
@@ -126,10 +136,48 @@ class _HomeScreenState extends State<HomeScreen> {
           _offline = true;
         });
       } else {
-        setState(() => _loadError = 'Failed to load data: $e');
+        setState(
+          () => _loadError = Api.userMessage(
+            e,
+            fallback: 'Could not load data right now.',
+          ),
+        );
       }
     } finally {
       setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _loadSafetyZones() async {
+    setState(() {
+      _safetyZonesLoading = true;
+      _safetyZonesError = null;
+    });
+    try {
+      final region = Api.region;
+      final endpoint = region == null
+          ? '/geofences'
+          : '/geofences?region=${Uri.encodeQueryComponent(region)}';
+      final result = await Api.get(endpoint);
+      if (result is! List) {
+        throw const FormatException('Unexpected safety-zone response');
+      }
+      if (mounted) {
+        setState(() {
+          _geofences = result;
+          _safetyZonesLoading = false;
+        });
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _safetyZonesError = Api.userMessage(
+            error,
+            fallback: AppLocalizations.of(context).safetyZonesLoadFailed,
+          );
+          _safetyZonesLoading = false;
+        });
+      }
     }
   }
 
@@ -176,7 +224,11 @@ class _HomeScreenState extends State<HomeScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Please sign in to like posts: $e')),
+          SnackBar(
+            content: Text(
+              Api.userMessage(e, fallback: 'Please sign in to like posts.'),
+            ),
+          ),
         );
       }
     }
@@ -239,9 +291,13 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to post comment: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              Api.userMessage(e, fallback: 'Could not post your comment.'),
+            ),
+          ),
+        );
       }
     }
   }
@@ -342,7 +398,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return NotificationListener<ScrollNotification>(
       onNotification: _handleFilterBarScroll,
       child: RefreshIndicator(
-        onRefresh: () => _load(clearPersonNotifications: true),
+        onRefresh: () async {
+          await Future.wait([
+            _load(clearPersonNotifications: true),
+            _loadSafetyZones(),
+          ]);
+        },
         color: const Color(0xFF1E3A8A),
         child: Column(
           children: [
@@ -413,7 +474,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           const Icon(
                             Icons.error_outline,
                             size: 48,
-                            color: Colors.red,
+                            color: Colors.blueGrey,
                           ),
                           const SizedBox(height: 12),
                           Text(_loadError!, textAlign: TextAlign.center),
@@ -449,6 +510,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<Widget> _buildHomeSectionWidgets(AppLocalizations loc) {
     return [
+      _buildSafetyZonesCard(loc),
       Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
@@ -479,6 +541,96 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     ];
+  }
+
+  Widget _buildSafetyZonesCard(AppLocalizations loc) {
+    return Semantics(
+      container: true,
+      explicitChildNodes: true,
+      label: '${loc.safetyZones}. ${loc.safetyZonesHomeDescription}',
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 12),
+        color: const Color(0xFFEAF2FF),
+        child: ExpansionTile(
+          initiallyExpanded: true,
+          leading: const Icon(
+            Icons.health_and_safety_outlined,
+            color: Color(0xFF123B73),
+            size: 30,
+          ),
+          title: Text(
+            loc.safetyZones,
+            style: const TextStyle(
+              color: Color(0xFF123B73),
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          subtitle: Text(loc.safetyZonesHomeDescription),
+          children: [
+            if (_safetyZonesLoading)
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    semanticsLabel: 'Loading safety zones',
+                  ),
+                ),
+              )
+            else if (_safetyZonesError != null)
+              ListTile(
+                leading: const Icon(Icons.error_outline, color: Colors.red),
+                title: Text(_safetyZonesError!),
+                trailing: IconButton(
+                  tooltip: 'Retry loading safety zones',
+                  onPressed: _loadSafetyZones,
+                  icon: const Icon(Icons.refresh),
+                ),
+              )
+            else if (_geofences.isEmpty)
+              ListTile(
+                leading: const Icon(Icons.info_outline),
+                title: Text(loc.noSafetyZonesAvailable),
+              )
+            else
+              ..._geofences.map((item) {
+                final zone = Map<String, dynamic>.from(item as Map);
+                final name = (zone['label'] ?? zone['name'] ?? 'Safety zone')
+                    .toString();
+                final type = (zone['type'] ?? 'area').toString().replaceAll(
+                  '_',
+                  ' ',
+                );
+                final location = [
+                  if (zone['region'] != null) zone['region'].toString(),
+                  if (zone['sub_city'] != null) zone['sub_city'].toString(),
+                ].join(' · ');
+                return Semantics(
+                  button: true,
+                  label:
+                      '$name, $type. ${location.isEmpty ? '' : '$location. '}Open map and boundary.',
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.location_on_outlined,
+                      color: Color(0xFF123B73),
+                    ),
+                    title: Text(name),
+                    subtitle: Text(
+                      [type, if (location.isNotEmpty) location].join(' · '),
+                    ),
+                    trailing: const Icon(Icons.map_outlined),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => GeofenceMapScreen(geofence: zone),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildFilterTabs(AppLocalizations loc) {

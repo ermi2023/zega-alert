@@ -4,7 +4,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
 import '../main.dart';
-import 'auth_screen.dart';
 import 'login_screen.dart';
 import 'id_verification_screen.dart';
 import 'communication_screen.dart';
@@ -13,7 +12,7 @@ import '../services/person_image_cache_service.dart';
 import '../widgets/auth_gate.dart';
 import '../widgets/pod_actions.dart';
 import 'callbacks_screen.dart';
-import 'geofence_editor_screen.dart';
+import 'geofence_map_screen.dart';
 import '../config/constants.dart';
 
 const _languages = [
@@ -102,7 +101,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _language = me['preferred_language'] ?? 'en';
         _region = me['region'] ?? 'Addis Ababa';
         _subCity = me['sub_city'] ?? (subCitiesByRegion[_region]?.first ?? '');
-        final geofenceResult = await Api.get('/geofences');
+        final geofenceResult = await Api.get(
+          '/geofences?region=${Uri.encodeQueryComponent(_region)}',
+        );
         geofences = geofenceResult is List ? geofenceResult : [];
         await Api.setProfile(me);
         if (mounted) ZegaAlertApp.of(context)?.setLanguage(_language);
@@ -116,7 +117,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _loadError = 'Failed to load settings: $e');
+      if (mounted)
+        setState(
+          () => _loadError = Api.userMessage(
+            e,
+            fallback: 'Could not load settings right now.',
+          ),
+        );
     }
   }
 
@@ -132,7 +139,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     } catch (error) {
       if (mounted) {
-        setState(() => _status = 'Could not read cached photo storage: $error');
+        setState(
+          () => _status = Api.userMessage(
+            error,
+            fallback: 'Could not read saved photo storage.',
+          ),
+        );
       }
     }
   }
@@ -152,7 +164,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         setState(() {
           _personPhotoCachingEnabled = PersonImageCacheService.enabled.value;
-          _status = 'Could not update photo storage settings: $error';
+          _status = Api.userMessage(
+            error,
+            fallback: 'Could not update photo storage settings.',
+          );
         });
       }
     } finally {
@@ -189,7 +204,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await _refreshPersonPhotoCacheUsage();
     } catch (error) {
       if (mounted) {
-        setState(() => _status = 'Could not clear saved photos: $error');
+        setState(
+          () => _status = Api.userMessage(
+            error,
+            fallback: 'Could not clear saved photos.',
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _personPhotoCacheBusy = false);
@@ -252,7 +272,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ZegaAlertApp.of(context)?.setLanguage(_language);
       setState(() => _status = 'Profile and settings saved.');
     } catch (e) {
-      if (mounted) setState(() => _status = 'Failed: $e');
+      if (mounted)
+        setState(
+          () => _status = Api.userMessage(
+            e,
+            fallback: 'Could not save your profile.',
+          ),
+        );
     }
   }
 
@@ -273,43 +299,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _confirmPassword.clear();
       setState(() => _passwordStatus = 'Password changed successfully.');
     } catch (e) {
-      if (mounted) setState(() => _passwordStatus = 'Failed: $e');
-    } finally {
-      if (mounted) setState(() => _passwordBusy = false);
-    }
-  }
-
-  Future<void> _addGeofence() async {
-    final loc = AppLocalizations.of(context);
-    if (_geofences.length >= 10) {
       if (mounted)
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Maximum of 10 active safety zones reached. Delete one first.',
-            ),
+        setState(
+          () => _passwordStatus = Api.userMessage(
+            e,
+            fallback: 'Could not change your password.',
           ),
         );
-      return;
-    }
-    final created = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => const GeofenceEditorScreen()),
-    );
-    if (created == true) {
-      await _load();
-      if (mounted) setState(() => _status = loc.safetyZoneCreated);
-    }
-  }
-
-  Future<void> _editGeofence(Map<String, dynamic> geofence) async {
-    final updated = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => GeofenceEditorScreen(geofence: geofence),
-      ),
-    );
-    if (updated == true) {
-      await _load();
-      if (mounted) setState(() => _status = 'Safety zone updated.');
+    } finally {
+      if (mounted) setState(() => _passwordBusy = false);
     }
   }
 
@@ -318,29 +316,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (translations is! Map) return null;
     final localized = translations[_language];
     return localized is Map ? Map<String, dynamic>.from(localized) : null;
-  }
-
-  Future<void> _deleteGeofence(String id) async {
-    try {
-      await Api.delete('/geofences/$id');
-      if (!mounted) return;
-      final loc = AppLocalizations.of(context);
-      setState(() => _status = loc.safetyZoneDeleted);
-    } catch (e) {
-      setState(() => _status = 'Failed: $e');
-    }
-    _load();
-  }
-
-  Future<void> _toggleGeofence(String id, bool active) async {
-    try {
-      await Api.patch('/geofences/$id', {'is_active': active});
-      _load();
-    } catch (e) {
-      if (mounted)
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Failed: $e')));
-    }
   }
 
   Future<void> _logout() async {
@@ -374,34 +349,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const SizedBox(height: 16),
         if (_status != null)
           Card(
-            color: _status!.startsWith('Failed')
-                ? Colors.red.shade50
-                : Colors.green.shade50,
+            color: Colors.blueGrey.shade50,
             child: Padding(
               padding: const EdgeInsets.all(10),
               child: Text(
                 _status!,
-                style: TextStyle(
-                  color: _status!.startsWith('Failed')
-                      ? Colors.red
-                      : Colors.green,
-                ),
+                style: const TextStyle(color: Colors.blueGrey),
               ),
             ),
           ),
         if (_loadError != null)
           Card(
-            color: Colors.red.shade50,
+            color: Colors.blueGrey.shade50,
             child: Padding(
               padding: const EdgeInsets.all(10),
               child: Row(
                 children: [
-                  const Icon(Icons.error_outline, color: Colors.red),
+                  const Icon(Icons.info_outline, color: Colors.blueGrey),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       _loadError!,
-                      style: const TextStyle(color: Colors.red),
+                      style: const TextStyle(color: Colors.blueGrey),
                     ),
                   ),
                 ],
@@ -613,46 +582,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ]),
         if (_loggedIn)
           _category(loc.safetyZones, Icons.location_on_outlined, [
+            const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: Text(
+                'View official safety areas published by local authorities. '
+                'New or changed areas and emergency incidents inside a zone '
+                'appear in Notifications; push alerts require device '
+                'notifications to be enabled. This information does not '
+                'guarantee safety.',
+              ),
+            ),
+            if (_geofences.isEmpty)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 12),
+                child: Text(
+                  'No official safety areas are available for this region yet.',
+                ),
+              ),
             ..._geofences.map((g) {
               final zone = Map<String, dynamic>.from(g as Map);
               final name = zone['label'] ?? zone['name'] ?? 'Zone';
               return Semantics(
                 label:
-                    'Safety zone: $name. Type: ${zone['type'] ?? 'zone'}. Sensitivity: ${zone['sensitivity'] ?? 'medium'}.',
+                    'Official safety area: $name. Type: ${zone['type'] ?? 'zone'}.',
                 child: Card(
                   child: ListTile(
                     dense: true,
-                    onTap: () => _editGeofence(zone),
-                    leading: const Icon(Icons.radar, color: Colors.green),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => GeofenceMapScreen(geofence: zone),
+                      ),
+                    ),
+                    leading: const Icon(
+                      Icons.verified_user_outlined,
+                      color: Colors.green,
+                    ),
                     title: Text(name),
                     subtitle: Text(
-                      '${zone['type'] ?? 'zone'} · ${zone['sensitivity'] ?? 'medium'} · ${zone['radius_m'] != null ? '${zone['radius_m']}m' : 'radius not set'}',
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Switch(
-                          value: zone['is_active'] != false,
-                          onChanged: (active) =>
-                              _toggleGeofence(zone['id'] as String, active),
+                      [
+                        (zone['type'] ?? 'area').toString().replaceAll(
+                          '_',
+                          ' ',
                         ),
-                        IconButton(
-                          tooltip: 'Delete safety zone: $name',
-                          icon: const Icon(Icons.delete_outline),
-                          onPressed: () =>
-                              _deleteGeofence(zone['id'] as String),
-                        ),
-                      ],
+                        if (zone['region'] != null) zone['region'].toString(),
+                        if (zone['radius_m'] != null)
+                          '${zone['radius_m']} m radius',
+                        if (zone['polygon'] is List &&
+                            (zone['polygon'] as List).length >= 3)
+                          'Mapped boundary',
+                      ].join(' · '),
                     ),
+                    trailing: const Icon(Icons.chevron_right),
                   ),
                 ),
               );
             }),
-            OutlinedButton.icon(
-              onPressed: _addGeofence,
-              icon: const Icon(Icons.add_location_alt_outlined),
-              label: Text(loc.addSafetyZone),
-            ),
           ]),
         _category(loc.legalInformation, Icons.gavel, [
           if (_legal.isEmpty)
@@ -919,8 +903,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Card(
         child: ListTile(
           leading: const Icon(Icons.verified_user_outlined, color: Colors.teal),
-          title: Text(loc.faydaIdVerification),
-          subtitle: Text(loc.faydaVerificationSubtitle),
+          title: const Text('FAN identity verification'),
+          subtitle: const Text(
+            'Scan your original ID QR or enter its 16-digit FAN to check the administrator’s mock record.',
+          ),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const IdVerificationScreen()),
@@ -933,7 +919,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _profileHeader() {
     final name = (_profile['full_name'] ?? _name.text).toString().trim();
     final phone = (_profile['phone'] ?? '').toString();
-    final verified = _profile['is_verified'] == true;
+    final verified = _profile['is_identity_verified'] == true;
     return Card(
       elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -1016,7 +1002,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final formattedDate = createdAt == null
         ? 'Not available'
         : DateFormat.yMMMd().format(createdAt.toLocal());
-    final verified = _profile['is_verified'] == true;
+    final verified = _profile['is_identity_verified'] == true;
     return Card(
       child: Column(
         children: [

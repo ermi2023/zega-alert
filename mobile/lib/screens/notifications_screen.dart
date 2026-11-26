@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+
 import '../services/api.dart';
 import '../services/notification_state.dart';
+import 'geofence_map_screen.dart';
 import 'news_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -22,7 +24,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<void> _load() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final data = await Api.get('/notifications?limit=50');
       final List<dynamic> list;
@@ -35,7 +40,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       }
       setState(() => _notifications = list);
     } catch (e) {
-      setState(() => _error = 'Failed to load notifications: $e');
+      setState(
+        () => _error = Api.userMessage(
+          e,
+          fallback: 'Could not load notifications right now.',
+        ),
+      );
     } finally {
       setState(() => _loading = false);
     }
@@ -77,11 +87,71 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   String _emoji(String? type) {
     switch (type) {
-      case 'alert': return '🚨';
-      case 'warning': return '⚠️';
-      case 'sos': return '🆘';
-      case 'system': return '⚙️';
-      default: return 'ℹ️';
+      case 'geofence_alert':
+        return '🛡️';
+      case 'alert':
+        return '🚨';
+      case 'warning':
+        return '⚠️';
+      case 'sos':
+        return '🆘';
+      case 'system':
+        return '⚙️';
+      default:
+        return 'ℹ️';
+    }
+  }
+
+  Future<void> _openGeofence(Map metadata) async {
+    final geofenceId = metadata['geofenceId']?.toString();
+    if (geofenceId == null || geofenceId.isEmpty) return;
+
+    try {
+      final region = Api.region;
+      final endpoint = region == null
+          ? '/geofences'
+          : '/geofences?region=${Uri.encodeQueryComponent(region)}';
+      final result = await Api.get(endpoint);
+      if (!mounted) return;
+      Map? zone;
+      if (result is List) {
+        for (final item in result) {
+          if (item is Map && item['id']?.toString() == geofenceId) {
+            zone = item;
+            break;
+          }
+        }
+      }
+      final selectedZone = zone;
+      if (selectedZone == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'This area is no longer active. Check Home for current safety zones.',
+            ),
+          ),
+        );
+        return;
+      }
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => GeofenceMapScreen(
+            geofence: Map<String, dynamic>.from(selectedZone),
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            Api.userMessage(
+              error,
+              fallback: 'Could not open this safety-zone map.',
+            ),
+          ),
+        ),
+      );
     }
   }
 
@@ -100,7 +170,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final unread = _notifications.where((n) => n is Map && n['is_read'] != true).length;
+    final unread = _notifications
+        .where((n) => n is Map && n['is_read'] != true)
+        .length;
     return Scaffold(
       appBar: AppBar(
         title: Text(unread > 0 ? 'Notifications ($unread)' : 'Notifications'),
@@ -116,80 +188,110 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(_error!, style: const TextStyle(color: Colors.red)),
-                      const SizedBox(height: 12),
-                      FilledButton(onPressed: _load, child: const Text('Retry')),
-                    ],
-                  ),
-                )
-              : _notifications.isEmpty
-                  ? const Center(child: Text('No notifications yet.'))
-                  : RefreshIndicator(
-                      onRefresh: _load,
-                      child: ListView.builder(
-                        itemCount: _notifications.length,
-                        itemBuilder: (context, i) {
-                          final n = _notifications[i];
-                          if (n is! Map) return const SizedBox.shrink();
-                          final isRead = n['is_read'] == true;
-                          final id = n['id']?.toString();
-                          final metadata = n['metadata'];
-                          final newsTab = metadata is Map
-                              ? _newsTabForNotification(
-                                  metadata['type']?.toString(),
-                                )
-                              : null;
-                          return ListTile(
-                            onTap: newsTab != null
-                                ? () async {
-                                    if (id != null) await _markRead(id);
-                                    if (!context.mounted) return;
-                                    final navigator = Navigator.of(context);
-                                    await navigator.push(
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            NewsScreen(initialTab: newsTab),
-                                      ),
-                                    );
-                                    if (mounted) await _load();
-                                  }
-                                : null,
-                            leading: CircleAvatar(
-                              backgroundColor: isRead ? Colors.grey.shade200 : Colors.blue.shade100,
-                              child: Text(_emoji(n['type']?.toString()), style: const TextStyle(fontSize: 18)),
-                            ),
-                            title: Text(
-                              n['title']?.toString() ?? '',
-                              style: TextStyle(fontWeight: isRead ? FontWeight.normal : FontWeight.bold),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(n['body']?.toString() ?? ''),
-                                if (n['created_at'] != null)
-                                  Text(
-                                    DateTime.tryParse(n['created_at'].toString())?.toLocal().toString().substring(0, 16) ?? '',
-                                    style: const TextStyle(fontSize: 11, color: Colors.grey),
-                                  ),
-                              ],
-                            ),
-                            trailing: isRead
-                                ? const Icon(Icons.check_circle_outline, color: Colors.grey, size: 20)
-                                : IconButton(
-                                    icon: const Icon(Icons.mark_email_read_outlined, color: Colors.blue, size: 20),
-                                    tooltip: 'Mark read',
-                                    onPressed: id != null ? () => _markRead(id) : null,
-                                  ),
-                            isThreeLine: true,
-                            tileColor: isRead ? null : Colors.blue.withValues(alpha: 0.04),
-                          );
-                        },
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(_error!, style: const TextStyle(color: Colors.blueGrey)),
+                  const SizedBox(height: 12),
+                  FilledButton(onPressed: _load, child: const Text('Retry')),
+                ],
+              ),
+            )
+          : _notifications.isEmpty
+          ? const Center(child: Text('No notifications yet.'))
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView.builder(
+                itemCount: _notifications.length,
+                itemBuilder: (context, i) {
+                  final n = _notifications[i];
+                  if (n is! Map) return const SizedBox.shrink();
+                  final isRead = n['is_read'] == true;
+                  final id = n['id']?.toString();
+                  final metadata = n['metadata'];
+                  final notificationType = metadata is Map
+                      ? metadata['type']?.toString()
+                      : n['type']?.toString();
+                  final newsTab = _newsTabForNotification(notificationType);
+                  return ListTile(
+                    onTap: newsTab != null
+                        ? () async {
+                            if (id != null) await _markRead(id);
+                            if (!context.mounted) return;
+                            final navigator = Navigator.of(context);
+                            await navigator.push(
+                              MaterialPageRoute(
+                                builder: (_) => NewsScreen(initialTab: newsTab),
+                              ),
+                            );
+                            if (mounted) await _load();
+                          }
+                        : notificationType == 'geofence_alert'
+                        ? () async {
+                            if (id != null) await _markRead(id);
+                            if (!context.mounted || metadata is! Map) return;
+                            await _openGeofence(metadata);
+                          }
+                        : null,
+                    leading: CircleAvatar(
+                      backgroundColor: isRead
+                          ? Colors.grey.shade200
+                          : Colors.blue.shade100,
+                      child: Text(
+                        _emoji(notificationType),
+                        style: const TextStyle(fontSize: 18),
                       ),
                     ),
+                    title: Text(
+                      n['title']?.toString() ?? '',
+                      style: TextStyle(
+                        fontWeight: isRead
+                            ? FontWeight.normal
+                            : FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(n['body']?.toString() ?? ''),
+                        if (n['created_at'] != null)
+                          Text(
+                            DateTime.tryParse(n['created_at'].toString())
+                                    ?.toLocal()
+                                    .toString()
+                                    .substring(0, 16) ??
+                                '',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey,
+                            ),
+                          ),
+                      ],
+                    ),
+                    trailing: isRead
+                        ? const Icon(
+                            Icons.check_circle_outline,
+                            color: Colors.grey,
+                            size: 20,
+                          )
+                        : IconButton(
+                            icon: const Icon(
+                              Icons.mark_email_read_outlined,
+                              color: Colors.blue,
+                              size: 20,
+                            ),
+                            tooltip: 'Mark read',
+                            onPressed: id != null ? () => _markRead(id) : null,
+                          ),
+                    isThreeLine: true,
+                    tileColor: isRead
+                        ? null
+                        : Colors.blue.withValues(alpha: 0.04),
+                  );
+                },
+              ),
+            ),
     );
   }
 }

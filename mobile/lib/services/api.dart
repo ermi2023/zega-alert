@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart'
@@ -186,6 +187,9 @@ class Api {
   static const String _profileCacheKey = 'public_user_profile';
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   static String? _role;
+  static bool _sessionExpiryHandled = false;
+  static String? _refreshFailureMessage;
+  static Future<void> Function()? onSessionExpired;
   static String? get token => _token;
   static String? get userId => _userId;
   static String? get refreshToken => _refreshToken;
@@ -215,6 +219,7 @@ class Api {
       'accessibility_mode',
       'preferred_language',
       'is_verified',
+      'is_identity_verified',
       'created_at',
     ];
     final publicProfile = <String, dynamic>{};
@@ -240,6 +245,7 @@ class Api {
   static Future<void> setToken(String t, {String? userId}) async {
     _token = t;
     _userId = userId;
+    _sessionExpiryHandled = false;
     final prefs = await SharedPreferences.getInstance();
     if (kIsWeb) {
       // Browser tokens stay memory-only; do not persist auth credentials in localStorage.
@@ -313,7 +319,11 @@ class Api {
   /// Exchange the stored refresh token for a fresh access token.
   /// Used by biometric login. Returns true on success.
   static Future<bool> refreshSession() async {
-    if (_refreshToken == null) return false;
+    _refreshFailureMessage = null;
+    if (_refreshToken == null) {
+      _refreshFailureMessage = 'Your session has ended. Please sign in again.';
+      return false;
+    }
     try {
       final data = await _send('POST', '/auth/refresh', {
         'refreshToken': _refreshToken,
@@ -322,8 +332,50 @@ class Api {
       if (data['refreshToken'] != null)
         await setRefreshToken(data['refreshToken']);
       return true;
-    } catch (_) {
+    } on ApiException catch (error) {
+      if (error.statusCode == 401) {
+        await _expireSession();
+        _refreshFailureMessage =
+            'Your session has ended. Please sign in again.';
+      } else {
+        _refreshFailureMessage = userMessage(error);
+      }
       return false;
+    } catch (error) {
+      _refreshFailureMessage = userMessage(error);
+      return false;
+    }
+  }
+
+  static String? get refreshFailureMessage => _refreshFailureMessage;
+
+  static String userMessage(
+    Object error, {
+    String fallback = 'Something went wrong. Please try again.',
+  }) {
+    if (error is ApiException) return error.message;
+    final details = error.toString().toLowerCase();
+    if (error is TimeoutException ||
+        error is http.ClientException ||
+        details.contains('socketexception') ||
+        details.contains('handshakeexception') ||
+        details.contains('failed host lookup') ||
+        details.contains('connection refused') ||
+        details.contains('network is unreachable') ||
+        details.contains('xmlhttprequest error') ||
+        details.contains('failed to fetch')) {
+      return 'Could not connect. Check your internet connection and try again.';
+    }
+    return fallback;
+  }
+
+  static Future<void> _expireSession() async {
+    if (_sessionExpiryHandled) return;
+    _sessionExpiryHandled = true;
+    try {
+      await clear();
+    } finally {
+      await onSessionExpired?.call();
     }
   }
 
@@ -385,12 +437,25 @@ class Api {
   ]) async {
     final uri = Uri.parse('$baseUrl/api$path');
     final headers = <String, String>{'Content-Type': 'application/json'};
-    if (_token != null) headers['Authorization'] = 'Bearer $_token';
+    final authenticated = _token != null;
+    if (authenticated) headers['Authorization'] = 'Bearer $_token';
     final req = http.Request(method, uri)..headers.addAll(headers);
     if (body != null) req.body = jsonEncode(body);
     final streamed = await req.send().timeout(const Duration(seconds: 45));
     final res = await http.Response.fromStream(streamed)
         .timeout(const Duration(seconds: 45));
+    return _decodeResponse(
+      res,
+      authenticated: authenticated,
+      failureMessage: 'Request failed',
+    );
+  }
+
+  static Future<dynamic> _decodeResponse(
+    http.Response res, {
+    required bool authenticated,
+    required String failureMessage,
+  }) async {
     dynamic data;
     try {
       data = res.body.isEmpty ? null : jsonDecode(res.body);
@@ -398,9 +463,17 @@ class Api {
       data = null;
     }
     if (res.statusCode >= 400) {
+      if (res.statusCode == 401 && authenticated) {
+        await _expireSession();
+        throw ApiException(
+          'Your session has ended. Please sign in again.',
+          statusCode: res.statusCode,
+        );
+      }
       final message = data is Map ? data['message'] : null;
       throw ApiException(
-        message?.toString() ?? 'Request failed (${res.statusCode})',
+        message?.toString() ?? '$failureMessage (${res.statusCode})',
+        statusCode: res.statusCode,
       );
     }
     return data is Map ? data['data'] : null;
@@ -585,7 +658,8 @@ class Api {
   }) async {
     final uri = Uri.parse('$baseUrl/api$path');
     final req = http.MultipartRequest('POST', uri);
-    if (_token != null) req.headers['Authorization'] = 'Bearer $_token';
+    final authenticated = _token != null;
+    if (authenticated) req.headers['Authorization'] = 'Bearer $_token';
     fields?.forEach((k, v) => req.fields[k] = v);
 
     for (final f in files) {
@@ -608,19 +682,11 @@ class Api {
     final streamed = await req.send().timeout(const Duration(seconds: 120));
     final res = await http.Response.fromStream(streamed)
         .timeout(const Duration(seconds: 120));
-    dynamic data;
-    try {
-      data = res.body.isEmpty ? null : jsonDecode(res.body);
-    } on FormatException {
-      data = null;
-    }
-    if (res.statusCode >= 400) {
-      final message = data is Map ? data['message'] : null;
-      throw ApiException(
-        message?.toString() ?? 'Upload failed (${res.statusCode})',
-      );
-    }
-    return data is Map ? data['data'] : null;
+    return _decodeResponse(
+      res,
+      authenticated: authenticated,
+      failureMessage: 'Upload failed',
+    );
   }
 
   /// Upload files on web using bytes (XFile.readAsBytes()).
@@ -634,7 +700,8 @@ class Api {
   }) async {
     final uri = Uri.parse('$baseUrl/api$path');
     final req = http.MultipartRequest('POST', uri);
-    if (_token != null) req.headers['Authorization'] = 'Bearer $_token';
+    final authenticated = _token != null;
+    if (authenticated) req.headers['Authorization'] = 'Bearer $_token';
     fields?.forEach((k, v) => req.fields[k] = v);
 
     for (final f in files) {
@@ -653,25 +720,18 @@ class Api {
     final streamed = await req.send().timeout(const Duration(seconds: 120));
     final res = await http.Response.fromStream(streamed)
         .timeout(const Duration(seconds: 120));
-    dynamic data;
-    try {
-      data = res.body.isEmpty ? null : jsonDecode(res.body);
-    } on FormatException {
-      data = null;
-    }
-    if (res.statusCode >= 400) {
-      final message = data is Map ? data['message'] : null;
-      throw ApiException(
-        message?.toString() ?? 'Upload failed (${res.statusCode})',
-      );
-    }
-    return data is Map ? data['data'] : null;
+    return _decodeResponse(
+      res,
+      authenticated: authenticated,
+      failureMessage: 'Upload failed',
+    );
   }
 }
 
 class ApiException implements Exception {
   final String message;
-  ApiException(this.message);
+  final int? statusCode;
+  ApiException(this.message, {this.statusCode});
   @override
   String toString() => message;
 }

@@ -149,7 +149,9 @@ class _AuthScreenState extends State<AuthScreen> {
       final refreshed = await Api.refreshSession();
       if (!refreshed) {
         setState(
-          () => _error = 'Session expired. Please sign in with your password.',
+          () => _error =
+              Api.refreshFailureMessage ??
+              'Your session has ended. Please sign in again.',
         );
         return;
       }
@@ -158,7 +160,7 @@ class _AuthScreenState extends State<AuthScreen> {
           context,
         ).pushReplacement(MaterialPageRoute(builder: (_) => const MainShell()));
     } catch (e) {
-      setState(() => _error = e.toString());
+      setState(() => _error = Api.userMessage(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -291,15 +293,11 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   String _friendlyError(Object e) {
-    final s = e.toString();
-    if (s.contains('SocketException') ||
-        s.contains('ClientException') ||
-        s.toLowerCase().contains('timeout') ||
-        s.contains('errno = 110')) {
-      return 'Cannot reach the server at ${Api.baseUrl}.\n'
-          'Check your internet connection, or tap "Server" below to set a different backend URL.';
-    }
-    return s;
+    return Api.userMessage(
+      e,
+      fallback:
+          'Could not connect. Check your internet connection and try again.',
+    );
   }
 
   Future<void> _editServerUrl() async {
@@ -793,15 +791,18 @@ class _AuthScreenState extends State<AuthScreen> {
                 child: Row(
                   children: [
                     const Icon(
-                      Icons.error_outline,
-                      color: Colors.red,
+                      Icons.info_outline,
+                      color: Colors.blueGrey,
                       size: 18,
                     ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         _error,
-                        style: const TextStyle(color: Colors.red, fontSize: 13),
+                        style: const TextStyle(
+                          color: Colors.blueGrey,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ],

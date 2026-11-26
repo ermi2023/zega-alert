@@ -73,9 +73,9 @@ export const createSos = async (req, res) => {
 
   // Notify citizens in the affected geofence area
   try {
-    const geoNotify = await notifyGeofenceCitizens(alert, dispatch.geofence);
+    const geoNotify = await notifyGeofenceCitizens(alert);
     if (geoNotify && geoNotify.notifiedCount > 0) {
-      console.log(`[GEOFENCE] Notified ${geoNotify.notifiedCount} citizens in zones: ${geoNotify.zones.join(', ')}`);
+      console.log(`[GEOFENCE] Created ${geoNotify.notifiedCount} safety notice(s) for zones: ${geoNotify.zones.join(', ')}`);
     }
   } catch (err) {
     console.error('[GEOFENCE NOTIFY ERROR]', err.message);

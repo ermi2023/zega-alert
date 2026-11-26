@@ -52,7 +52,12 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
       });
       if (data.isNotEmpty && _active == null) _open(data.first['id'] as String);
     } catch (e) {
-      setState(() => _loadError = 'Failed to load conversations: $e');
+      setState(
+        () => _loadError = Api.userMessage(
+          e,
+          fallback: 'Could not load conversations right now.',
+        ),
+      );
     }
     _loadWait();
   }
@@ -123,8 +128,13 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
       }
     } catch (e) {
       if (mounted)
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              Api.userMessage(e, fallback: 'Could not upload the file.'),
+            ),
+          ),
+        );
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -187,7 +197,9 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
       if (position == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Enable location to find the nearest police station.'),
+            content: Text(
+              'Enable location to find the nearest police station.',
+            ),
           ),
         );
         return;
@@ -201,7 +213,14 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not start station chat: $error')),
+          SnackBar(
+            content: Text(
+              Api.userMessage(
+                error,
+                fallback: 'Could not start the station chat.',
+              ),
+            ),
+          ),
         );
       }
     }
@@ -267,8 +286,13 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
         );
     } catch (e) {
       if (mounted)
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              Api.userMessage(e, fallback: 'Could not submit your feedback.'),
+            ),
+          ),
+        );
     }
   }
 
@@ -316,8 +340,13 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
       }
     } catch (e) {
       if (mounted)
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Call failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              Api.userMessage(e, fallback: 'Could not start the call.'),
+            ),
+          ),
+        );
     }
   }
 
@@ -347,12 +376,12 @@ class _CommunicationScreenState extends State<CommunicationScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Card(
-                color: Colors.red.shade50,
+                color: Colors.blueGrey.shade50,
                 child: Padding(
                   padding: const EdgeInsets.all(10),
                   child: Text(
                     _loadError!,
-                    style: const TextStyle(color: Colors.red),
+                    style: const TextStyle(color: Colors.blueGrey),
                   ),
                 ),
               ),

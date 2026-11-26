@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireRole } from '../middleware/auth.js';
 import {
   listGeofences, createGeofence, updateGeofence, deleteGeofence,
 } from '../controllers/geofence.controller.js';
@@ -8,8 +8,8 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', listGeofences);
-router.post('/', createGeofence);
-router.patch('/:id', updateGeofence);
-router.delete('/:id', deleteGeofence);
+router.post('/', requireRole('system_admin', 'regional_admin', 'dispatcher'), createGeofence);
+router.patch('/:id', requireRole('system_admin', 'regional_admin', 'dispatcher'), updateGeofence);
+router.delete('/:id', requireRole('system_admin', 'regional_admin'), deleteGeofence);
 
 export default router;

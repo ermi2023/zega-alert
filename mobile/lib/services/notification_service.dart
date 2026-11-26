@@ -1,8 +1,10 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/material.dart' show MaterialPageRoute, ScaffoldMessenger, SnackBar, Text;
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+
 import '../screens/callbacks_screen.dart';
 import '../screens/news_screen.dart';
+import '../screens/notifications_screen.dart';
 import 'notification_state.dart';
 import '../main.dart' show navigatorKey;
 import 'api.dart';
@@ -16,11 +18,13 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 class NotificationService {
   static FirebaseMessaging? _messaging;
+  static bool _initialized = false;
   static const String channelId = 'zega_alert_channel';
 
   static Future<void> initialize() async {
+    if (kIsWeb || _initialized) return;
+    _initialized = true;
     try {
-      if (kIsWeb) return;
       _messaging = FirebaseMessaging.instance;
 
       await _messaging!.setForegroundNotificationPresentationOptions(
@@ -56,7 +60,7 @@ class NotificationService {
         _handleMessageTap(initialMessage);
       }
     } catch (_) {
-      // Firebase not configured — app works without push
+      _initialized = false;
     }
   }
 
@@ -75,10 +79,48 @@ class NotificationService {
     if (notification == null) return;
     final context = navigatorKey.currentContext;
     if (context == null) return;
-    final text = [notification.title, notification.body]
-        .where((s) => s != null && s.isNotEmpty)
-        .join(': ');
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+    final text = [
+      notification.title,
+      notification.body,
+    ].where((s) => s != null && s.isNotEmpty).join(': ');
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (message.data['type'] == 'geofence_alert') {
+      if (messenger == null) return;
+      messenger.hideCurrentMaterialBanner();
+      messenger.showMaterialBanner(
+        MaterialBanner(
+          leading: const Icon(
+            Icons.health_and_safety,
+            color: Color(0xFF8A1C1C),
+            size: 30,
+          ),
+          content: Text(
+            text.isEmpty ? 'Safety-zone alert' : text,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: const Color(0xFFFFE8D6),
+          actions: [
+            TextButton(
+              onPressed: () {
+                messenger.hideCurrentMaterialBanner();
+                navigatorKey.currentState?.push(
+                  MaterialPageRoute(
+                    builder: (_) => const NotificationsScreen(),
+                  ),
+                );
+              },
+              child: const Text('View alert'),
+            ),
+            TextButton(
+              onPressed: () => messenger.hideCurrentMaterialBanner(),
+              child: const Text('Dismiss'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    messenger?.showSnackBar(
       SnackBar(content: Text(text.isEmpty ? 'New alert' : text)),
     );
   }
@@ -89,7 +131,9 @@ class NotificationService {
     if (nav == null) return;
     final data = message.data;
     final type = (data['type'] ?? '').toString();
-    if (type == 'callback' || data.containsKey('reportId')) {
+    if (type == 'geofence_alert') {
+      nav.push(MaterialPageRoute(builder: (_) => const NotificationsScreen()));
+    } else if (type == 'callback' || data.containsKey('reportId')) {
       nav.push(MaterialPageRoute(builder: (_) => const CallbacksScreen()));
     } else if (type == 'announcement' ||
         type == 'missing_person' ||
@@ -100,9 +144,7 @@ class NotificationService {
         _ => 0,
       };
       nav.push(
-        MaterialPageRoute(
-          builder: (_) => NewsScreen(initialTab: initialTab),
-        ),
+        MaterialPageRoute(builder: (_) => NewsScreen(initialTab: initialTab)),
       );
     }
     // SOS / other alerts keep the user on the home shell.

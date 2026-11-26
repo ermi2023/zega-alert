@@ -187,12 +187,6 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   String _friendlyError(Object e) {
     final s = e.toString();
-    if (s.contains('SocketException') ||
-        s.contains('ClientException') ||
-        s.toLowerCase().contains('timeout') ||
-        s.contains('errno = 110')) {
-      return 'Cannot reach the server at ${Api.baseUrl}.\nCheck your internet connection.';
-    }
     if (s.toLowerCase().contains('already exists') ||
         s.toLowerCase().contains('duplicate')) {
       return 'An account with this phone number or email already exists.';
@@ -201,7 +195,10 @@ class _RegisterScreenState extends State<RegisterScreen>
         s.toLowerCase().contains('invalid')) {
       return 'Please check your information and try again.';
     }
-    return s;
+    return Api.userMessage(
+      e,
+      fallback: 'Registration could not be completed. Please try again.',
+    );
   }
 
   Future<void> _submit() async {
@@ -238,30 +235,42 @@ class _RegisterScreenState extends State<RegisterScreen>
           'accepted_privacy': true,
         }) as Map<String, dynamic>?;
       } on ApiException catch (e) {
-        if (!e.message.toLowerCase().contains('already exists')) rethrow;
+        if (e.statusCode == 409 ||
+            e.message.toLowerCase().contains('already exists')) {
+          setState(
+            () => _error = 'This phone number or email already has an account. Sign in or reset your password.',
+          );
+          return;
+        }
+        rethrow;
       }
 
-      // Step 2: Phone verification (best-effort)
-      final devOtp = registered?['devOtp']?.toString();
-      if (devOtp == null || devOtp.isEmpty) {
-        final otp = await _askOtp(phone);
-        if (otp != null && otp.isNotEmpty) {
-          try {
-            await Api.post('/auth/verify-otp', {
-              'contact': phone,
-              'code': otp,
-              'purpose': 'verify_phone',
-            });
-          } catch (_) {}
-        }
-      } else {
-        try {
-          await Api.post('/auth/verify-otp', {
-            'contact': phone,
-            'code': devOtp,
-            'purpose': 'verify_phone',
-          });
-        } catch (_) {}
+      if (registered == null) {
+        setState(
+          () =>
+              _error = 'Your account could not be confirmed. Please try again.',
+        );
+        return;
+      }
+
+      final otpDelivery = registered['otp_delivery']?.toString();
+      if (otpDelivery == 'unavailable') {
+        setState(
+          () => _error =
+              'Your account was created, but a phone verification code could not be sent to $phone. Please try again later.',
+        );
+        return;
+      }
+
+      // The demo code is displayed for the user to enter; it is never auto-verified.
+      final devOtp = registered['devOtp']?.toString();
+      final verified = await _askOtp(phone, fallbackCode: devOtp);
+      if (!mounted) return;
+      if (!verified) {
+        setState(
+          () => _error = 'Your account was created, but phone verification is not complete. Enter the code to finish signing in.',
+        );
+        return;
       }
 
       // Step 3: Auto-login after registration
@@ -293,85 +302,170 @@ class _RegisterScreenState extends State<RegisterScreen>
     }
   }
 
-  Future<String?> _askOtp(String phone) async {
+  Future<bool> _askOtp(String phone, {String? fallbackCode}) async {
     final loc = AppLocalizations.of(context);
     final controller = TextEditingController();
-    final code = await showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(ZegaTheme.radiusXLarge),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: ZegaTheme.primaryNavy.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(ZegaTheme.radiusMedium),
+    String? verificationError;
+    bool verifying = false;
+    try {
+      final result = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            Future<void> verify() async {
+              final code = controller.text.trim();
+              if (!RegExp(r'^\d{6}$').hasMatch(code)) {
+                setDialogState(
+                  () => verificationError = 'Enter the 6-digit code.',
+                );
+                return;
+              }
+
+              setDialogState(() {
+                verifying = true;
+                verificationError = null;
+              });
+              try {
+                await Api.post('/auth/verify-otp', {
+                  'contact': phone,
+                  'code': code,
+                  'purpose': 'verify_phone',
+                });
+                if (dialogContext.mounted) {
+                  Navigator.of(dialogContext).pop(true);
+                }
+              } catch (error) {
+                if (!dialogContext.mounted) return;
+                setDialogState(() {
+                  verifying = false;
+                  verificationError =
+                      error is ApiException && error.statusCode == 400
+                      ? 'That code is incorrect or expired. Please try again.'
+                      : Api.userMessage(
+                          error,
+                          fallback: 'We could not verify this code. Please try again.',
+                        );
+                });
+              }
+            }
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(ZegaTheme.radiusXLarge),
               ),
-              child: const Icon(
-                Icons.sms_outlined,
-                color: ZegaTheme.primaryNavy,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(child: Text('Verify Phone Number')),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'We\'ve sent a 6-digit code to\n$phone',
-              style: ZegaTheme.bodyMedium.copyWith(height: 1.5),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              keyboardType: TextInputType.number,
-              textAlign: TextAlign.center,
-              style: ZegaTheme.headlineSmall.copyWith(letterSpacing: 8),
-              maxLength: 6,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: InputDecoration(
-                counterText: '',
-                hintText: '000000',
-                filled: true,
-                fillColor: ZegaTheme.surfaceVariant,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(ZegaTheme.radiusLarge),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(ZegaTheme.radiusLarge),
-                  borderSide: const BorderSide(
-                    color: ZegaTheme.primaryNavy,
-                    width: 2,
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: ZegaTheme.primaryNavy.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(
+                        ZegaTheme.radiusMedium,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.sms_outlined,
+                      color: ZegaTheme.primaryNavy,
+                      size: 24,
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  const Expanded(child: Text('Verify Phone Number')),
+                ],
               ),
-              autofocus: true,
-            ),
-          ],
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (fallbackCode != null && fallbackCode.isNotEmpty) ...[
+                    Text(
+                      'SMS is not configured yet. Use this temporary demo code:',
+                      style: ZegaTheme.bodyMedium.copyWith(height: 1.5),
+                    ),
+                    const SizedBox(height: 8),
+                    SelectableText(
+                      fallbackCode,
+                      style: ZegaTheme.headlineSmall.copyWith(
+                        letterSpacing: 8,
+                        color: ZegaTheme.primaryNavy,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ] else
+                    Text(
+                      'Enter the 6-digit code sent to\n$phone',
+                      style: ZegaTheme.bodyMedium.copyWith(height: 1.5),
+                    ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: controller,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    style: ZegaTheme.headlineSmall.copyWith(letterSpacing: 8),
+                    maxLength: 6,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: InputDecoration(
+                      counterText: '',
+                      hintText: '000000',
+                      filled: true,
+                      fillColor: ZegaTheme.surfaceVariant,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(
+                          ZegaTheme.radiusLarge,
+                        ),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(
+                          ZegaTheme.radiusLarge,
+                        ),
+                        borderSide: const BorderSide(
+                          color: ZegaTheme.primaryNavy,
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                    autofocus: true,
+                    enabled: !verifying,
+                  ),
+                  if (verificationError != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      verificationError!,
+                      style: ZegaTheme.bodySmall.copyWith(
+                        color: ZegaTheme.secondaryText,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: verifying
+                      ? null
+                      : () => Navigator.of(dialogContext).pop(false),
+                  child: Text('Not Now', style: ZegaTheme.labelLarge),
+                ),
+                FilledButton(
+                  onPressed: verifying ? null : verify,
+                  child: verifying
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(loc.verify),
+                ),
+              ],
+            );
+          },
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, ''),
-            child: Text('Not Now', style: ZegaTheme.labelLarge),
-          ),
-          ZegaPrimaryButton(
-            label: loc.verify,
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            height: 44,
-          ),
-        ],
-      ),
-    );
-    return code?.isEmpty ?? true ? null : code;
+      );
+      return result == true;
+    } finally {
+      controller.dispose();
+    }
   }
 
   void _navigateToLogin() {
@@ -484,7 +578,10 @@ class _RegisterScreenState extends State<RegisterScreen>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = 'Error detecting location: $e';
+          _error = Api.userMessage(
+            e,
+            fallback: 'Could not detect your location. You can continue without sharing it.',
+          );
           _useDeviceLocation = false;
           _isFetchingLocation = false;
         });

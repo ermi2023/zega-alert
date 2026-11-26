@@ -1,27 +1,38 @@
 import { query } from '../config/db.js';
 import { getRecentPositions } from '../controllers/position.controller.js';
-import { haversine } from './geo.service.js';
+import { haversine, isInsideGeofence } from './geo.service.js';
 
 // Average urban police response speed assumed for ETA estimation (~40 km/h).
 const ASSUMED_SPEED_MPS = 11.1;
 export { haversine };
 
 export async function evaluateGeofenceContext(alert) {
-  const context = { inside_safety_zone: false, nearest_police_station: null, nearest_zone: null };
+  const context = {
+    inside_safety_zone: false,
+    matching_zones: [],
+    nearest_police_station: null,
+    nearest_zone: null,
+  };
   if (alert.latitude == null || alert.longitude == null) return context;
 
   const { rows: zones } = await query(
-    `SELECT id, name, type, center_lat, center_lng, radius_m FROM geofences
-     WHERE center_lat IS NOT NULL AND center_lng IS NOT NULL`,
+    `SELECT id, name, type, center_lat, center_lng, radius_m, polygon FROM geofences
+     WHERE is_active = true
+       AND (created_by IS NULL OR EXISTS (
+         SELECT 1 FROM users creator
+         WHERE creator.id = geofences.created_by
+           AND creator.role IN ('police', 'dispatcher', 'regional_admin', 'system_admin')
+       ))`,
   );
   if (!zones.length) return context;
 
   let best = null;
   for (const zone of zones) {
-    const dist = haversine(alert.latitude, alert.longitude, zone.center_lat, zone.center_lng);
-    const radius = zone.radius_m || 500;
-    if (dist <= radius) {
-      context.inside_safety_zone = true;
+    const dist = zone.center_lat != null && zone.center_lng != null
+      ? haversine(alert.latitude, alert.longitude, zone.center_lat, zone.center_lng)
+      : Infinity;
+    if (isInsideGeofence(alert.latitude, alert.longitude, zone)) {
+      context.matching_zones.push({ id: zone.id, name: zone.name, type: zone.type });
     }
     if (zone.type === 'police_station' && (!best || dist < best.dist)) {
       best = { id: zone.id, name: zone.name, dist };
@@ -30,6 +41,7 @@ export async function evaluateGeofenceContext(alert) {
       context.nearest_zone = { id: zone.id, name: zone.name, type: zone.type, dist };
     }
   }
+  context.inside_safety_zone = context.matching_zones.length > 0;
   if (best) context.nearest_police_station = best;
   return context;
 }

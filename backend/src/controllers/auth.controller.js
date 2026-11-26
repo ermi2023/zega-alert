@@ -26,7 +26,7 @@ const revokeJti = (jti) => {
 };
 
 const PUBLIC_USER = `id, full_name, phone, email, role, region, sub_city, woreda, photo_url,
-  preferred_language, accessibility_mode, is_verified, is_active, last_login_at, created_at`;
+  preferred_language, accessibility_mode, is_verified, is_identity_verified, is_active, last_login_at, created_at`;
 
 const issueTokens = (user, policy) =>
   signTokens(user, { accessExpiresIn: accessTokenExpiry(policy) });
@@ -88,17 +88,23 @@ export const register = async (req, res) => {
     } catch (e) {
       console.error('[REGISTER] OTP delivery failed:', e.message);
     }
-    // In development, the app receives a fallback code when SMS delivery is unavailable.
-    if (!smsDelivered && env.nodeEnv !== 'production') {
-      await query('UPDATE users SET is_verified = true WHERE phone = $1', [phone]);
-    }
-    const developmentFallback = env.nodeEnv !== 'production' && !smsDelivered;
+    const screenFallback = Boolean(code) && !smsDelivered &&
+      (env.nodeEnv !== 'production' || env.otpScreenFallback);
+    const otpDelivery = smsDelivered
+      ? 'sms'
+      : screenFallback
+        ? 'screen_fallback'
+        : 'unavailable';
+    const message = smsDelivered
+      ? 'Account created. A 6-digit code was sent to your phone.'
+      : screenFallback
+        ? 'Account created. Enter the on-screen demo code to verify your phone.'
+        : 'Account created, but a phone verification code could not be sent. Please try again later.';
     ok(res, {
       ...rows[0],
-      is_verified: rows[0].is_verified || developmentFallback,
-      devOtp: developmentFallback ? code : undefined,
-    },
-      smsDelivered ? 'Registered. Verify your phone with the OTP sent.' : 'Registered. You are signed in.', 201);
+      otp_delivery: otpDelivery,
+      devOtp: screenFallback ? code : undefined,
+    }, message, 201);
   } catch (e) {
     console.error('[REGISTER]', e);
     if (!res.headersSent) return fail(res, 'Registration failed. Please try again.', 500);

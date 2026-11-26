@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+
 import '../l10n/app_localizations.dart';
 import '../services/api.dart';
 
@@ -29,23 +30,28 @@ class _PhotoUploadFieldState extends State<PhotoUploadField> {
 
   Future<void> _pick() async {
     final loc = AppLocalizations.of(context);
-    setState(() { _error = null; _busy = true; });
+    setState(() {
+      _error = null;
+      _busy = true;
+    });
     try {
       final source = await showModalBottomSheet<ImageSource>(
         context: context,
         builder: (ctx) => SafeArea(
-          child: Wrap(children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: Text(loc.takePhoto),
-              onTap: () => Navigator.pop(ctx, ImageSource.camera),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: Text(loc.chooseFromGallery),
-              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
-            ),
-          ]),
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: Text(loc.takePhoto),
+                onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: Text(loc.chooseFromGallery),
+                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              ),
+            ],
+          ),
         ),
       );
       if (source == null) {
@@ -54,7 +60,10 @@ class _PhotoUploadFieldState extends State<PhotoUploadField> {
       }
 
       if (source == ImageSource.gallery && widget.allowMultiple) {
-        final files = await ImagePicker().pickMultiImage(maxWidth: 1600, imageQuality: 80);
+        final files = await ImagePicker().pickMultiImage(
+          maxWidth: 1600,
+          imageQuality: 80,
+        );
         if (files.isEmpty) {
           if (mounted) setState(() => _busy = false);
           return;
@@ -63,9 +72,11 @@ class _PhotoUploadFieldState extends State<PhotoUploadField> {
           String? url;
           if (kIsWeb) {
             final bytes = await file.readAsBytes();
-            final res = await Api.uploadBytes('/upload/single', [
-              MapEntry('file', bytes),
-            ], filenames: {'file': file.name});
+            final res = await Api.uploadBytes(
+              '/upload/single',
+              [MapEntry('file', bytes)],
+              filenames: {'file': file.name},
+            );
             url = Api.assetUrl(res['url'] as String?);
           } else {
             final res = await Api.upload('/upload/single', [
@@ -76,7 +87,11 @@ class _PhotoUploadFieldState extends State<PhotoUploadField> {
           if (url != null) _urls.add(url);
         }
       } else {
-        final file = await ImagePicker().pickImage(source: source, maxWidth: 1600, imageQuality: 80);
+        final file = await ImagePicker().pickImage(
+          source: source,
+          maxWidth: 1600,
+          imageQuality: 80,
+        );
         if (file == null) {
           if (mounted) setState(() => _busy = false);
           return;
@@ -84,9 +99,11 @@ class _PhotoUploadFieldState extends State<PhotoUploadField> {
         String? url;
         if (kIsWeb) {
           final bytes = await file.readAsBytes();
-          final res = await Api.uploadBytes('/upload/single', [
-            MapEntry('file', bytes),
-          ], filenames: {'file': file.name});
+          final res = await Api.uploadBytes(
+            '/upload/single',
+            [MapEntry('file', bytes)],
+            filenames: {'file': file.name},
+          );
           url = Api.assetUrl(res['url'] as String?);
         } else {
           final res = await Api.upload('/upload/single', [
@@ -104,11 +121,19 @@ class _PhotoUploadFieldState extends State<PhotoUploadField> {
         }
       }
 
-      setState(() { _busy = false; });
+      setState(() {
+        _busy = false;
+      });
       widget.onUploaded?.call(_urls.isNotEmpty ? _urls.first : null);
       widget.onPhotosChanged?.call(_urls);
     } catch (e) {
-      setState(() { _busy = false; _error = 'Upload failed: $e'; });
+      setState(() {
+        _busy = false;
+        _error = Api.userMessage(
+          e,
+          fallback: 'Could not upload the photo. Try again later.',
+        );
+      });
     }
   }
 
@@ -123,7 +148,8 @@ class _PhotoUploadFieldState extends State<PhotoUploadField> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final displayLabel = widget.label ?? (widget.allowMultiple ? 'Add photos' : 'Add photo');
+    final displayLabel =
+        widget.label ?? (widget.allowMultiple ? 'Add photos' : 'Add photo');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -143,14 +169,26 @@ class _PhotoUploadFieldState extends State<PhotoUploadField> {
                     child: Container(
                       width: 90,
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade400, style: BorderStyle.solid),
+                        border: Border.all(
+                          color: Colors.grey.shade400,
+                          style: BorderStyle.solid,
+                        ),
                         borderRadius: BorderRadius.circular(10),
                         color: Colors.grey.shade50,
                       ),
                       child: Center(
                         child: _busy
-                            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                            : const Icon(Icons.add_a_photo_outlined, color: Colors.grey),
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.add_a_photo_outlined,
+                                color: Colors.grey,
+                              ),
                       ),
                     ),
                   );
@@ -169,7 +207,11 @@ class _PhotoUploadFieldState extends State<PhotoUploadField> {
                           width: 90,
                           height: 100,
                           color: Colors.grey.shade200,
-                          child: const Icon(Icons.broken_image, size: 28, color: Colors.grey),
+                          child: const Icon(
+                            Icons.broken_image,
+                            size: 28,
+                            color: Colors.grey,
+                          ),
                         ),
                       ),
                     ),
@@ -184,7 +226,11 @@ class _PhotoUploadFieldState extends State<PhotoUploadField> {
                             shape: BoxShape.circle,
                           ),
                           padding: const EdgeInsets.all(4),
-                          child: const Icon(Icons.close, size: 14, color: Colors.white),
+                          child: const Icon(
+                            Icons.close,
+                            size: 14,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
@@ -199,14 +245,21 @@ class _PhotoUploadFieldState extends State<PhotoUploadField> {
           OutlinedButton.icon(
             onPressed: _busy ? null : _pick,
             icon: _busy
-                ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                 : const Icon(Icons.camera_alt_outlined),
             label: Text(_busy ? loc.uploading : displayLabel),
           ),
         if (_error != null)
           Padding(
             padding: const EdgeInsets.only(top: 6),
-            child: Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+            child: Text(
+              _error!,
+              style: const TextStyle(color: Colors.red, fontSize: 12),
+            ),
           ),
       ],
     );

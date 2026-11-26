@@ -121,7 +121,10 @@ class SosLiveStreamService {
       _pendingLocalCandidates.clear();
     } catch (error) {
       if (_stopRequested) return;
-      _setStatus('error', error.toString());
+      _setStatus(
+        'error',
+        Api.userMessage(error, fallback: 'Could not start the live stream.'),
+      );
       await _close();
       rethrow;
     } finally {
@@ -158,7 +161,10 @@ class SosLiveStreamService {
         unawaited(
           _finish(
             status: 'error',
-            error: 'Could not connect live media: $error',
+            error: Api.userMessage(
+              error,
+              fallback: 'Could not connect the live stream.',
+            ),
           ),
         );
       }
@@ -188,7 +194,10 @@ class SosLiveStreamService {
     } catch (error) {
       await _finish(
         status: 'error',
-        error: 'Could not establish the live connection: $error',
+        error: Api.userMessage(
+          error,
+          fallback: 'Could not establish the live connection.',
+        ),
       );
     }
   }
@@ -208,7 +217,10 @@ class SosLiveStreamService {
         _addRemoteCandidate(candidate).catchError((Object error) async {
           await _finish(
             status: 'error',
-            error: 'Could not connect live media: $error',
+            error: Api.userMessage(
+              error,
+              fallback: 'Could not connect the live stream.',
+            ),
           );
         }),
       );
@@ -250,8 +262,10 @@ class SosLiveStreamService {
       try {
         await Api.post('/sos/$sosId/live/end', {'streamId': streamId});
       } catch (error) {
-        errorMessage =
-            'Could not notify dispatch that the live stream ended: $error';
+        errorMessage = Api.userMessage(
+          error,
+          fallback: 'Could not notify dispatch that the live stream ended.',
+        );
       }
     }
     await _close();

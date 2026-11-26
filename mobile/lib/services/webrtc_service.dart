@@ -1,5 +1,7 @@
 import 'dart:async';
+
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+
 import 'api.dart';
 
 typedef OnRemoteStream = void Function(MediaStream stream);
@@ -23,10 +25,7 @@ class WebRTCService {
     _pendingSignalingAnswers[roomId] = answer;
   }
 
-  static void routeIceCandidate(
-    String roomId,
-    Map<String, dynamic> candidate,
-  ) {
+  static void routeIceCandidate(String roomId, Map<String, dynamic> candidate) {
     if (roomId.isEmpty) return;
     final current = active;
     if (current != null && current._roomId == roomId) {
@@ -124,8 +123,7 @@ class WebRTCService {
       } else if (state ==
           RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
         _setStatus('disconnected');
-      } else if (state ==
-          RTCPeerConnectionState.RTCPeerConnectionStateFailed) {
+      } else if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed) {
         _setStatus('error', 'The call connection failed. Check your network.');
         unawaited(endCall(notifyUi: false));
       } else if (state == RTCPeerConnectionState.RTCPeerConnectionStateClosed) {
@@ -140,7 +138,10 @@ class WebRTCService {
     }
   }
 
-  Future<void> startCall(String targetUserId, {String callType = 'video'}) async {
+  Future<void> startCall(
+    String targetUserId, {
+    String callType = 'video',
+  }) async {
     if (active != null && active != this) {
       throw StateError('Another call is already active.');
     }
@@ -188,7 +189,10 @@ class WebRTCService {
       }
       await _flushLocalCandidates();
     } catch (error) {
-      _setStatus('error', error.toString());
+      _setStatus(
+        'error',
+        Api.userMessage(error, fallback: 'Could not connect the call.'),
+      );
       await endCall(notifyPeer: false, notifyUi: false);
       rethrow;
     }
@@ -233,7 +237,10 @@ class WebRTCService {
         'answer': {'sdp': answer.sdp, 'type': answer.type},
       });
     } catch (error) {
-      _setStatus('error', error.toString());
+      _setStatus(
+        'error',
+        Api.userMessage(error, fallback: 'Could not connect the call.'),
+      );
       await endCall(notifyPeer: false, notifyUi: false);
       rethrow;
     }
@@ -248,7 +255,10 @@ class WebRTCService {
       _remoteDescriptionSet = true;
       await _flushRemoteCandidates();
     } catch (error) {
-      _setStatus('error', 'Could not connect the call: $error');
+      _setStatus(
+        'error',
+        Api.userMessage(error, fallback: 'Could not connect the call.'),
+      );
       unawaited(endCall(notifyUi: false));
     }
   }
@@ -261,7 +271,10 @@ class WebRTCService {
     }
     unawaited(
       _addRemoteCandidate(candidate).catchError((Object error) {
-        _setStatus('error', 'Could not connect the call: $error');
+        _setStatus(
+          'error',
+          Api.userMessage(error, fallback: 'Could not connect the call.'),
+        );
         return endCall(notifyUi: false);
       }),
     );
@@ -301,7 +314,10 @@ class WebRTCService {
         'candidate': candidate,
       });
     } catch (error) {
-      _setStatus('error', 'Could not send call network data: $error');
+      _setStatus(
+        'error',
+        Api.userMessage(error, fallback: 'Could not send call network data.'),
+      );
     }
   }
 
@@ -343,10 +359,7 @@ class WebRTCService {
     onStatusChanged?.call(status, error);
   }
 
-  Future<void> endCall({
-    bool notifyPeer = true,
-    bool notifyUi = true,
-  }) =>
+  Future<void> endCall({bool notifyPeer = true, bool notifyUi = true}) =>
       _endFuture ??= _endCall(notifyPeer: notifyPeer, notifyUi: notifyUi);
 
   Future<void> _endCall({
@@ -365,13 +378,22 @@ class WebRTCService {
       }
       await _peerConnection?.close();
     } catch (error) {
-      _setStatus('error', 'Could not close the local call cleanly: $error');
+      _setStatus(
+        'error',
+        Api.userMessage(error, fallback: 'Could not close the call cleanly.'),
+      );
     }
     if (rid != null && notifyPeer) {
       try {
         await Api.post('/webrtc/end', {'roomId': rid});
       } catch (error) {
-        _setStatus('error', 'Could not notify the other caller: $error');
+        _setStatus(
+          'error',
+          Api.userMessage(
+            error,
+            fallback: 'Could not notify the other caller.',
+          ),
+        );
       }
     }
     _peerConnection = null;
@@ -388,7 +410,10 @@ class WebRTCService {
       try {
         await disposeRenderers();
       } catch (error) {
-        _setStatus('error', 'Could not release call media: $error');
+        _setStatus(
+          'error',
+          Api.userMessage(error, fallback: 'Could not release call media.'),
+        );
       }
     }
     _renderersInitialized = false;

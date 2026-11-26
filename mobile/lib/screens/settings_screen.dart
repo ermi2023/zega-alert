@@ -304,13 +304,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await Api.setProfile(_profile);
       if (!mounted) return;
       ZegaAlertApp.of(context)?.setLanguage(_language);
-      setState(() => _status = 'Profile and settings saved.');
+      setState(() => _status = AppLocalizations.of(context).settingsSaved);
     } catch (e) {
       if (mounted)
         setState(
           () => _status = Api.userMessage(
             e,
-            fallback: 'Could not save your profile.',
+            fallback: AppLocalizations.of(context).settingsSaveFailed,
           ),
         );
     }
@@ -590,8 +590,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   if (_safetyZoneTrackingBusy)
                     const LinearProgressIndicator(),
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(16, 0, 16, 14),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: Text(loc.safetyZoneLocationPrivacy),
@@ -652,13 +652,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ]),
         ],
         _category(loc.preferences, Icons.tune, [
-          _section(loc.languageLabel, Icons.language),
+          _section('Language', Icons.language),
           Semantics(
             label: loc.languageSelectedSemantics(_language),
             child: DropdownButtonFormField<String>(
               value: _language,
               decoration: InputDecoration(
-                labelText: loc.preferredLanguage,
+                labelText: 'Preferred language',
                 border: const OutlineInputBorder(),
               ),
               items: _languages
@@ -737,18 +737,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ]),
         if (_loggedIn)
           _category(loc.safetyZones, Icons.location_on_outlined, [
-            const Padding(
-              padding: EdgeInsets.only(bottom: 12),
-              child: Text(
-                loc.officialSafetyAreasDescription,
-              ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(loc.officialSafetyAreasDescription),
             ),
             if (_geofences.isEmpty)
-              const Padding(
-                padding: EdgeInsets.only(bottom: 12),
-                child: Text(
-                  loc.noOfficialSafetyAreas,
-                ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(loc.noOfficialSafetyAreas),
               ),
             ..._geofences.map((g) {
               final zone = Map<String, dynamic>.from(g as Map);

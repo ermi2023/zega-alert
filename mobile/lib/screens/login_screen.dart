@@ -221,6 +221,7 @@ class _LoginScreenState extends State<LoginScreen>
 
   Future<void> _biometricLogin() async {
     if (!mounted) return;
+    final loc = AppLocalizations.of(context);
 
     FocusScope.of(context).unfocus();
 

@@ -612,7 +612,7 @@ class _MainShellState extends State<MainShell> {
               )
             : _index == 0
             ? const SizedBox.shrink()
-            : const Text(
+            : Text(
                 loc.appTitle,
                 style: TextStyle(
                   color: Colors.white,

@@ -4,6 +4,7 @@ import { CircleMarker, MapContainer, TileLayer, useMapEvents } from 'react-leafl
 import 'leaflet/dist/leaflet.css';
 import { api, API_BASE, assetUrl } from '../api/client';
 import { useToast } from '../components/Toast';
+import { getMapTileConfig } from '../utils/mapTiles';
 
 function MapClick({ onChange }) {
   useMapEvents({ click: (e) => onChange(e.latlng.lat, e.latlng.lng) });
@@ -17,10 +18,12 @@ export default function Announcements() {
   const [msg, setMsg] = useState({ type: '', text: '' });
   const [editing, setEditing] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [satellite, setSatellite] = useState(false);
   const { addToast } = useToast();
 
   const load = () => api.get('/announcements?include_unpublished=true').then(setRows);
   useEffect(() => { load(); }, []);
+  const tileConfig = getMapTileConfig(satellite);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -182,14 +185,24 @@ export default function Announcements() {
                 </label>
                 <button type="button" className="btn small ghost" onClick={() => setForm({ ...form, latitude: '', longitude: '' })}>Clear</button>
               </div>
-              <div style={{ height: 240, borderRadius: 10, overflow: 'hidden' }}>
+              <div style={{ height: 240, borderRadius: 10, overflow: 'hidden', position: 'relative' }}>
                 <MapContainer center={[Number(form.latitude) || 9.03, Number(form.longitude) || 38.74]} zoom={13} style={{ width: '100%', height: '100%' }}>
-                  <TileLayer attribution='&copy; OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                  <TileLayer attribution={tileConfig.attribution} url={tileConfig.url} />
                   <MapClick onChange={(lat, lng) => setForm((f) => ({ ...f, latitude: lat.toFixed(6), longitude: lng.toFixed(6) }))} />
                   {form.latitude !== '' && form.longitude !== '' && (
                     <CircleMarker center={[Number(form.latitude), Number(form.longitude)]} radius={9} pathOptions={{ color: '#dc2626', fillColor: '#ef4444', fillOpacity: 1 }} />
                   )}
                 </MapContainer>
+                <button
+                  type="button"
+                  className="btn small"
+                  title={satellite ? 'Switch to street map' : 'Switch to satellite imagery'}
+                  aria-label={satellite ? 'Switch to street map' : 'Switch to satellite imagery'}
+                  onClick={() => setSatellite((current) => !current)}
+                  style={{ position: 'absolute', top: 12, right: 12, zIndex: 1000 }}
+                >
+                  {satellite ? 'Street map' : 'Satellite'}
+                </button>
               </div>
               <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>Click the map to mark the closed road / affected area.</div>
             </div>

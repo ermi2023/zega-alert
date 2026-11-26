@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../l10n/app_localizations.dart';
+import '../widgets/map_tile_layers.dart';
 
 List<LatLng> _readPolygon(dynamic value) {
   if (value is! List) return [];
@@ -36,14 +37,22 @@ List<LatLng> _readPolygon(dynamic value) {
   return points;
 }
 
-class GeofenceMapScreen extends StatelessWidget {
+class GeofenceMapScreen extends StatefulWidget {
   const GeofenceMapScreen({super.key, required this.geofence});
 
   final Map<String, dynamic> geofence;
 
   @override
+  State<GeofenceMapScreen> createState() => _GeofenceMapScreenState();
+}
+
+class _GeofenceMapScreenState extends State<GeofenceMapScreen> {
+  bool _satellite = false;
+
+  @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final geofence = widget.geofence;
     final polygon = _readPolygon(geofence['polygon']);
     final centerLat = (geofence['center_lat'] as num?)?.toDouble();
     final centerLng = (geofence['center_lng'] as num?)?.toDouble();
@@ -61,7 +70,18 @@ class GeofenceMapScreen extends StatelessWidget {
     final hasPolygon = polygon.length >= 3;
 
     return Scaffold(
-      appBar: AppBar(title: Text(geofence['name'] ?? loc.safetyZones)),
+      appBar: AppBar(
+        title: Text(geofence['name'] ?? loc.safetyZones),
+        actions: [
+          IconButton(
+            tooltip: _satellite
+                ? 'Switch to street map'
+                : 'Switch to satellite imagery',
+            onPressed: () => setState(() => _satellite = !_satellite),
+            icon: Icon(_satellite ? Icons.map_outlined : Icons.satellite_alt),
+          ),
+        ],
+      ),
       body: center == null
           ? const Center(child: Text('The area boundary is not available yet.'))
           : Column(
@@ -70,11 +90,7 @@ class GeofenceMapScreen extends StatelessWidget {
                   child: FlutterMap(
                     options: MapOptions(initialCenter: center, initialZoom: 15),
                     children: [
-                      TileLayer(
-                        urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        subdomains: const ['a', 'b', 'c'],
-                        userAgentPackageName: 'com.zega.alert',
-                      ),
+                      mapTileLayer(satellite: _satellite),
                       if (hasPolygon)
                         PolygonLayer(
                           polygons: [
@@ -112,6 +128,7 @@ class GeofenceMapScreen extends StatelessWidget {
                           ),
                         ],
                       ),
+                      mapAttribution(satellite: _satellite),
                     ],
                   ),
                 ),

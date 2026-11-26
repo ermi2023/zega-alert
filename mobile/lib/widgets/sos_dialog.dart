@@ -11,6 +11,7 @@ import '../services/api.dart';
 import '../services/location_service.dart';
 import '../services/socket_service.dart';
 import '../services/sos_live_stream_service.dart';
+import 'map_tile_layers.dart';
 import 'auth_gate.dart';
 
 /// Implements Figure 17 (AD-3: Emergency SOS Response Workflow) & Table 9 (UC-18):
@@ -51,6 +52,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
   bool _aborted = false;
   bool _dispatched = false;
   bool _sending = false;
+  bool _satelliteMap = false;
   String? _sosId;
   double? _myLat;
   double? _myLng;
@@ -411,51 +413,72 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
                 borderRadius: BorderRadius.circular(12),
                 child: SizedBox(
                   height: 220,
-                  child: FlutterMap(
-                    options: MapOptions(
-                      initialCenter: LatLng(_myLat!, _myLng!),
-                      initialZoom: 14,
-                    ),
+                  child: Stack(
                     children: [
-                      TileLayer(
-                        urlTemplate:
-                            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        userAgentPackageName: 'com.zega.alert',
-                      ),
-                      MarkerLayer(
-                        markers: [
-                          Marker(
-                            point: LatLng(_myLat!, _myLng!),
-                            width: 36,
-                            height: 36,
-                            child: const Icon(
-                              Icons.location_on,
-                              color: Colors.red,
-                              size: 36,
-                            ),
-                          ),
-                          ..._units
-                              .where(
-                                (u) =>
-                                    u['latitude'] != null &&
-                                    u['longitude'] != null,
-                              )
-                              .map(
-                                (u) => Marker(
-                                  point: LatLng(
-                                    (u['latitude'] as num).toDouble(),
-                                    (u['longitude'] as num).toDouble(),
-                                  ),
-                                  width: 30,
-                                  height: 30,
-                                  child: const Icon(
-                                    Icons.local_police,
-                                    color: Colors.blue,
-                                    size: 30,
-                                  ),
+                      FlutterMap(
+                        options: MapOptions(
+                          initialCenter: LatLng(_myLat!, _myLng!),
+                          initialZoom: 14,
+                        ),
+                        children: [
+                          mapTileLayer(satellite: _satelliteMap),
+                          MarkerLayer(
+                            markers: [
+                              Marker(
+                                point: LatLng(_myLat!, _myLng!),
+                                width: 36,
+                                height: 36,
+                                child: const Icon(
+                                  Icons.location_on,
+                                  color: Colors.red,
+                                  size: 36,
                                 ),
                               ),
+                              ..._units
+                                  .where(
+                                    (u) =>
+                                        u['latitude'] != null &&
+                                        u['longitude'] != null,
+                                  )
+                                  .map(
+                                    (u) => Marker(
+                                      point: LatLng(
+                                        (u['latitude'] as num).toDouble(),
+                                        (u['longitude'] as num).toDouble(),
+                                      ),
+                                      width: 30,
+                                      height: 30,
+                                      child: const Icon(
+                                        Icons.local_police,
+                                        color: Colors.blue,
+                                        size: 30,
+                                      ),
+                                    ),
+                                  ),
+                            ],
+                          ),
+                          mapAttribution(satellite: _satelliteMap),
                         ],
+                      ),
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Material(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          child: IconButton(
+                            tooltip: _satelliteMap
+                                ? 'Switch to street map'
+                                : 'Switch to satellite imagery',
+                            onPressed: () =>
+                                setState(() => _satelliteMap = !_satelliteMap),
+                            icon: Icon(
+                              _satelliteMap
+                                  ? Icons.map_outlined
+                                  : Icons.satellite_alt,
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),

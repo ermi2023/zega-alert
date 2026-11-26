@@ -2,48 +2,60 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+
 import '../services/api.dart';
+import '../widgets/map_tile_layers.dart';
 import '../widgets/translatable_text.dart';
 
-class AnnouncementDetailScreen extends StatelessWidget {
+class AnnouncementDetailScreen extends StatefulWidget {
   const AnnouncementDetailScreen({super.key, required this.item});
 
   final Map<String, dynamic> item;
 
+  @override
+  State<AnnouncementDetailScreen> createState() =>
+      _AnnouncementDetailScreenState();
+}
+
+class _AnnouncementDetailScreenState extends State<AnnouncementDetailScreen> {
+  bool _satellite = false;
+
+  Map<String, dynamic> get item => widget.item;
+
   String get _category => (item['category'] ?? 'news').toString();
 
   Color get _color => switch (_category) {
-        'warning' => Colors.amber.shade800,
-        'road_closure' => Colors.deepOrange,
-        'missing_item' => Colors.teal,
-        'wanted' => Colors.red,
-        'missing' => Colors.orange,
-        'legal' => Colors.indigo,
-        'event' => Colors.purple,
-        _ => const Color(0xFF1E40AF),
-      };
+    'warning' => Colors.amber.shade800,
+    'road_closure' => Colors.deepOrange,
+    'missing_item' => Colors.teal,
+    'wanted' => Colors.red,
+    'missing' => Colors.orange,
+    'legal' => Colors.indigo,
+    'event' => Colors.purple,
+    _ => const Color(0xFF1E40AF),
+  };
 
   IconData get _icon => switch (_category) {
-        'warning' => Icons.warning_amber,
-        'road_closure' => Icons.traffic,
-        'missing_item' => Icons.inventory_2_outlined,
-        'wanted' => Icons.gavel,
-        'missing' => Icons.person_search,
-        'legal' => Icons.gavel,
-        'event' => Icons.event,
-        _ => Icons.article,
-      };
+    'warning' => Icons.warning_amber,
+    'road_closure' => Icons.traffic,
+    'missing_item' => Icons.inventory_2_outlined,
+    'wanted' => Icons.gavel,
+    'missing' => Icons.person_search,
+    'legal' => Icons.gavel,
+    'event' => Icons.event,
+    _ => Icons.article,
+  };
 
   String get _label => switch (_category) {
-        'warning' => 'Safety alert',
-        'road_closure' => 'Road closure',
-        'missing_item' => 'Lost & found',
-        'wanted' => 'Wanted person',
-        'missing' => 'Missing person',
-        'legal' => 'Legal information',
-        'event' => 'Event',
-        _ => 'News',
-      };
+    'warning' => 'Safety alert',
+    'road_closure' => 'Road closure',
+    'missing_item' => 'Lost & found',
+    'wanted' => 'Wanted person',
+    'missing' => 'Missing person',
+    'legal' => 'Legal information',
+    'event' => 'Event',
+    _ => 'News',
+  };
 
   String get _date {
     final raw = item['published_at'] ?? item['created_at'];
@@ -59,7 +71,11 @@ class AnnouncementDetailScreen extends StatelessWidget {
       '${item['title'] ?? ''}\n\n${item['body'] ?? ''}\n\n'
       'Shared via ZEGA-ALERT\n#ZEGAALERT #EthiopianFederalPolice #PublicSafety',
     );
-    await Api.recordShare('announcement', item['id']?.toString(), platform: Api.platformFromRaw(r.raw));
+    await Api.recordShare(
+      'announcement',
+      item['id']?.toString(),
+      platform: Api.platformFromRaw(r.raw),
+    );
   }
 
   @override
@@ -73,6 +89,16 @@ class AnnouncementDetailScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(_label),
         actions: [
+          if (_category == 'road_closure' &&
+              item['latitude'] != null &&
+              item['longitude'] != null)
+            IconButton(
+              tooltip: _satellite
+                  ? 'Switch to street map'
+                  : 'Switch to satellite imagery',
+              onPressed: () => setState(() => _satellite = !_satellite),
+              icon: Icon(_satellite ? Icons.map_outlined : Icons.satellite_alt),
+            ),
           IconButton(
             tooltip: 'Share',
             onPressed: () => _share(context),
@@ -100,14 +126,26 @@ class AnnouncementDetailScreen extends StatelessWidget {
                   children: [
                     Icon(_icon, color: Colors.white, size: 18),
                     const SizedBox(width: 6),
-                    Text(_label.toUpperCase(),
-                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.6)),
+                    Text(
+                      _label.toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Text(
                   item['title']?.toString() ?? '',
-                  style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, height: 1.25),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    height: 1.25,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Wrap(
@@ -115,8 +153,16 @@ class AnnouncementDetailScreen extends StatelessWidget {
                   runSpacing: 4,
                   children: [
                     if (_date.isNotEmpty) _headerBadge(Icons.schedule, _date),
-                    if (item['region'] != null) _headerBadge(Icons.location_on_outlined, item['region'].toString()),
-                    if (item['author_name'] != null) _headerBadge(Icons.verified_user_outlined, item['author_name'].toString()),
+                    if (item['region'] != null)
+                      _headerBadge(
+                        Icons.location_on_outlined,
+                        item['region'].toString(),
+                      ),
+                    if (item['author_name'] != null)
+                      _headerBadge(
+                        Icons.verified_user_outlined,
+                        item['author_name'].toString(),
+                      ),
                   ],
                 ),
               ],
@@ -135,7 +181,9 @@ class AnnouncementDetailScreen extends StatelessWidget {
               style: const TextStyle(fontSize: 16, height: 1.55),
             ),
           ),
-          if (_category == 'road_closure' && item['latitude'] != null && item['longitude'] != null)
+          if (_category == 'road_closure' &&
+              item['latitude'] != null &&
+              item['longitude'] != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Column(
@@ -145,7 +193,10 @@ class AnnouncementDetailScreen extends StatelessWidget {
                     children: [
                       Icon(Icons.traffic, size: 18, color: scheme.primary),
                       const SizedBox(width: 6),
-                      const Text('Affected area', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const Text(
+                        'Affected area',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -162,22 +213,25 @@ class AnnouncementDetailScreen extends StatelessWidget {
                           initialZoom: 15,
                         ),
                         children: [
-                          TileLayer(
-                            urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            subdomains: const ['a', 'b', 'c'],
-                            userAgentPackageName: 'com.zega.alert',
-                          ),
-                          MarkerLayer(markers: [
-                            Marker(
-                              point: LatLng(
-                                (item['latitude'] as num).toDouble(),
-                                (item['longitude'] as num).toDouble(),
+                          mapTileLayer(satellite: _satellite),
+                          MarkerLayer(
+                            markers: [
+                              Marker(
+                                point: LatLng(
+                                  (item['latitude'] as num).toDouble(),
+                                  (item['longitude'] as num).toDouble(),
+                                ),
+                                width: 44,
+                                height: 44,
+                                child: const Icon(
+                                  Icons.location_on,
+                                  color: Colors.red,
+                                  size: 44,
+                                ),
                               ),
-                              width: 44,
-                              height: 44,
-                              child: const Icon(Icons.location_on, color: Colors.red, size: 44),
-                            ),
-                          ]),
+                            ],
+                          ),
+                          mapAttribution(satellite: _satellite),
                         ],
                       ),
                     ),
@@ -195,7 +249,10 @@ class AnnouncementDetailScreen extends StatelessWidget {
                     children: [
                       Icon(Icons.translate, size: 18, color: scheme.primary),
                       const SizedBox(width: 6),
-                      const Text('Other languages', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const Text(
+                        'Other languages',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -212,9 +269,17 @@ class AnnouncementDetailScreen extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 if (t['title'] != null)
-                                  Text(t['title'].toString(), style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  Text(
+                                    t['title'].toString(),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 const SizedBox(height: 4),
-                                Text((t['body'] ?? '').toString(), style: const TextStyle(height: 1.45)),
+                                Text(
+                                  (t['body'] ?? '').toString(),
+                                  style: const TextStyle(height: 1.45),
+                                ),
                               ],
                             ),
                           ),

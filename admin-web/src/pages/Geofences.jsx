@@ -4,6 +4,7 @@ import { Circle, CircleMarker, MapContainer, Polygon, Polyline, TileLayer, useMa
 import 'leaflet/dist/leaflet.css';
 import { api } from '../api/client';
 import LiveMap from '../components/LiveMap';
+import { getMapTileConfig } from '../utils/mapTiles';
 
 const TYPES = ['zone', 'school', 'police_station', 'hospital', 'event', 'residence', 'market'];
 const EMPTY_FORM = {
@@ -12,7 +13,8 @@ const EMPTY_FORM = {
   polygon: [], is_active: true,
 };
 
-function MapEditor({ form, drawMode, setForm }) {
+function MapEditor({ form, drawMode, setForm, satellite }) {
+  const tileConfig = getMapTileConfig(satellite);
   useMapEvents({
     click(e) {
       if (drawMode) {
@@ -25,10 +27,7 @@ function MapEditor({ form, drawMode, setForm }) {
 
   return (
     <>
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
+      <TileLayer attribution={tileConfig.attribution} url={tileConfig.url} />
       {!drawMode && (form.polygon || []).length < 3 && form.center_lat && form.center_lng && (
         <>
           <Circle
@@ -93,6 +92,7 @@ export default function Geofences() {
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [editing, setEditing] = useState(null);
   const [drawMode, setDrawMode] = useState(false);
+  const [satellite, setSatellite] = useState(false);
   const [msg, setMsg] = useState({ type: '', text: '' });
   const [mapOpen, setMapOpen] = useState(false);
   const [mapCenter, setMapCenter] = useState([9.03, 38.74]);
@@ -393,7 +393,7 @@ export default function Geofences() {
               </button>
             </form>
             <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
-              Search results and map data © OpenStreetMap contributors.
+              Search results and street maps © OpenStreetMap contributors; satellite imagery © Esri.
             </div>
             {searchError && <div className="msg err" style={{ marginTop: 8 }}>{searchError}</div>}
             {searchResults.length > 0 && (
@@ -429,9 +429,12 @@ export default function Geofences() {
               <span style={{ color: 'var(--muted)', fontSize: 12 }}>
                 {drawMode ? `Tap at least 3 points (${form.polygon?.length || 0} selected).` : 'Tap the map to set the center.'}
               </span>
+              <span style={{ color: 'var(--muted)', fontSize: 12 }}>
+                Zoom changes only the view. Drawn points stay at fixed GPS coordinates; a circle keeps its set radius in meters.
+              </span>
             </div>
           </div>
-          <div style={{ flex: 1, minHeight: 0 }}>
+          <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
             <MapContainer
               center={mapCenter}
               zoom={14}
@@ -440,8 +443,23 @@ export default function Geofences() {
             >
               <MapView center={mapCenter} zoom={14} />
               <MapResizeFix />
-              <MapEditor form={form} drawMode={drawMode} setForm={setForm} />
+              <MapEditor
+                form={form}
+                drawMode={drawMode}
+                setForm={setForm}
+                satellite={satellite}
+              />
             </MapContainer>
+            <button
+              type="button"
+              className="btn small"
+              title={satellite ? 'Switch to street map' : 'Switch to satellite imagery'}
+              aria-label={satellite ? 'Switch to street map' : 'Switch to satellite imagery'}
+              onClick={() => setSatellite((current) => !current)}
+              style={{ position: 'absolute', top: 12, right: 12, zIndex: 1000 }}
+            >
+              {satellite ? 'Street map' : 'Satellite'}
+            </button>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: 12, boxShadow: '0 -2px 8px rgba(0,0,0,.12)' }}>
             <span style={{ fontSize: 12, color: 'var(--muted)' }}>

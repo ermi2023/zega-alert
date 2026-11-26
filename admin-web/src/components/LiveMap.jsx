@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, Polygon, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { getMapTileConfig } from '../utils/mapTiles';
 
 // OpenStreetMap via Leaflet - no API key and no billing. The map API key that
 // Google Maps required (spec 4.4) is intentionally not used.
@@ -79,6 +80,7 @@ export default function LiveMap({
   center,
   defaultCenter = DEFAULT_CENTER,
 }) {
+  const [satellite, setSatellite] = useState(false);
   const resolvedCenter =
     center ||
     (alerts[0] && [Number(alerts[0].latitude), Number(alerts[0].longitude)]) ||
@@ -91,14 +93,12 @@ export default function LiveMap({
     ...officers.filter((p) => p.latitude && p.longitude).map((p) => [Number(p.latitude), Number(p.longitude)]),
   ];
   const signature = `${alerts.map((a) => a.id).join(',')}|${officers.map((o) => o.userId).join(',')}`;
+  const tileConfig = getMapTileConfig(satellite);
 
   return (
-    <div style={{ width: '100%', height: cssHeight(height), borderRadius: 10, overflow: 'hidden' }}>
+    <div style={{ width: '100%', height: cssHeight(height), borderRadius: 10, overflow: 'hidden', position: 'relative' }}>
       <MapContainer center={resolvedCenter} zoom={12} style={{ width: '100%', height: '100%' }} scrollWheelZoom>
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        <TileLayer attribution={tileConfig.attribution} url={tileConfig.url} />
         <ResizeFix />
         <FitBounds points={fitPoints} signature={signature} />
 
@@ -159,6 +159,25 @@ export default function LiveMap({
           </Marker>
         ))}
       </MapContainer>
+      <button
+        type="button"
+        title={satellite ? 'Switch to street map' : 'Switch to satellite imagery'}
+        aria-label={satellite ? 'Switch to street map' : 'Switch to satellite imagery'}
+        onClick={() => setSatellite((current) => !current)}
+        style={{
+          position: 'absolute',
+          top: 12,
+          right: 12,
+          zIndex: 1000,
+          border: '1px solid #9ca3af',
+          borderRadius: 6,
+          background: '#fff',
+          padding: '8px 12px',
+          cursor: 'pointer',
+        }}
+      >
+        {satellite ? 'Street map' : 'Satellite'}
+      </button>
     </div>
   );
 }

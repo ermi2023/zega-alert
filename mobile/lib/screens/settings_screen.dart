@@ -292,7 +292,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-    Future<void> _setSafetyZoneTracking(bool enabled) async {
+  Future<void> _setSafetyZoneTracking(bool enabled) async {
+    final loc = AppLocalizations.of(context);
       setState(() {
         _safetyZoneTrackingBusy = true;
         _status = null;
@@ -303,7 +304,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           if (mounted) {
             setState(() {
               _safetyZoneTrackingEnabled = false;
-              _status = 'Safety Zone location alerts are off.';
+              _status = loc.safetyZoneAlertsOff;
             });
           }
           return;
@@ -329,20 +330,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           final openSettings = await showDialog<bool>(
             context: context,
             builder: (dialogContext) => AlertDialog(
-              title: const Text('Allow background location'),
-              content: const Text(
-                'To check for Safety Zone entry while ZEGA Alert is closed, '
-                'Android must allow location access all the time. In app '
-                'permissions, choose “Allow all the time”.',
-              ),
+              title: Text(loc.allowBackgroundLocation),
+              content: Text(loc.allowBackgroundLocationDescription),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext, false),
-                  child: const Text('Not now'),
+                  child: Text(loc.notNow),
                 ),
                 FilledButton(
                   onPressed: () => Navigator.pop(dialogContext, true),
-                  child: const Text('Open app settings'),
+                  child: Text(loc.openAppSettings),
                 ),
               ],
             ),
@@ -350,8 +347,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           if (openSettings == true) await Geolocator.openAppSettings();
           if (mounted) {
             setState(
-              () => _status =
-                  'Choose “Allow all the time” in app permissions, then turn on Safety Zone alerts again.',
+              () => _status = loc.backgroundLocationPermissionRequired,
             );
           }
           return;
@@ -368,8 +364,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           setState(() {
             _safetyZoneTrackingEnabled = true;
             _status = monitoredZoneCount == 0
-                ? 'Location alerts are on. No published Safety Zones are available yet.'
-                : 'Safety Zone entry alerts are on.';
+                ? loc.safetyZoneAlertsOnNoZones
+                : loc.safetyZoneAlertsOn;
           });
         }
       } catch (error) {

@@ -800,4 +800,117 @@ class AppLocalizationsOm extends AppLocalizations {
 
   @override
   String get signInFailed => 'Seenuun hin danda\'amne. Irra deebi\'ii yaali.';
+
+  @override
+  String get police => 'Poolisii';
+
+  @override
+  String get ambulanceRescue => 'Ambulaansii / baraarsaa';
+
+  @override
+  String regionSelectedSemantics(Object region) {
+    return 'Filannoo naannoo. Amma $region filatameera.';
+  }
+
+  @override
+  String subCitySelectedSemantics(Object subCity) {
+    return 'Filannoo naannoo xiqqaa. Amma $subCity filatameera.';
+  }
+
+  @override
+  String languageSelectedSemantics(Object language) {
+    return 'Filannoo afaanii. Amma $language filatameera.';
+  }
+
+  @override
+  String get citizenProfile => 'Ibsa lammii';
+
+  @override
+  String get verifiedAccount => 'Herrega mirkanaa\'e';
+
+  @override
+  String get unverifiedAccount => 'Herrega hin mirkanoofne';
+
+  @override
+  String get editProfile => 'Ibsa gulaali';
+
+  @override
+  String get notAvailable => 'Hin jiru';
+
+  @override
+  String get memberSince => 'Miseensa ta\'ee';
+
+  @override
+  String get verificationStatus => 'Haala mirkaneessaa';
+
+  @override
+  String get guestBrowsing => 'Akka keessummaatti ilaalta';
+
+  @override
+  String get guestFeaturesInfo =>
+      'Gabaasa dhiyeessuuf, SOS erguuf, poolisiif ergaa barreessuuf fi ID kee mirkaneessuuf seeni.';
+
+  @override
+  String get signInCreateAccount => 'Seeni / Herrega uumi';
+
+  @override
+  String get fanIdentityTitle => 'Mirkaneessa eenyummaa FAN';
+
+  @override
+  String get fanIdentityDescription =>
+      'QR ID jalqabaa kee qindeessi ykn FAN lakkoofsa 16 galchi; galmee fakkeenyaa bulchaa mirkaneessuuf.';
+
+  @override
+  String get settingsSaved => 'Ibsi fi qindaa\'inni olkaa\'ameera.';
+
+  @override
+  String get settingsSaveFailed => 'Ibsa kee olkaa\'uun hin danda\'amne.';
+
+  @override
+  String get notificationLoadFailed =>
+      'Beeksisoota amma fe\'uun hin danda\'amne.';
+
+  @override
+  String get backgroundLocationPermissionRequired =>
+      'Hayyama app keessatti “Yeroo hunda hayyami” filadhu, achii booda beeksisa aanaa nageenyaa irra deebi\'ii bani.';
+
+  @override
+  String get backgroundLocationAndroidOnly =>
+      'Beeksisni aanaa nageenyaa duubaa Android irratti qofa hojjeta.';
+
+  @override
+  String get turnOnDeviceLocation =>
+      'Beeksisa aanaa nageenyaa banuuf bakka bilbilaa bani.';
+
+  @override
+  String get alwaysLocationPermission =>
+      'Hayyama app keessatti ZEGA Alert yeroo hunda bakka fayyadamu hayyami, achii booda beeksisa aanaa nageenyaa irra deebi\'ii bani.';
+
+  @override
+  String get safetyNotificationsUnavailable =>
+      'Beeksisni aanaa nageenyaa meeshaa kana irratti hin jiru.';
+
+  @override
+  String get allowSafetyNotifications =>
+      'Beeksisa yeroo aanaa nageenyaa seentu argachuuf beeksisa ZEGA Alert hayyami.';
+
+  @override
+  String get couldNotEnableSafetyZoneAlerts =>
+      'Beeksisa aanaa nageenyaa banuun hin danda\'amne. Walqunnamtii, hayyama bakka fi qindaa\'ina beeksisaa ilaali.';
+
+  @override
+  String get couldNotStartLocationMonitoring =>
+      'Hordoffii bakka aanaa nageenyaa jalqabuun hin danda\'amne.';
+
+  @override
+  String get couldNotRestartLocationMonitoring =>
+      'Hordoffii bakka aanaa nageenyaa irra deebi\'anii jalqabuun hin danda\'amne.';
+
+  @override
+  String get locationMonitoringStopped =>
+      'Hordoffiin bakka dhaabbateera. Bakka bilbilaa fi hayyama ilaali.';
+
+  @override
+  String get couldNotCheckZoneBoundaries =>
+      'Daangaa aanaa nageenyaa ammaa mirkaneessuun hin danda\'amne.';
 }

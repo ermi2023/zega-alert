@@ -812,4 +812,117 @@ class AppLocalizationsSo extends AppLocalizations {
   @override
   String get signInFailed =>
       'Soo gelitaanku ma suurtagelin. Mar kale isku day.';
+
+  @override
+  String get police => 'Booliiska';
+
+  @override
+  String get ambulanceRescue => 'Ambalaas / gurmad';
+
+  @override
+  String regionSelectedSemantics(Object region) {
+    return 'Doorashada gobolka. Hadda $region ayaa la doortay.';
+  }
+
+  @override
+  String subCitySelectedSemantics(Object subCity) {
+    return 'Doorashada magaalada-hoose. Hadda $subCity ayaa la doortay.';
+  }
+
+  @override
+  String languageSelectedSemantics(Object language) {
+    return 'Doorashada luqadda. Hadda $language ayaa la doortay.';
+  }
+
+  @override
+  String get citizenProfile => 'Xogta muwaadinka';
+
+  @override
+  String get verifiedAccount => 'Akoon la xaqiijiyey';
+
+  @override
+  String get unverifiedAccount => 'Akoon aan la xaqiijin';
+
+  @override
+  String get editProfile => 'Wax ka beddel xogta';
+
+  @override
+  String get notAvailable => 'Lama hayo';
+
+  @override
+  String get memberSince => 'Xubin laga soo bilaabo';
+
+  @override
+  String get verificationStatus => 'Xaaladda xaqiijinta';
+
+  @override
+  String get guestBrowsing => 'Waxaad u baadhaysaa marti ahaan';
+
+  @override
+  String get guestFeaturesInfo =>
+      'Soo gal si aad warbixin u gudbiso, SOS u dirto, saraakiisha farriin ugu dirto oo aqoonsigaaga u xaqiijiso.';
+
+  @override
+  String get signInCreateAccount => 'Soo gal / Akoon samee';
+
+  @override
+  String get fanIdentityTitle => 'Xaqiijinta aqoonsiga FAN';
+
+  @override
+  String get fanIdentityDescription =>
+      'Sawir QR-ka aqoonsigaaga asalka ah ama geli FAN-ka 16-ka lambar ah si loo eego diiwaanka tusaalaha ee maamulka.';
+
+  @override
+  String get settingsSaved => 'Xogta iyo dejimaha waa la kaydiyey.';
+
+  @override
+  String get settingsSaveFailed => 'Xogtaada lama kaydin karin.';
+
+  @override
+  String get notificationLoadFailed =>
+      'Ogeysiisyada hadda lama soo dejin karin.';
+
+  @override
+  String get backgroundLocationPermissionRequired =>
+      'Dejinta oggolaanshaha app-ka ka dooro “Oggolow mar kasta”, dabadeed mar kale daar ogeysiisyada Aagga Badbaadada.';
+
+  @override
+  String get backgroundLocationAndroidOnly =>
+      'Ogeysiisyada Aagga Badbaadada ee gadaal waxay hadda ka shaqeeyaan Android oo keliya.';
+
+  @override
+  String get turnOnDeviceLocation =>
+      'Daar goobta qalabka si aad u shiddo ogeysiisyada Aagga Badbaadada.';
+
+  @override
+  String get alwaysLocationPermission =>
+      'Oggolaanshaha app-ka u oggolow ZEGA Alert inay goobta isticmaasho mar kasta, dabadeed mar kale daar ogeysiisyada Aagga Badbaadada.';
+
+  @override
+  String get safetyNotificationsUnavailable =>
+      'Ogeysiisyada Aagga Badbaadada lagama heli karo qalabkan.';
+
+  @override
+  String get allowSafetyNotifications =>
+      'Oggolow ogeysiisyada ZEGA Alert si aad u hesho digniinaha gelitaanka Aagga Badbaadada.';
+
+  @override
+  String get couldNotEnableSafetyZoneAlerts =>
+      'Lama shidi karin ogeysiisyada Aagga Badbaadada. Hubi internetka, oggolaanshaha goobta iyo dejinta ogeysiisyada.';
+
+  @override
+  String get couldNotStartLocationMonitoring =>
+      'Lama bilaabi karin la socodka goobta Aagga Badbaadada.';
+
+  @override
+  String get couldNotRestartLocationMonitoring =>
+      'Lama bilaabi karin mar kale la socodka goobta Aagga Badbaadada.';
+
+  @override
+  String get locationMonitoringStopped =>
+      'La socodka goobtu wuu joogsaday. Hubi goobta qalabka iyo oggolaanshaha.';
+
+  @override
+  String get couldNotCheckZoneBoundaries =>
+      'Lama hubin karin xuduudaha hadda ee Aagga Badbaadada.';
 }

@@ -781,4 +781,113 @@ class AppLocalizationsTi extends AppLocalizations {
 
   @override
   String get signInFailed => 'ምእታው ኣይተኻእለን። ዳግማይ ፈትን።';
+
+  @override
+  String get police => 'ፖሊስ';
+
+  @override
+  String get ambulanceRescue => 'ኣምቡላንስ / ህጹጽ ሓገዝ';
+
+  @override
+  String regionSelectedSemantics(Object region) {
+    return 'ምርጫ ክልል። ሕጂ $region ተመሪጹ ኣሎ።';
+  }
+
+  @override
+  String subCitySelectedSemantics(Object subCity) {
+    return 'ምርጫ ንኡስ ከተማ። ሕጂ $subCity ተመሪጹ ኣሎ።';
+  }
+
+  @override
+  String languageSelectedSemantics(Object language) {
+    return 'ምርጫ ቋንቋ። ሕጂ $language ተመሪጹ ኣሎ።';
+  }
+
+  @override
+  String get citizenProfile => 'መግለጺ ዜጋ';
+
+  @override
+  String get verifiedAccount => 'ዝተረጋገጸ ሕሳብ';
+
+  @override
+  String get unverifiedAccount => 'ዘይተረጋገጸ ሕሳብ';
+
+  @override
+  String get editProfile => 'መግለጺ ኣርትዕ';
+
+  @override
+  String get notAvailable => 'ኣይርከብን';
+
+  @override
+  String get memberSince => 'ኣባል ዝኾንካሉ ግዜ';
+
+  @override
+  String get verificationStatus => 'ኩነታት መረጋገጺ';
+
+  @override
+  String get guestBrowsing => 'ከም ጋሻ ትጥቀም ኣለኻ';
+
+  @override
+  String get guestFeaturesInfo =>
+      'ሪፖርት ንምቕራብ፣ SOS ንምልኣኽ፣ ንፖሊስ መልእኽቲ ንምልኣኽን IDኻ ንምርግጋጽን እቶ።';
+
+  @override
+  String get signInCreateAccount => 'እቶ / ሕሳብ ፍጠር';
+
+  @override
+  String get fanIdentityTitle => 'መረጋገጺ መንነት FAN';
+
+  @override
+  String get fanIdentityDescription =>
+      'ናይ መጀመርታ ID QR ስካን ግበር ወይ 16 ኣሃዝ FAN ኣእቱ፤ ናይ ኣመሓዳሪ መዝገብ ንምርግጋጽ።';
+
+  @override
+  String get settingsSaved => 'መግለጺን ቅጥዕታትን ተዓቂቦም።';
+
+  @override
+  String get settingsSaveFailed => 'መግለጺኻ ምዕቃብ ኣይተኻእለን።';
+
+  @override
+  String get notificationLoadFailed => 'ምልክታታት ሕጂ ምጽዓን ኣይተኻእለን።';
+
+  @override
+  String get backgroundLocationPermissionRequired =>
+      'ኣብ ፍቓዳት app “ኩሉ ግዜ ፍቐድ” ምረጽ፣ ድሕሪኡ ምልክታ ዞባ ድሕነት ዳግማይ ኣብርህ።';
+
+  @override
+  String get backgroundLocationAndroidOnly =>
+      'ናይ ድሕረ ባይታ ምልክታታት ዞባ ድሕነት ኣብ Android ጥራይ ይርከቡ።';
+
+  @override
+  String get turnOnDeviceLocation => 'ምልክታ ዞባ ድሕነት ንምኽፋት ቦታ ስልኪ ኣብርህ።';
+
+  @override
+  String get alwaysLocationPermission =>
+      'ኣብ ፍቓዳት app ZEGA Alert ኩሉ ግዜ ቦታ ክጥቀም ፍቐድ፣ ድሕሪኡ ምልክታ ዞባ ድሕነት ዳግማይ ኣብርህ።';
+
+  @override
+  String get safetyNotificationsUnavailable =>
+      'ምልክታታት ዞባ ድሕነት ኣብዚ መሳርሒ ኣይርከቡን።';
+
+  @override
+  String get allowSafetyNotifications =>
+      'ምልክታ ምእታው ዞባ ድሕነት ንምቕባል ምልክታታት ZEGA Alert ፍቐድ።';
+
+  @override
+  String get couldNotEnableSafetyZoneAlerts =>
+      'ምልክታታት ዞባ ድሕነት ምኽፋት ኣይተኻእለን። ርክብ፣ ፍቓድ ቦታን ቅጥዕታት ምልክታን ምርምር።';
+
+  @override
+  String get couldNotStartLocationMonitoring => 'ክትትል ቦታ ዞባ ድሕነት ምጅማር ኣይተኻእለን።';
+
+  @override
+  String get couldNotRestartLocationMonitoring =>
+      'ክትትል ቦታ ዞባ ድሕነት ዳግማይ ምጅማር ኣይተኻእለን።';
+
+  @override
+  String get locationMonitoringStopped => 'ክትትል ቦታ ተቛሪጹ። ቦታ ስልኪን ፍቓዳትን ምርምር።';
+
+  @override
+  String get couldNotCheckZoneBoundaries =>
+      'ዶባት ናይቲ እዋናዊ ዞባ ድሕነት ምርምር ኣይተኻእለን።';
 }

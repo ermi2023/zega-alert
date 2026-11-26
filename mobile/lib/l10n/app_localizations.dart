@@ -1555,6 +1555,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sign in could not be completed. Please try again.'**
   String get signInFailed;
+
+  /// No description provided for @police.
+  ///
+  /// In en, this message translates to:
+  /// **'Police'**
+  String get police;
+
+  /// No description provided for @ambulanceRescue.
+  ///
+  /// In en, this message translates to:
+  /// **'Ambulance / rescue'**
+  String get ambulanceRescue;
+
+  /// No description provided for @regionSelectedSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Region dropdown. Currently set to {region}.'**
+  String regionSelectedSemantics(Object region);
+
+  /// No description provided for @subCitySelectedSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Sub-city dropdown. Currently set to {subCity}.'**
+  String subCitySelectedSemantics(Object subCity);
+
+  /// No description provided for @languageSelectedSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferred language dropdown. Currently set to {language}.'**
+  String languageSelectedSemantics(Object language);
+
+  /// No description provided for @citizenProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Citizen profile'**
+  String get citizenProfile;
+
+  /// No description provided for @verifiedAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified account'**
+  String get verifiedAccount;
+
+  /// No description provided for @unverifiedAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Unverified account'**
+  String get unverifiedAccount;
+
+  /// No description provided for @editProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit profile'**
+  String get editProfile;
+
+  /// No description provided for @notAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available'**
+  String get notAvailable;
+
+  /// No description provided for @memberSince.
+  ///
+  /// In en, this message translates to:
+  /// **'Member since'**
+  String get memberSince;
+
+  /// No description provided for @verificationStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification status'**
+  String get verificationStatus;
+
+  /// No description provided for @guestBrowsing.
+  ///
+  /// In en, this message translates to:
+  /// **'Browsing as guest'**
+  String get guestBrowsing;
+
+  /// No description provided for @guestFeaturesInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to file reports, send SOS, message officers and verify your ID.'**
+  String get guestFeaturesInfo;
+
+  /// No description provided for @signInCreateAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in / Create account'**
+  String get signInCreateAccount;
+
+  /// No description provided for @fanIdentityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'FAN identity verification'**
+  String get fanIdentityTitle;
+
+  /// No description provided for @fanIdentityDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan your original ID QR or enter its 16-digit FAN to check the administrator’s mock record.'**
+  String get fanIdentityDescription;
+
+  /// No description provided for @settingsSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile and settings saved.'**
+  String get settingsSaved;
+
+  /// No description provided for @settingsSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save your profile.'**
+  String get settingsSaveFailed;
+
+  /// No description provided for @notificationLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load notifications right now.'**
+  String get notificationLoadFailed;
+
+  /// No description provided for @backgroundLocationPermissionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose “Allow all the time” in app permissions, then turn on Safety Zone alerts again.'**
+  String get backgroundLocationPermissionRequired;
+
+  /// No description provided for @backgroundLocationAndroidOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Background Safety Zone alerts are currently available on Android.'**
+  String get backgroundLocationAndroidOnly;
+
+  /// No description provided for @turnOnDeviceLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on device Location to enable Safety Zone alerts.'**
+  String get turnOnDeviceLocation;
+
+  /// No description provided for @alwaysLocationPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow ZEGA Alert to access location all the time in app permissions, then turn Safety Zone alerts on again.'**
+  String get alwaysLocationPermission;
+
+  /// No description provided for @safetyNotificationsUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety Zone notifications are not available on this device.'**
+  String get safetyNotificationsUnavailable;
+
+  /// No description provided for @allowSafetyNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow notifications for ZEGA Alert to receive Safety Zone entry alerts.'**
+  String get allowSafetyNotifications;
+
+  /// No description provided for @couldNotEnableSafetyZoneAlerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not enable Safety Zone alerts. Check your connection, location permission, and notification settings.'**
+  String get couldNotEnableSafetyZoneAlerts;
+
+  /// No description provided for @couldNotStartLocationMonitoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start Safety Zone location monitoring.'**
+  String get couldNotStartLocationMonitoring;
+
+  /// No description provided for @couldNotRestartLocationMonitoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not restart Safety Zone location monitoring.'**
+  String get couldNotRestartLocationMonitoring;
+
+  /// No description provided for @locationMonitoringStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Location monitoring stopped. Check device Location and permissions.'**
+  String get locationMonitoringStopped;
+
+  /// No description provided for @couldNotCheckZoneBoundaries.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not check the current Safety Zone boundaries.'**
+  String get couldNotCheckZoneBoundaries;
 }
 
 class _AppLocalizationsDelegate

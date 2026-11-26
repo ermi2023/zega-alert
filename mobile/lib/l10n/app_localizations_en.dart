@@ -796,4 +796,117 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get signInFailed =>
       'Sign in could not be completed. Please try again.';
+
+  @override
+  String get police => 'Police';
+
+  @override
+  String get ambulanceRescue => 'Ambulance / rescue';
+
+  @override
+  String regionSelectedSemantics(Object region) {
+    return 'Region dropdown. Currently set to $region.';
+  }
+
+  @override
+  String subCitySelectedSemantics(Object subCity) {
+    return 'Sub-city dropdown. Currently set to $subCity.';
+  }
+
+  @override
+  String languageSelectedSemantics(Object language) {
+    return 'Preferred language dropdown. Currently set to $language.';
+  }
+
+  @override
+  String get citizenProfile => 'Citizen profile';
+
+  @override
+  String get verifiedAccount => 'Verified account';
+
+  @override
+  String get unverifiedAccount => 'Unverified account';
+
+  @override
+  String get editProfile => 'Edit profile';
+
+  @override
+  String get notAvailable => 'Not available';
+
+  @override
+  String get memberSince => 'Member since';
+
+  @override
+  String get verificationStatus => 'Verification status';
+
+  @override
+  String get guestBrowsing => 'Browsing as guest';
+
+  @override
+  String get guestFeaturesInfo =>
+      'Sign in to file reports, send SOS, message officers and verify your ID.';
+
+  @override
+  String get signInCreateAccount => 'Sign in / Create account';
+
+  @override
+  String get fanIdentityTitle => 'FAN identity verification';
+
+  @override
+  String get fanIdentityDescription =>
+      'Scan your original ID QR or enter its 16-digit FAN to check the administrator’s mock record.';
+
+  @override
+  String get settingsSaved => 'Profile and settings saved.';
+
+  @override
+  String get settingsSaveFailed => 'Could not save your profile.';
+
+  @override
+  String get notificationLoadFailed =>
+      'Could not load notifications right now.';
+
+  @override
+  String get backgroundLocationPermissionRequired =>
+      'Choose “Allow all the time” in app permissions, then turn on Safety Zone alerts again.';
+
+  @override
+  String get backgroundLocationAndroidOnly =>
+      'Background Safety Zone alerts are currently available on Android.';
+
+  @override
+  String get turnOnDeviceLocation =>
+      'Turn on device Location to enable Safety Zone alerts.';
+
+  @override
+  String get alwaysLocationPermission =>
+      'Allow ZEGA Alert to access location all the time in app permissions, then turn Safety Zone alerts on again.';
+
+  @override
+  String get safetyNotificationsUnavailable =>
+      'Safety Zone notifications are not available on this device.';
+
+  @override
+  String get allowSafetyNotifications =>
+      'Allow notifications for ZEGA Alert to receive Safety Zone entry alerts.';
+
+  @override
+  String get couldNotEnableSafetyZoneAlerts =>
+      'Could not enable Safety Zone alerts. Check your connection, location permission, and notification settings.';
+
+  @override
+  String get couldNotStartLocationMonitoring =>
+      'Could not start Safety Zone location monitoring.';
+
+  @override
+  String get couldNotRestartLocationMonitoring =>
+      'Could not restart Safety Zone location monitoring.';
+
+  @override
+  String get locationMonitoringStopped =>
+      'Location monitoring stopped. Check device Location and permissions.';
+
+  @override
+  String get couldNotCheckZoneBoundaries =>
+      'Could not check the current Safety Zone boundaries.';
 }

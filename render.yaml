@@ -60,6 +60,13 @@ services:
         sync: false
       - key: AT_SENDER_ID
         sync: false
+      # Optional WebRTC TURN relay; required by some mobile networks.
+      - key: TURN_URLS
+        sync: false
+      - key: TURN_USERNAME
+        sync: false
+      - key: TURN_CREDENTIAL
+        sync: false
 
   # ---------- Admin web (static) ----------
   - type: web

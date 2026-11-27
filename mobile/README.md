@@ -97,6 +97,19 @@ The API base URL is configured in `lib/services/api.dart`:
 - **Android emulator**: `http://10.0.2.2:5000` (maps to host localhost)
 - **Physical device**: Change to your backend server IP
 
+### Live SOS audio and video
+
+The backend supplies WebRTC ICE configuration to the mobile app and dispatch
+dashboard. STUN is used by default; reliable calls across cellular networks and
+restrictive firewalls also require a reachable TURN relay. Configure
+`TURN_URLS`, `TURN_USERNAME`, and `TURN_CREDENTIAL` on the backend using your
+TURN provider's details. `TURN_URLS` accepts comma-separated `turn:` or
+`turns:` endpoints. Without a configured TURN relay, some networks will not
+allow audio/video to connect even when microphone and camera permissions are
+granted. If the deployed backend is older and does not have the ICE-config
+route yet, the app temporarily falls back to STUN; deploy the backend updates
+to enable TURN.
+
 ## Demo Login
 
 | Role    | Phone       | Password     |

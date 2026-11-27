@@ -230,50 +230,70 @@ export default function Sos() {
 
   const acceptLiveStream = async (stream) => {
     updateLiveStream(stream.streamId, { status: 'connecting', error: null });
-    const pc = new RTCPeerConnection({
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-      ],
-    });
-    const peer = {
-      pc,
-      sosId: stream.sosId,
-      pendingRemoteCandidates: [],
-      pendingLocalCandidates: [],
-      answered: false,
-    };
-    livePeersRef.current.set(stream.streamId, peer);
-    pc.ontrack = (event) => {
-      if (event.streams[0]) {
-        updateLiveStream(stream.streamId, { remoteStream: event.streams[0] });
-      }
-    };
-    pc.onicecandidate = (event) => {
-      if (!event.candidate) return;
-      const candidate = event.candidate.toJSON();
-      if (!peer.answered) {
-        peer.pendingLocalCandidates.push(candidate);
-        return;
-      }
-      api.post(`/sos/${stream.sosId}/live/ice`, {
-        streamId: stream.streamId,
-        candidate,
-      }).catch((error) => {
-        updateLiveStream(stream.streamId, { status: 'error', error: error.message });
-        endLiveStream(stream);
-      });
-    };
-    pc.onconnectionstatechange = () => {
-      if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
-        updateLiveStream(stream.streamId, {
-          status: 'error',
-          error: 'The live media connection was interrupted.',
-        });
-        if (!peer.ending) endLiveStream(stream);
-      }
-    };
+    let pc;
     try {
+      let iceServers;
+      try {
+        const iceConfig = await api.get('/sos/live/ice-config');
+        iceServers = iceConfig?.iceServers;
+      } catch (error) {
+        if (error.status !== 404) throw error;
+        console.warn(
+          'SOS ICE config endpoint is not deployed; using STUN-only fallback. Deploy the backend to enable configured TURN relays.',
+        );
+        iceServers = [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+        ];
+      }
+      if (!Array.isArray(iceServers) || !iceServers.length) {
+        throw new Error('The server did not provide WebRTC ICE servers.');
+      }
+      pc = new RTCPeerConnection({ iceServers });
+      const peer = {
+        pc,
+        sosId: stream.sosId,
+        pendingRemoteCandidates: [],
+        pendingLocalCandidates: [],
+        answered: false,
+      };
+      livePeersRef.current.set(stream.streamId, peer);
+      pc.ontrack = (event) => {
+        if (event.streams[0]) {
+          updateLiveStream(stream.streamId, { remoteStream: event.streams[0] });
+        }
+      };
+      pc.onicecandidate = (event) => {
+        if (!event.candidate) return;
+        const candidate = event.candidate.toJSON();
+        if (!peer.answered) {
+          peer.pendingLocalCandidates.push(candidate);
+          return;
+        }
+        api.post(`/sos/${stream.sosId}/live/ice`, {
+          streamId: stream.streamId,
+          candidate,
+        }).catch((error) => {
+          updateLiveStream(stream.streamId, { status: 'error', error: error.message });
+          endLiveStream(stream);
+        });
+      };
+      pc.onconnectionstatechange = () => {
+        if (pc.connectionState === 'connected') {
+          updateLiveStream(stream.streamId, { status: 'connected', error: null });
+        } else if (pc.connectionState === 'disconnected') {
+          updateLiveStream(stream.streamId, {
+            status: 'reconnecting',
+            error: 'The live media connection was interrupted.',
+          });
+        } else if (pc.connectionState === 'failed') {
+          updateLiveStream(stream.streamId, {
+            status: 'error',
+            error: 'The live media connection was interrupted.',
+          });
+          if (!peer.ending) endLiveStream(stream);
+        }
+      };
       await pc.setRemoteDescription(stream.offer);
       for (const candidate of peer.pendingRemoteCandidates) {
         await pc.addIceCandidate(new RTCIceCandidate(candidate));
@@ -295,8 +315,10 @@ export default function Sos() {
       }
       peer.pendingLocalCandidates = [];
     } catch (error) {
-      pc.close();
-      livePeersRef.current.delete(stream.streamId);
+      pc?.close();
+      if (livePeersRef.current.get(stream.streamId)?.pc === pc) {
+        livePeersRef.current.delete(stream.streamId);
+      }
       updateLiveStream(stream.streamId, { status: 'error', error: error.message });
       try {
         await api.post(`/sos/${stream.sosId}/live/end`, { streamId: stream.streamId });
@@ -442,9 +464,10 @@ export default function Sos() {
                       <button className="btn small danger" onClick={() => endLiveStream(stream)}>Decline</button>
                     </>
                   )}
-                  {hasLocalPeer && ['connected', 'connecting', 'error'].includes(stream.status) && (
-                    <button className="btn small danger" onClick={() => endLiveStream(stream)}>End stream</button>
-                  )}
+                  {hasLocalPeer &&
+                    ['connected', 'connecting', 'reconnecting', 'error'].includes(stream.status) && (
+                      <button className="btn small danger" onClick={() => endLiveStream(stream)}>End stream</button>
+                    )}
                   {stream.error && <span style={{ color: '#b91c1c' }}>{stream.error}</span>}
                 </div>
                 {stream.remoteStream && (

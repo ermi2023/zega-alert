@@ -33,6 +33,7 @@ git push origin main
 | --- | --- |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | The **entire** contents of `backend/zega-alert-firebase-adminsdk-*.json` as one line |
 | `AT_USERNAME` / `AT_API_KEY` / `AT_SENDER_ID` | Africa's Talking credentials |
+| `TURN_URLS` / `TURN_USERNAME` / `TURN_CREDENTIAL` | Optional TURN relay credentials for reliable live audio/video; obtain these from your TURN provider |
 | `OTP_SCREEN_FALLBACK` | Set to `true` only for a controlled demo to show an undelivered OTP in the app; keep `false` for public production |
 | `VITE_API_URL` (admin site) | `https://zega-alert-api.onrender.com` |
 

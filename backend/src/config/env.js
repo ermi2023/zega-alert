@@ -18,6 +18,9 @@ export const env = {
   jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d',
   appName: process.env.APP_NAME || 'ZEGA-ALERT',
   publicBaseUrl: process.env.PUBLIC_BASE_URL || '',
+  turnUrls: (process.env.TURN_URLS || '').split(',').map((url) => url.trim()).filter(Boolean),
+  turnUsername: process.env.TURN_USERNAME || '',
+  turnCredential: process.env.TURN_CREDENTIAL || '',
   corsOrigins: !process.env.CORS_ORIGINS || process.env.CORS_ORIGINS === '*'
     ? '*'
     : process.env.CORS_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean),

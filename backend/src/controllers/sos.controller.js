@@ -157,6 +157,43 @@ export const getSos = async (req, res) => {
   ok(res, decryptRow(rows[0]));
 };
 
+export const resolveOwnSos = async (req, res) => {
+  const { rows: alerts } = await query(
+    'SELECT id, user_id, status FROM sos_alerts WHERE id = $1',
+    [req.params.id],
+  );
+  const alert = alerts[0];
+  if (!alert) return fail(res, 'SOS not found', 404);
+  if (alert.user_id !== req.user.id) {
+    return fail(res, 'Only the citizen who created this SOS can mark it resolved', 403);
+  }
+  if (['resolved', 'cancelled'].includes(alert.status)) {
+    return ok(res, alert, 'SOS is already closed');
+  }
+
+  const { rows } = await query(
+    `UPDATE sos_alerts SET status = 'resolved', response_notes = 'Marked safe by citizen.',
+       resolved_at = now()
+     WHERE id = $1 AND user_id = $2 AND status NOT IN ('resolved', 'cancelled')
+     RETURNING *`,
+    [req.params.id, req.user.id],
+  );
+  if (!rows[0]) return fail(res, 'SOS status changed before it could be resolved', 409);
+
+  endLiveStreamsForSos(rows[0].id);
+  await query(
+    `INSERT INTO audit_log (user_id, action, entity, entity_id, detail)
+     VALUES ($1,'update_sos_status','sos_alerts',$2,$3)`,
+    [req.user.id, rows[0].id, JSON.stringify({ status: 'resolved', source: 'citizen_safe_action' })],
+  );
+  io.to(`user:${req.user.id}`).emit('sos:status', {
+    sosId: rows[0].id,
+    status: rows[0].status,
+    response_notes: rows[0].response_notes,
+  });
+  ok(res, decryptRow(rows[0]), 'SOS resolved');
+};
+
 export const updateSosStatus = async (req, res) => {
   if (!await hasSosAccess(req.user, req.params.id)) {
     return fail(res, 'This SOS is routed to another station', 403);

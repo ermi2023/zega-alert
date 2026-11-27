@@ -95,15 +95,18 @@ class WebRTCService {
           ? {'width': 640, 'height': 480, 'frameRate': 15}
           : false,
     });
+    if (_localStream!.getAudioTracks().isEmpty) {
+      throw StateError('Microphone access is required for calls.');
+    }
+    if (callType == 'video' && _localStream!.getVideoTracks().isEmpty) {
+      throw StateError('Camera access is required for video calls.');
+    }
     localRenderer.srcObject = _localStream;
   }
 
   Future<void> _createPeerConnection() async {
     _peerConnection = await createPeerConnection({
-      'iceServers': [
-        {'urls': 'stun:stun.l.google.com:19302'},
-        {'urls': 'stun:stun1.l.google.com:19302'},
-      ],
+      'iceServers': await Api.getSosIceServers(),
     });
 
     _peerConnection!.onIceCandidate = (RTCIceCandidate candidate) {

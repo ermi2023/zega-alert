@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import {
-  createSos, listSos, getSos, updateSosStatus, assignSos,
+  createSos, listSos, getSos, updateSosStatus, assignSos, resolveOwnSos,
 } from '../controllers/sos.controller.js';
 import {
-  createSosLiveOffer, listActiveSosLiveOffers, answerSosLiveOffer,
+  createSosLiveOffer, listActiveSosLiveOffers, getSosLiveIceConfig, answerSosLiveOffer,
   addSosLiveIceCandidate, endSosLiveStream,
 } from '../controllers/sos-live.controller.js';
 
@@ -13,7 +13,9 @@ router.use(authenticate);
 
 router.post('/', createSos);
 router.get('/', listSos);
+router.get('/live/ice-config', getSosLiveIceConfig);
 router.get('/:id', getSos);
+router.post('/:id/resolve', resolveOwnSos);
 router.patch('/:id/status', requireRole('police', 'dispatcher', 'regional_admin', 'system_admin'), updateSosStatus);
 router.post('/:id/assign', requireRole('dispatcher', 'regional_admin', 'system_admin'), assignSos);
 router.get('/live/active', requireRole('police', 'dispatcher', 'regional_admin', 'system_admin'), listActiveSosLiveOffers);

@@ -51,6 +51,7 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
   bool _aborted = false;
   bool _dispatched = false;
   bool _sending = false;
+  bool _endingEmergency = false;
   bool _satelliteMap = false;
   String? _sosId;
   double? _myLat;
@@ -229,15 +230,35 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
   }
 
   Future<void> _resolveAndClose() async {
-    await _stopLiveStream();
-    if (_sosId != null) {
-      try {
-        await Api.patch('/sos/$_sosId/status', {'status': 'resolved'});
-      } catch (_) {}
+    if (_endingEmergency) return;
+    setState(() => _endingEmergency = true);
+    try {
+      final sosId = _sosId;
+      if (sosId == null) {
+        throw StateError('The emergency alert ID is missing.');
+      }
+      await _stopLiveStream();
+      await Api.post('/sos/$sosId/resolve');
+      _locationStreamTimer?.cancel();
+      _etaPollingTimer?.cancel();
+      if (mounted) Navigator.of(context).pop();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              Api.userMessage(
+                error,
+                fallback:
+                    'Could not end the emergency alert. Please try again.',
+              ),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _endingEmergency = false);
     }
-    _locationStreamTimer?.cancel();
-    _etaPollingTimer?.cancel();
-    if (mounted) Navigator.of(context).pop();
   }
 
   @override
@@ -346,244 +367,257 @@ class _SosFlowDialogState extends State<_SosFlowDialog>
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
         padding: const EdgeInsets.all(16),
-        constraints: const BoxConstraints(maxHeight: 620),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.sos, color: Colors.white, size: 20),
                   ),
-                  child: const Icon(Icons.sos, color: Colors.white, size: 20),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        loc.sosHelpIsOnWay,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Colors.white,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          loc.sosHelpIsOnWay,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
                         ),
+                        Text(
+                          loc.sosLivePatrolActive,
+                          style: TextStyle(fontSize: 12, color: Colors.white60),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade900,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      loc.sosDispatched,
+                      style: TextStyle(
+                        color: Colors.greenAccent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
                       ),
-                      Text(
-                        loc.sosLivePatrolActive,
-                        style: TextStyle(fontSize: 12, color: Colors.white60),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade900,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    loc.sosDispatched,
-                    style: TextStyle(
-                      color: Colors.greenAccent,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
+                ],
+              ),
+              const SizedBox(height: 12),
+              _buildLiveStreamControls(),
+              const SizedBox(height: 12),
+              if (_myLat != null && _myLng != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    height: 220,
+                    child: Stack(
+                      children: [
+                        FlutterMap(
+                          options: MapOptions(
+                            initialCenter: LatLng(_myLat!, _myLng!),
+                            initialZoom: 14,
+                          ),
+                          children: [
+                            mapTileLayer(satellite: _satelliteMap),
+                            MarkerLayer(
+                              markers: [
+                                Marker(
+                                  point: LatLng(_myLat!, _myLng!),
+                                  width: 36,
+                                  height: 36,
+                                  child: const Icon(
+                                    Icons.location_on,
+                                    color: Colors.red,
+                                    size: 36,
+                                  ),
+                                ),
+                                ..._units
+                                    .where(
+                                      (u) =>
+                                          u['latitude'] != null &&
+                                          u['longitude'] != null,
+                                    )
+                                    .map(
+                                      (u) => Marker(
+                                        point: LatLng(
+                                          (u['latitude'] as num).toDouble(),
+                                          (u['longitude'] as num).toDouble(),
+                                        ),
+                                        width: 30,
+                                        height: 30,
+                                        child: const Icon(
+                                          Icons.local_police,
+                                          color: Colors.blue,
+                                          size: 30,
+                                        ),
+                                      ),
+                                    ),
+                              ],
+                            ),
+                            mapAttribution(satellite: _satelliteMap),
+                          ],
+                        ),
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Material(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            child: IconButton(
+                              tooltip: _satelliteMap
+                                  ? loc.switchToStreetMap
+                                  : loc.switchToSatelliteImagery,
+                              onPressed: () => setState(
+                                () => _satelliteMap = !_satelliteMap,
+                              ),
+                              icon: Icon(
+                                _satelliteMap
+                                    ? Icons.map_outlined
+                                    : Icons.satellite_alt,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _buildLiveStreamControls(),
-            const SizedBox(height: 12),
-            if (_myLat != null && _myLng != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: SizedBox(
-                  height: 220,
-                  child: Stack(
-                    children: [
-                      FlutterMap(
-                        options: MapOptions(
-                          initialCenter: LatLng(_myLat!, _myLng!),
-                          initialZoom: 14,
-                        ),
-                        children: [
-                          mapTileLayer(satellite: _satelliteMap),
-                          MarkerLayer(
-                            markers: [
-                              Marker(
-                                point: LatLng(_myLat!, _myLng!),
-                                width: 36,
-                                height: 36,
-                                child: const Icon(
-                                  Icons.location_on,
-                                  color: Colors.red,
-                                  size: 36,
-                                ),
-                              ),
-                              ..._units
-                                  .where(
-                                    (u) =>
-                                        u['latitude'] != null &&
-                                        u['longitude'] != null,
-                                  )
-                                  .map(
-                                    (u) => Marker(
-                                      point: LatLng(
-                                        (u['latitude'] as num).toDouble(),
-                                        (u['longitude'] as num).toDouble(),
-                                      ),
-                                      width: 30,
-                                      height: 30,
-                                      child: const Icon(
-                                        Icons.local_police,
-                                        color: Colors.blue,
-                                        size: 30,
-                                      ),
-                                    ),
-                                  ),
-                            ],
-                          ),
-                          mapAttribution(satellite: _satelliteMap),
-                        ],
-                      ),
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: Material(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          child: IconButton(
-                            tooltip: _satelliteMap
-                                ? loc.switchToStreetMap
-                                : loc.switchToSatelliteImagery,
-                            onPressed: () =>
-                                setState(() => _satelliteMap = !_satelliteMap),
-                            icon: Icon(
-                              _satelliteMap
-                                  ? Icons.map_outlined
-                                  : Icons.satellite_alt,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+              const SizedBox(height: 12),
+              Text(
+                loc.sosRespondingUnits,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
                 ),
               ),
-            const SizedBox(height: 12),
-            Text(
-              loc.sosRespondingUnits,
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Expanded(
-              child: _units.isEmpty
-                  ? Center(
-                      child: Text(
-                        loc.sosRoutingOfficer,
-                        style: TextStyle(color: Colors.white60),
-                      ),
-                    )
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: _units.length,
-                      itemBuilder: (_, i) {
-                        final u = _units[i];
-                        final etaSec = u['eta_seconds'] as int?;
-                        final distM = u['distance_m'] as num?;
-                        final etaMin = etaSec != null
-                            ? math.max(1, (etaSec / 60).round())
-                            : null;
-                        final distKm = distM != null
-                            ? (distM / 1000).toStringAsFixed(1)
-                            : null;
-                        final etaLabel = etaMin != null
-                            ? loc.sosEtaMinutes(etaMin)
-                            : loc.sosCalculating;
-                        final distLabel = distKm != null
-                            ? loc.sosDistanceAway(distKm)
-                            : '';
-                        return Card(
-                          color: const Color(0xFF1E293B),
-                          child: ListTile(
-                            dense: true,
-                            leading: const Icon(
-                              Icons.local_police,
-                              color: Colors.blueAccent,
-                            ),
-                            title: Text(
-                              u['staff_name'] ??
-                                  u['officer_name'] ??
-                                  loc.sosOfficerOnDuty,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
+              const SizedBox(height: 6),
+              SizedBox(
+                height: _units.isEmpty
+                    ? 54
+                    : math.min(180.0, _units.length * 84.0),
+                child: _units.isEmpty
+                    ? Center(
+                        child: Text(
+                          loc.sosRoutingOfficer,
+                          style: TextStyle(color: Colors.white60),
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: _units.length,
+                        itemBuilder: (_, i) {
+                          final u = _units[i];
+                          final etaSec = u['eta_seconds'] as int?;
+                          final distM = u['distance_m'] as num?;
+                          final etaMin = etaSec != null
+                              ? math.max(1, (etaSec / 60).round())
+                              : null;
+                          final distKm = distM != null
+                              ? (distM / 1000).toStringAsFixed(1)
+                              : null;
+                          final etaLabel = etaMin != null
+                              ? loc.sosEtaMinutes(etaMin)
+                              : loc.sosCalculating;
+                          final distLabel = distKm != null
+                              ? loc.sosDistanceAway(distKm)
+                              : '';
+                          return Card(
+                            color: const Color(0xFF1E293B),
+                            child: ListTile(
+                              dense: true,
+                              leading: const Icon(
+                                Icons.local_police,
+                                color: Colors.blueAccent,
                               ),
-                            ),
-                            subtitle: Text(
-                              loc.sosEtaWithDistance(etaLabel, distLabel),
-                              style: const TextStyle(
-                                color: Colors.amberAccent,
-                                fontSize: 12,
-                              ),
-                            ),
-                            trailing: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.shade900,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                (u['status']?.toString().toLowerCase() ==
-                                        'en_route'
-                                    ? loc.sosStatusEnRoute
-                                    : (u['status'] ?? '')
-                                          .toString()
-                                          .toUpperCase()),
+                              title: Text(
+                                u['staff_name'] ??
+                                    u['officer_name'] ??
+                                    loc.sosOfficerOnDuty,
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
+                              subtitle: Text(
+                                loc.sosEtaWithDistance(etaLabel, distLabel),
+                                style: const TextStyle(
+                                  color: Colors.amberAccent,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              trailing: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade900,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  (u['status']?.toString().toLowerCase() ==
+                                          'en_route'
+                                      ? loc.sosStatusEnRoute
+                                      : (u['status'] ?? '')
+                                            .toString()
+                                            .toUpperCase()),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: _endingEmergency ? null : _resolveAndClose,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.green.shade700,
+                      ),
+                      child: _endingEmergency
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(loc.sosSafeEndEmergency),
                     ),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton(
-                    onPressed: _resolveAndClose,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.green.shade700,
-                    ),
-                    child: Text(loc.sosSafeEndEmergency),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

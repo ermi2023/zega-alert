@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart'
-    show kIsWeb, kDebugMode, TargetPlatform, defaultTargetPlatform;
+    show debugPrint, kIsWeb, kDebugMode, TargetPlatform, defaultTargetPlatform;
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -354,7 +355,17 @@ class Api {
     String fallback = 'Something went wrong. Please try again.',
   }) {
     if (error is ApiException) return error.message;
+    if (error is StateError) return error.message.toString();
     final details = error.toString().toLowerCase();
+    if (details.contains('permission') ||
+        details.contains('notallowederror') ||
+        details.contains('not allowed')) {
+      return 'Allow camera and microphone access for ZEGA Alert in device settings, then try again.';
+    }
+    if (error is PlatformException &&
+        (error.message?.trim().isNotEmpty ?? false)) {
+      return error.message!.trim();
+    }
     if (error is TimeoutException ||
         error is http.ClientException ||
         details.contains('socketexception') ||
@@ -482,6 +493,38 @@ class Api {
   static Future<dynamic> get(String path) => _send('GET', path);
   static Future<dynamic> post(String path, [Map<String, dynamic>? body]) =>
       _send('POST', path, body);
+
+  static Future<List<Map<String, dynamic>>> getSosIceServers() async {
+    dynamic config;
+    try {
+      config = await get('/sos/live/ice-config');
+    } on ApiException catch (error) {
+      if (error.statusCode != 404) rethrow;
+      debugPrint(
+        'SOS ICE config endpoint is not deployed; using STUN-only fallback. '
+        'Deploy the backend to enable configured TURN relays.',
+      );
+      return const [
+        {'urls': 'stun:stun.l.google.com:19302'},
+        {'urls': 'stun:stun1.l.google.com:19302'},
+      ];
+    }
+    final servers = config is Map ? config['iceServers'] : null;
+    if (servers is! List || servers.isEmpty) {
+      throw StateError('The server did not provide WebRTC ICE servers.');
+    }
+
+    return servers
+        .map((server) {
+          if (server is! Map) {
+            throw StateError(
+              'The server returned an invalid WebRTC ICE server.',
+            );
+          }
+          return Map<String, dynamic>.from(server);
+        })
+        .toList(growable: false);
+  }
 
   /// Public raw request used by the offline sync service.
   static Future<dynamic> request(

@@ -21,6 +21,12 @@ android {
         applicationId = "com.example.zega_alert_mobile"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
+        // x86/x86_64 are desktop/emulator architectures, not Android phones.
+        // Keep both ARM variants for a small universal APK that supports all
+        // modern physical Android devices.
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+        }
         // local_auth (biometrics) requires API 23+.
         minSdk = maxOf(flutter.minSdkVersion, 23)
         targetSdk = flutter.targetSdkVersion

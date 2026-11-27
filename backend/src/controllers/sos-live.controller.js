@@ -4,6 +4,8 @@ import { io } from '../socket/socket.js';
 import { fail, ok } from '../utils/response.js';
 import { isUuid } from '../utils/uuid.js';
 import { getRouteRecipients } from '../services/police-station.service.js';
+import { env } from '../config/env.js';
+import { buildIceServers } from '../services/ice-config.service.js';
 
 const streams = new Map();
 const staffRoles = new Set(['police', 'dispatcher', 'regional_admin', 'system_admin']);
@@ -31,6 +33,14 @@ const getStream = (sosId, streamId, res) => {
     return null;
   }
   return stream;
+};
+
+export const getSosLiveIceConfig = (_req, res) => {
+  try {
+    ok(res, { iceServers: buildIceServers(env) });
+  } catch (error) {
+    fail(res, error.message, 503);
+  }
 };
 
 const removeStream = (stream, endedBy = null) => {

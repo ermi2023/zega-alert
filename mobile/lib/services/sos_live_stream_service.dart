@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 import 'api.dart';
@@ -49,19 +50,25 @@ class SosLiveStreamService {
             ? {'width': 640, 'height': 480, 'frameRate': 15}
             : false,
       });
+      if (_localStream!.getAudioTracks().isEmpty) {
+        throw StateError('Microphone access is required for live SOS audio.');
+      }
+      if (mediaType == 'video' && _localStream!.getVideoTracks().isEmpty) {
+        throw StateError('Camera access is required for live SOS video.');
+      }
       if (_stopRequested) return;
       localRenderer.srcObject = _localStream;
 
       _peerConnection = await createPeerConnection({
-        'iceServers': [
-          {'urls': 'stun:stun.l.google.com:19302'},
-          {'urls': 'stun:stun1.l.google.com:19302'},
-        ],
+        'iceServers': await Api.getSosIceServers(),
       });
       if (_stopRequested) return;
       _peerConnection!.onIceCandidate = _onLocalIceCandidate;
       _peerConnection!.onConnectionState = (state) {
-        if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed) {
+        if (state == RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
+          _setStatus('live');
+        } else if (state ==
+            RTCPeerConnectionState.RTCPeerConnectionStateFailed) {
           unawaited(
             _finish(
               status: 'error',
@@ -119,8 +126,9 @@ class SosLiveStreamService {
         unawaited(_sendIceCandidate(candidate));
       }
       _pendingLocalCandidates.clear();
-    } catch (error) {
+    } catch (error, stackTrace) {
       if (_stopRequested) return;
+      debugPrint('SOS live stream startup failed: $error\n$stackTrace');
       _setStatus(
         'error',
         Api.userMessage(error, fallback: 'Could not start the live stream.'),
